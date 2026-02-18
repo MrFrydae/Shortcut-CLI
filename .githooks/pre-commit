@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ── Step 1: cargo fmt (auto-fix) ──────────────────────────────
+echo "Running cargo fmt..."
+cargo fmt
+
+# Re-stage any .rs files that were already staged so formatted changes
+# are included in the commit.
+git diff --cached --name-only --diff-filter=d -- '*.rs' | while IFS= read -r file; do
+    git add "$file"
+done
+
+# ── Step 2: cargo clippy ──────────────────────────────────────
+echo "Running cargo clippy..."
+cargo clippy -- -D warnings
+
+# ── Step 3: Secret scanning with gitleaks ─────────────────────
+if command -v gitleaks &>/dev/null; then
+    echo "Running gitleaks..."
+    gitleaks protect --staged
+else
+    echo "Warning: gitleaks is not installed — skipping secret scan."
+fi
