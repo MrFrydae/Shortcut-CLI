@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 
+mod api;
+
 /// CLI for interacting with Shortcut
 #[derive(Parser)]
 #[command(name = "sc")]
@@ -11,6 +13,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {}
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let _cli = Cli::parse();
 }
