@@ -10,6 +10,7 @@ path = "src/lib.rs"
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
+dirs = "6"
 keyring = { version = "3", features = ["apple-native"] }
 progenitor-client = "0.11"
 regress = "0.10"

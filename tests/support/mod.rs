@@ -155,6 +155,67 @@ pub fn workflow_state_json(id: i64, name: &str, type_: &str, position: i64) -> s
     })
 }
 
+/// Build a JSON value representing a valid `Profile` for a `Member`.
+///
+/// When `display_icon` is `None` the field is serialised as JSON `null`,
+/// matching what the Shortcut API returns for members without a custom icon.
+pub fn profile_json(
+    id: &str,
+    mention_name: &str,
+    name: &str,
+    display_icon: Option<serde_json::Value>,
+) -> serde_json::Value {
+    let icon = display_icon.unwrap_or(serde_json::Value::Null);
+    serde_json::json!({
+        "deactivated": false,
+        "display_icon": icon,
+        "email_address": format!("{mention_name}@example.com"),
+        "entity_type": "profile",
+        "gravatar_hash": null,
+        "id": id,
+        "is_owner": false,
+        "mention_name": mention_name,
+        "name": name
+    })
+}
+
+/// Build a JSON value representing a valid `Member` response object.
+///
+/// Pass `display_icon: None` to test members whose profile has a null icon.
+pub fn member_json(
+    id: &str,
+    mention_name: &str,
+    name: &str,
+    role: &str,
+    disabled: bool,
+    display_icon: Option<serde_json::Value>,
+) -> serde_json::Value {
+    serde_json::json!({
+        "created_at": "2024-01-01T00:00:00Z",
+        "created_without_invite": false,
+        "disabled": disabled,
+        "entity_type": "member",
+        "global_id": format!("global-member-{id}"),
+        "group_ids": [],
+        "id": id,
+        "profile": profile_json(id, mention_name, name, display_icon),
+        "role": role,
+        "state": "full",
+        "updated_at": "2024-01-01T00:00:00Z"
+    })
+}
+
+/// A default `Icon` JSON value for tests that don't care about the icon.
+pub fn default_icon() -> serde_json::Value {
+    serde_json::json!({
+        "created_at": "2024-01-01T00:00:00Z",
+        "entity_type": "icon",
+        "id": "00000000-0000-0000-0000-000000000099",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "url": "https://example.com/icon.png"
+    })
+}
+
 /// Build a JSON value representing a valid `MemberInfo` response object.
 pub fn member_info_json(name: &str, mention_name: &str) -> serde_json::Value {
     let workspace2 = serde_json::json!({

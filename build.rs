@@ -59,6 +59,21 @@ fn main() {
         }
     }
 
+    // Make `display_icon` optional in the `Profile` schema.
+    // The Shortcut API returns `null` for members without a custom icon,
+    // but the spec declares it as a required `$ref` to `Icon`.
+    // Removing it from `required` causes Progenitor to generate
+    // `Option<Icon>` and accept both `null` and missing values.
+    if let Some(required) = spec_value
+        .get_mut("components")
+        .and_then(|c| c.get_mut("schemas"))
+        .and_then(|s| s.get_mut("Profile"))
+        .and_then(|p| p.get_mut("required"))
+        .and_then(|r| r.as_array_mut())
+    {
+        required.retain(|v| v.as_str() != Some("display_icon"));
+    }
+
     let spec: openapiv3::OpenAPI =
         serde_json::from_value(spec_value).expect("failed to deserialize OpenAPI spec");
 
