@@ -1,8 +1,5 @@
 use clap::{Parser, Subcommand};
-
-mod api;
-mod auth;
-mod commands;
+use sc::{api, auth, commands};
 
 /// CLI for interacting with Shortcut
 #[derive(Parser)]
@@ -25,8 +22,16 @@ async fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Command::Login(args) => commands::login::run(args).await,
-        Command::Epic(args) => commands::epic::run(args).await,
+        Command::Login(args) => {
+            commands::login::run(&args, api::BASE_URL, &auth::KeychainStore, || {
+                Ok(rpassword::prompt_password("Shortcut API token: ")?)
+            })
+            .await
+        }
+        Command::Epic(args) => match api::authenticated_client() {
+            Ok(client) => commands::epic::run(&args, &client).await,
+            Err(e) => Err(e.into()),
+        },
     };
 
     if let Err(e) = result {

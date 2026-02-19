@@ -8,16 +8,15 @@ use crate::api;
 pub struct EpicArgs {
     /// List all epics
     #[arg(long)]
-    list: bool,
+    pub list: bool,
 
     /// Include epic descriptions in output
     #[arg(long, visible_alias = "descriptions")]
-    desc: bool,
+    pub desc: bool,
 }
 
-pub async fn run(args: EpicArgs) -> Result<(), Box<dyn Error>> {
+pub async fn run(args: &EpicArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
     if args.list {
-        let client = api::authenticated_client()?;
         let mut req = client.list_epics();
         if args.desc {
             req = req.includes_description(true);
