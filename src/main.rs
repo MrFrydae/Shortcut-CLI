@@ -16,6 +16,8 @@ struct Cli {
 enum Command {
     /// Authenticate with your Shortcut API token
     Login(commands::login::LoginArgs),
+    /// Work with epics
+    Epic(commands::epic::EpicArgs),
 }
 
 #[tokio::main]
@@ -24,6 +26,7 @@ async fn main() {
 
     let result = match cli.command {
         Command::Login(args) => commands::login::run(args).await,
+        Command::Epic(args) => commands::epic::run(args).await,
     };
 
     if let Err(e) = result {

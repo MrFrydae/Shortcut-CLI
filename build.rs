@@ -40,6 +40,25 @@ fn main() {
         }
     }
 
+    // Mark `associated_groups` as nullable across all schemas.
+    // The Shortcut API returns `null` for this field despite the spec
+    // declaring it as a required non-nullable array.
+    if let Some(schemas) = spec_value
+        .get_mut("components")
+        .and_then(|c| c.get_mut("schemas"))
+        .and_then(|s| s.as_object_mut())
+    {
+        for (_name, schema) in schemas.iter_mut() {
+            if let Some(prop) = schema
+                .get_mut("properties")
+                .and_then(|p| p.get_mut("associated_groups"))
+                .and_then(|ag| ag.as_object_mut())
+            {
+                prop.insert("nullable".to_string(), serde_json::Value::Bool(true));
+            }
+        }
+    }
+
     let spec: openapiv3::OpenAPI =
         serde_json::from_value(spec_value).expect("failed to deserialize OpenAPI spec");
 
