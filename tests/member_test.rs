@@ -18,6 +18,7 @@ fn make_args(list: bool, id: Option<&str>) -> member::MemberArgs {
 #[tokio::test]
 async fn list_members_prints_names() {
     let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
 
     let body = serde_json::json!([
         member_json(
@@ -40,13 +41,14 @@ async fn list_members_prints_names() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(true, None);
-    let result = member::run(&args, &client, None).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_members_empty() {
     let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
 
     Mock::given(method("GET"))
         .and(path("/api/v3/members"))
@@ -57,13 +59,14 @@ async fn list_members_empty() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(true, None);
-    let result = member::run(&args, &client, None).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_members_api_error() {
     let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
 
     Mock::given(method("GET"))
         .and(path("/api/v3/members"))
@@ -74,13 +77,14 @@ async fn list_members_api_error() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(true, None);
-    let result = member::run(&args, &client, None).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
     assert!(result.is_err());
 }
 
 #[tokio::test]
 async fn get_member_by_uuid() {
     let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
 
     let body = member_json(
         UUID_ALICE,
@@ -100,13 +104,14 @@ async fn get_member_by_uuid() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, Some(UUID_ALICE));
-    let result = member::run(&args, &client, None).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_member_by_mention_name() {
     let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
 
     let list_body = serde_json::json!([
         member_json(
@@ -152,13 +157,14 @@ async fn get_member_by_mention_name() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, Some("@alice"));
-    let result = member::run(&args, &client, None).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_member_mention_not_found() {
     let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
 
     let list_body = serde_json::json!([member_json(
         UUID_ALICE,
@@ -178,7 +184,7 @@ async fn get_member_mention_not_found() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, Some("@nobody"));
-    let result = member::run(&args, &client, None).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
     assert!(result.is_err());
     assert!(
         result
@@ -191,10 +197,11 @@ async fn get_member_mention_not_found() {
 #[tokio::test]
 async fn get_member_invalid_id() {
     let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, Some("not-a-uuid"));
-    let result = member::run(&args, &client, None).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
     assert!(result.is_err());
     assert!(
         result
@@ -207,9 +214,10 @@ async fn get_member_invalid_id() {
 #[tokio::test]
 async fn no_flags_does_nothing() {
     let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, None);
-    let result = member::run(&args, &client, None).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
     assert!(result.is_ok());
 }

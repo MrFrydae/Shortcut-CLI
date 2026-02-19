@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use sc::{api, auth, commands};
+use sc::{api, auth, commands, project};
 
 /// CLI for interacting with Shortcut
 #[derive(Parser)]
@@ -11,6 +11,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Initialize ~/.sc/ directory for token and cache storage
+    Init,
     /// Authenticate with your Shortcut API token
     Login(commands::login::LoginArgs),
     /// Work with epics
@@ -26,22 +28,40 @@ async fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Command::Login(args) => {
-            commands::login::run(&args, api::BASE_URL, &auth::KeychainStore, || {
-                Ok(rpassword::prompt_password("Shortcut API token: ")?)
-            })
-            .await
-        }
-        Command::Epic(args) => match api::authenticated_client() {
-            Ok(client) => commands::epic::run(&args, &client).await,
+        Command::Init => commands::init::run(),
+        Command::Login(args) => match project::discover_or_init() {
+            Ok(root) => {
+                let store = auth::FileTokenStore {
+                    path: root.token_path(),
+                };
+                commands::login::run(&args, api::BASE_URL, &store, || {
+                    Ok(rpassword::prompt_password("Shortcut API token: ")?)
+                })
+                .await
+            }
             Err(e) => Err(e.into()),
         },
-        Command::Member(args) => match api::authenticated_client() {
-            Ok(client) => commands::member::run(&args, &client, None).await,
-            Err(e) => Err(e.into()),
-        },
-        Command::Workflow(args) => match api::authenticated_client() {
-            Ok(client) => commands::workflow::run(&args, &client).await,
+        command => match project::discover() {
+            Ok(root) => {
+                let store = auth::FileTokenStore {
+                    path: root.token_path(),
+                };
+                match command {
+                    Command::Init | Command::Login(_) => unreachable!(),
+                    Command::Epic(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::epic::run(&args, &client).await,
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Member(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::member::run(&args, &client, root.cache_dir()).await,
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Workflow(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::workflow::run(&args, &client).await,
+                        Err(e) => Err(e.into()),
+                    },
+                }
+            }
             Err(e) => Err(e.into()),
         },
     };

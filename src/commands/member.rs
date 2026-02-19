@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use clap::Args;
 
@@ -20,7 +20,7 @@ pub struct MemberArgs {
 pub async fn run(
     args: &MemberArgs,
     client: &api::Client,
-    cache_dir: Option<PathBuf>,
+    cache_dir: PathBuf,
 ) -> Result<(), Box<dyn Error>> {
     if args.list {
         run_list(client, &cache_dir).await
@@ -31,7 +31,7 @@ pub async fn run(
     }
 }
 
-async fn run_list(client: &api::Client, cache_dir: &Option<PathBuf>) -> Result<(), Box<dyn Error>> {
+async fn run_list(client: &api::Client, cache_dir: &Path) -> Result<(), Box<dyn Error>> {
     let members = client
         .list_members()
         .send()
@@ -56,7 +56,7 @@ async fn run_list(client: &api::Client, cache_dir: &Option<PathBuf>) -> Result<(
 async fn run_get(
     id_or_mention: &str,
     client: &api::Client,
-    cache_dir: &Option<PathBuf>,
+    cache_dir: &Path,
 ) -> Result<(), Box<dyn Error>> {
     let uuid = resolve_member_id(id_or_mention, client, cache_dir).await?;
 
@@ -74,7 +74,7 @@ async fn run_get(
 async fn resolve_member_id(
     id_or_mention: &str,
     client: &api::Client,
-    cache_dir: &Option<PathBuf>,
+    cache_dir: &Path,
 ) -> Result<uuid::Uuid, Box<dyn Error>> {
     if let Some(mention) = id_or_mention.strip_prefix('@') {
         // Try cache first
@@ -122,27 +122,21 @@ fn print_member_detail(member: &api::types::Member) {
 
 // --- Cache helpers ---
 
-fn cache_path(cache_dir: &Option<PathBuf>) -> Option<PathBuf> {
-    let dir = match cache_dir {
-        Some(d) => d.clone(),
-        None => dirs::config_dir()?.join("sc-cli"),
-    };
-    Some(dir.join("member_cache.json"))
+fn cache_path(cache_dir: &Path) -> PathBuf {
+    cache_dir.join("member_cache.json")
 }
 
-fn read_cache(cache_dir: &Option<PathBuf>) -> Option<HashMap<String, String>> {
-    let path = cache_path(cache_dir)?;
+fn read_cache(cache_dir: &Path) -> Option<HashMap<String, String>> {
+    let path = cache_path(cache_dir);
     let data = std::fs::read_to_string(path).ok()?;
     serde_json::from_str(&data).ok()
 }
 
 fn write_cache(
     members: &progenitor_client::ResponseValue<Vec<api::types::Member>>,
-    cache_dir: &Option<PathBuf>,
+    cache_dir: &Path,
 ) {
-    let Some(path) = cache_path(cache_dir) else {
-        return;
-    };
+    let path = cache_path(cache_dir);
 
     let map: HashMap<String, String> = members
         .iter()
@@ -159,7 +153,6 @@ fn write_cache(
 
     let _ = std::fs::write(&path, json);
 
-    // Set 0600 permissions on Unix
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;

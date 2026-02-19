@@ -1,76 +1,76 @@
-use std::fmt;
-
-const SERVICE: &str = "sc-cli";
-const USER: &str = "shortcut-api-token";
+use std::path::PathBuf;
+use std::{fmt, fs, io};
 
 #[derive(Debug)]
 pub enum AuthError {
     NotFound,
-    Keyring(keyring::Error),
+    Io(io::Error),
 }
 
 impl fmt::Display for AuthError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             AuthError::NotFound => write!(f, "No API token found. Run `sc login` first."),
-            AuthError::Keyring(e) => write!(f, "Keychain error: {e}"),
+            AuthError::Io(e) => write!(f, "Token storage error: {e}"),
         }
     }
 }
 
 impl std::error::Error for AuthError {}
 
-impl From<keyring::Error> for AuthError {
-    fn from(e: keyring::Error) -> Self {
-        match e {
-            keyring::Error::NoEntry => AuthError::NotFound,
-            other => AuthError::Keyring(other),
-        }
+impl From<io::Error> for AuthError {
+    fn from(e: io::Error) -> Self {
+        AuthError::Io(e)
     }
 }
 
 /// Trait abstracting token storage, allowing test implementations that
-/// avoid the system keychain.
+/// avoid the filesystem.
 pub trait TokenStore {
     fn store_token(&self, token: &str) -> Result<(), AuthError>;
     fn get_token(&self) -> Result<String, AuthError>;
     fn delete_token(&self) -> Result<(), AuthError>;
 }
 
-/// Production implementation backed by the OS keychain.
-pub struct KeychainStore;
+/// File-backed token store. The token is stored as plain text at `path`.
+pub struct FileTokenStore {
+    pub path: PathBuf,
+}
 
-impl TokenStore for KeychainStore {
+impl TokenStore for FileTokenStore {
     fn store_token(&self, token: &str) -> Result<(), AuthError> {
-        let entry = keyring::Entry::new(SERVICE, USER)?;
-        entry.set_password(token)?;
+        if let Some(parent) = self.path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(&self.path, token)?;
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&self.path, fs::Permissions::from_mode(0o600))?;
+        }
+
         Ok(())
     }
 
     fn get_token(&self) -> Result<String, AuthError> {
-        let entry = keyring::Entry::new(SERVICE, USER)?;
-        Ok(entry.get_password()?)
+        let data = match fs::read_to_string(&self.path) {
+            Ok(s) => s,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return Err(AuthError::NotFound),
+            Err(e) => return Err(AuthError::Io(e)),
+        };
+        let trimmed = data.trim().to_string();
+        if trimmed.is_empty() {
+            return Err(AuthError::NotFound);
+        }
+        Ok(trimmed)
     }
 
     fn delete_token(&self) -> Result<(), AuthError> {
-        let entry = keyring::Entry::new(SERVICE, USER)?;
-        entry.delete_credential()?;
-        Ok(())
+        match fs::remove_file(&self.path) {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(AuthError::Io(e)),
+        }
     }
-}
-
-// Convenience free functions that delegate to KeychainStore.
-
-pub fn store_token(token: &str) -> Result<(), AuthError> {
-    KeychainStore.store_token(token)
-}
-
-#[allow(dead_code)]
-pub fn get_token() -> Result<String, AuthError> {
-    KeychainStore.get_token()
-}
-
-#[allow(dead_code)]
-pub fn delete_token() -> Result<(), AuthError> {
-    KeychainStore.delete_token()
 }
