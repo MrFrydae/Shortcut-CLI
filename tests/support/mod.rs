@@ -109,6 +109,42 @@ pub fn epic_json(id: i64, name: &str, description: Option<&str>) -> serde_json::
     epic
 }
 
+/// Build a JSON value representing a valid `Workflow` response object.
+pub fn workflow_json(id: i64, name: &str, states: Vec<serde_json::Value>) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "description": "",
+        "entity_type": "workflow",
+        "project_ids": [],
+        "states": states,
+        "auto_assign_owner": false,
+        "team_id": 1,
+        "default_state_id": 100,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    })
+}
+
+/// Build a JSON value representing a valid `WorkflowState` response object.
+pub fn workflow_state_json(id: i64, name: &str, type_: &str, position: i64) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "type": type_,
+        "position": position,
+        "description": "",
+        "entity_type": "workflow-state",
+        "global_id": format!("global-ws-{id}"),
+        "verb": null,
+        "color": "#ffffff",
+        "num_stories": 0,
+        "num_story_templates": 0,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    })
+}
+
 /// Build a JSON value representing a valid `MemberInfo` response object.
 pub fn member_info_json(name: &str, mention_name: &str) -> serde_json::Value {
     let workspace2 = serde_json::json!({
