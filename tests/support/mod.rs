@@ -109,6 +109,16 @@ pub fn epic_json(id: i64, name: &str, description: Option<&str>) -> serde_json::
     epic
 }
 
+/// Build a JSON value representing a valid full `Epic` response object.
+///
+/// The full `Epic` type (returned by update/get) requires `description` as a
+/// non-optional `String` and includes a `comments` array, unlike `EpicSlim`.
+pub fn full_epic_json(id: i64, name: &str, description: &str) -> serde_json::Value {
+    let mut epic = epic_json(id, name, Some(description));
+    epic["comments"] = serde_json::json!([]);
+    epic
+}
+
 /// Build a JSON value representing a valid `Workflow` response object.
 pub fn workflow_json(id: i64, name: &str, states: Vec<serde_json::Value>) -> serde_json::Value {
     serde_json::json!({
