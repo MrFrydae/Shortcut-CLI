@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::error::Error;
+use std::path::{Path, PathBuf};
 
 use clap::{Args, Subcommand};
 
@@ -44,9 +46,9 @@ pub struct UpdateArgs {
     #[arg(long)]
     pub archived: Option<bool>,
 
-    /// The ID of the epic state
+    /// The epic state ID or name (e.g. 500000042 or "in_progress")
     #[arg(long)]
-    pub epic_state_id: Option<i64>,
+    pub epic_state_id: Option<String>,
 
     /// Label names to attach (comma-separated)
     #[arg(long, value_delimiter = ',')]
@@ -69,10 +71,14 @@ pub struct UpdateArgs {
     pub requested_by_id: Option<uuid::Uuid>,
 }
 
-pub async fn run(args: &EpicArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &EpicArgs,
+    client: &api::Client,
+    cache_dir: PathBuf,
+) -> Result<(), Box<dyn Error>> {
     match &args.action {
         EpicAction::List { desc } => run_list(*desc, client).await,
-        EpicAction::Update(update_args) => run_update(update_args, client).await,
+        EpicAction::Update(update_args) => run_update(update_args, client, &cache_dir).await,
     }
 }
 
@@ -94,7 +100,11 @@ async fn run_list(desc: bool, client: &api::Client) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
-async fn run_update(args: &UpdateArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+async fn run_update(
+    args: &UpdateArgs,
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<(), Box<dyn Error>> {
     let name = args
         .name
         .as_ref()
@@ -129,6 +139,11 @@ async fn run_update(args: &UpdateArgs, client: &api::Client) -> Result<(), Box<d
         })
         .collect::<Result<_, _>>()?;
 
+    let resolved_state_id = match &args.epic_state_id {
+        Some(val) => Some(resolve_epic_state_id(val, client, cache_dir).await?),
+        None => None,
+    };
+
     let epic = client
         .update_epic()
         .epic_public_id(args.id)
@@ -145,7 +160,7 @@ async fn run_update(args: &UpdateArgs, client: &api::Client) -> Result<(), Box<d
             if let Some(archived) = args.archived {
                 b = b.archived(Some(archived));
             }
-            if let Some(state_id) = args.epic_state_id {
+            if let Some(state_id) = resolved_state_id {
                 b = b.epic_state_id(Some(state_id));
             }
             if !labels.is_empty() {
@@ -171,4 +186,98 @@ async fn run_update(args: &UpdateArgs, client: &api::Client) -> Result<(), Box<d
 
     println!("Updated epic {} - {}", epic.id, epic.name);
     Ok(())
+}
+
+// --- Name normalization ---
+
+fn normalize_name(name: &str) -> String {
+    name.to_lowercase()
+        .replace(['_', '-'], " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+// --- Epic state resolution ---
+
+async fn resolve_epic_state_id(
+    value: &str,
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<i64, Box<dyn Error>> {
+    // If it parses as i64, use it directly
+    if let Ok(id) = value.parse::<i64>() {
+        return Ok(id);
+    }
+
+    let normalized = normalize_name(value);
+
+    // Try cache first
+    if let Some(cache) = read_cache(cache_dir)
+        && let Some(&id) = cache.get(&normalized)
+    {
+        return Ok(id);
+    }
+
+    // Cache miss — fetch from API and update cache
+    let workflow = client
+        .get_epic_workflow()
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch epic workflow: {e}"))?;
+
+    let map: HashMap<String, i64> = workflow
+        .epic_states
+        .iter()
+        .map(|s| (normalize_name(&s.name), s.id))
+        .collect();
+
+    write_cache(&map, cache_dir);
+
+    if let Some(&id) = map.get(&normalized) {
+        return Ok(id);
+    }
+
+    let available: Vec<&str> = workflow
+        .epic_states
+        .iter()
+        .map(|s| s.name.as_str())
+        .collect();
+    Err(format!(
+        "Unknown epic state '{value}'. Available states: {}",
+        available.join(", ")
+    )
+    .into())
+}
+
+// --- Cache helpers ---
+
+fn cache_path(cache_dir: &Path) -> PathBuf {
+    cache_dir.join("epic_state_cache.json")
+}
+
+fn read_cache(cache_dir: &Path) -> Option<HashMap<String, i64>> {
+    let path = cache_path(cache_dir);
+    let data = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&data).ok()
+}
+
+fn write_cache(map: &HashMap<String, i64>, cache_dir: &Path) {
+    let path = cache_path(cache_dir);
+
+    let Ok(json) = serde_json::to_string_pretty(map) else {
+        return;
+    };
+
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+
+    let _ = std::fs::write(&path, json);
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+    }
 }

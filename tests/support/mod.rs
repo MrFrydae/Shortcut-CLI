@@ -216,6 +216,34 @@ pub fn default_icon() -> serde_json::Value {
     })
 }
 
+/// Build a JSON value representing a valid `EpicWorkflow` response object.
+pub fn epic_workflow_json(states: Vec<serde_json::Value>) -> serde_json::Value {
+    serde_json::json!({
+        "created_at": "2024-01-01T00:00:00Z",
+        "default_epic_state_id": 500000010,
+        "entity_type": "epic-workflow",
+        "epic_states": states,
+        "id": 1,
+        "updated_at": "2024-01-01T00:00:00Z"
+    })
+}
+
+/// Build a JSON value representing a valid `EpicState` response object.
+pub fn epic_state_json(id: i64, name: &str, type_: &str, position: i64) -> serde_json::Value {
+    serde_json::json!({
+        "color": "#ffffff",
+        "created_at": "2024-01-01T00:00:00Z",
+        "description": "",
+        "entity_type": "epic-state",
+        "global_id": format!("global-es-{id}"),
+        "id": id,
+        "name": name,
+        "position": position,
+        "type": type_,
+        "updated_at": "2024-01-01T00:00:00Z"
+    })
+}
+
 /// Build a JSON value representing a valid `MemberInfo` response object.
 pub fn member_info_json(name: &str, mention_name: &str) -> serde_json::Value {
     let workspace2 = serde_json::json!({

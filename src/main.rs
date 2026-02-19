@@ -49,7 +49,7 @@ async fn main() {
                 match command {
                     Command::Init | Command::Login(_) => unreachable!(),
                     Command::Epic(args) => match api::authenticated_client(&store) {
-                        Ok(client) => commands::epic::run(&args, &client).await,
+                        Ok(client) => commands::epic::run(&args, &client, root.cache_dir()).await,
                         Err(e) => Err(e.into()),
                     },
                     Command::Member(args) => match api::authenticated_client(&store) {
