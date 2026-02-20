@@ -74,6 +74,17 @@ fn main() {
         required.retain(|v| v.as_str() != Some("display_icon"));
     }
 
+    // Make `display_icon` optional in the `Group` schema (same issue as Profile).
+    if let Some(required) = spec_value
+        .get_mut("components")
+        .and_then(|c| c.get_mut("schemas"))
+        .and_then(|s| s.get_mut("Group"))
+        .and_then(|p| p.get_mut("required"))
+        .and_then(|r| r.as_array_mut())
+    {
+        required.retain(|v| v.as_str() != Some("display_icon"));
+    }
+
     // Fix PullRequestLabel `id` type.
     // The Shortcut API returns VCS label IDs as strings (GitHub label IDs),
     // but the spec declares them as int64.

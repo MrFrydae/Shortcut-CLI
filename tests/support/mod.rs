@@ -786,6 +786,32 @@ pub fn doc_slim_json(id: &str, title: Option<&str>) -> serde_json::Value {
     })
 }
 
+/// Build a JSON value representing a valid `Group` response object.
+pub fn group_json(id: &str, name: &str, mention_name: &str) -> serde_json::Value {
+    serde_json::json!({
+        "app_url": format!("https://app.shortcut.com/test/group/{id}"),
+        "archived": false,
+        "color": null,
+        "color_key": null,
+        "created_at": "2024-01-01T00:00:00Z",
+        "default_workflow_id": null,
+        "description": "",
+        "display_icon": null,
+        "entity_type": "group",
+        "global_id": format!("global-group-{id}"),
+        "id": id,
+        "member_ids": [],
+        "mention_name": mention_name,
+        "name": name,
+        "num_epics_started": 0,
+        "num_stories": 0,
+        "num_stories_backlog": 0,
+        "num_stories_started": 0,
+        "updated_at": "2024-01-01T00:00:00Z",
+        "workflow_ids": []
+    })
+}
+
 /// Build a JSON value representing a valid `Task` response object.
 pub fn task_json(id: i64, story_id: i64, description: &str, complete: bool) -> serde_json::Value {
     use serde_json::Value;

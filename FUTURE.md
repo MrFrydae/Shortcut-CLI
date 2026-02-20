@@ -63,10 +63,10 @@
 |  7.5  | `objective epics` |   ✅    |
 |  8.1  | Milestone CRUD |  N/A   |
 |  8.2  | Category CRUD |   ✅    |
-|  9.1  | `group list` |        |
-|  9.2  | `group get` |        |
-|  9.3  | `group stories` |        |
-|  9.4  | `group create` / `group update` |        |
+|  9.1  | `group list` |   ✅    |
+|  9.2  | `group get` |   ✅    |
+|  9.3  | `group stories` |   ✅    |
+|  9.4  | `group create` / `group update` |   ✅    |
 | 10.1  | Document CRUD |        |
 | 10.2  | Epic-document linking |        |
 | 11.1  | Project CRUD |        |

@@ -159,7 +159,7 @@ fn cache_path(cache_dir: &Path) -> PathBuf {
     cache_dir.join("member_cache.json")
 }
 
-fn read_cache(cache_dir: &Path) -> Option<HashMap<String, String>> {
+pub(crate) fn read_cache(cache_dir: &Path) -> Option<HashMap<String, String>> {
     let path = cache_path(cache_dir);
     let data = std::fs::read_to_string(path).ok()?;
     serde_json::from_str(&data).ok()

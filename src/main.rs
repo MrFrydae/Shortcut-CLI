@@ -19,6 +19,8 @@ enum Command {
     Category(commands::category::CategoryArgs),
     /// Work with epics
     Epic(commands::epic::EpicArgs),
+    /// Work with groups
+    Group(commands::group::GroupArgs),
     /// Work with iterations
     Iteration(commands::iteration::IterationArgs),
     /// Work with labels
@@ -66,6 +68,10 @@ async fn main() {
                     },
                     Command::Epic(args) => match api::authenticated_client(&store) {
                         Ok(client) => commands::epic::run(&args, &client, root.cache_dir()).await,
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Group(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::group::run(&args, &client, root.cache_dir()).await,
                         Err(e) => Err(e.into()),
                     },
                     Command::Iteration(args) => match api::authenticated_client(&store) {

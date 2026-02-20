@@ -1,6 +1,7 @@
 pub mod category;
 pub mod epic;
 pub mod epic_comment;
+pub mod group;
 pub mod init;
 pub mod iteration;
 pub mod label;
