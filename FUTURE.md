@@ -55,7 +55,7 @@
 |  5.1  | Story comments |   ✅    |
 |  5.2  | Epic comments |   ✅    |
 |  5.3  | Reactions |   ✅    |
-|  6.1  | `search` |        |
+|  6.1  | `search` |   ✅    |
 |  7.1  | `objective list` |        |
 |  7.2  | `objective create` |        |
 |  7.3  | `objective get` |        |
