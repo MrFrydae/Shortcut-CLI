@@ -268,3 +268,104 @@ pub fn member_info_json(name: &str, mention_name: &str) -> serde_json::Value {
         }
     })
 }
+
+/// Common story fields shared between slim and full variants.
+/// Built incrementally to avoid `serde_json::json!` recursion limit.
+fn story_base(id: i64, name: &str) -> serde_json::Map<String, serde_json::Value> {
+    use serde_json::Value;
+
+    let mut m = serde_json::Map::new();
+    m.insert("id".into(), Value::from(id));
+    m.insert("name".into(), Value::from(name));
+    m.insert("story_type".into(), Value::from("feature"));
+    m.insert(
+        "app_url".into(),
+        Value::from(format!("https://app.shortcut.com/test/story/{id}")),
+    );
+    m.insert("archived".into(), Value::from(false));
+    m.insert("blocked".into(), Value::from(false));
+    m.insert("blocker".into(), Value::from(false));
+    m.insert("completed".into(), Value::from(false));
+    m.insert("completed_at".into(), Value::Null);
+    m.insert("completed_at_override".into(), Value::Null);
+    m.insert("created_at".into(), Value::from("2024-01-01T00:00:00Z"));
+    m.insert("deadline".into(), Value::Null);
+    m.insert("entity_type".into(), Value::from("story"));
+    m.insert("epic_id".into(), Value::Null);
+    m.insert("estimate".into(), Value::Null);
+    m.insert("external_id".into(), Value::Null);
+    m.insert("external_links".into(), serde_json::json!([]));
+    m.insert("follower_ids".into(), serde_json::json!([]));
+    m.insert(
+        "global_id".into(),
+        Value::from(format!("global-story-{id}")),
+    );
+    m.insert("group_id".into(), Value::Null);
+    m.insert("group_mention_ids".into(), serde_json::json!([]));
+    m.insert("iteration_id".into(), Value::Null);
+    m.insert("label_ids".into(), serde_json::json!([]));
+    m.insert("labels".into(), serde_json::json!([]));
+    m.insert("member_mention_ids".into(), serde_json::json!([]));
+    m.insert("mention_ids".into(), serde_json::json!([]));
+    m.insert("moved_at".into(), Value::Null);
+    m.insert("owner_ids".into(), serde_json::json!([]));
+    m.insert("position".into(), Value::from(1));
+    m.insert("previous_iteration_ids".into(), serde_json::json!([]));
+    m.insert("project_id".into(), Value::Null);
+    m.insert(
+        "requested_by_id".into(),
+        Value::from("00000000-0000-0000-0000-000000000001"),
+    );
+    m.insert("started".into(), Value::from(false));
+    m.insert("started_at".into(), Value::Null);
+    m.insert("started_at_override".into(), Value::Null);
+    m.insert(
+        "stats".into(),
+        serde_json::json!({ "num_related_documents": 0 }),
+    );
+    m.insert("story_links".into(), serde_json::json!([]));
+    m.insert("story_template_id".into(), Value::Null);
+    m.insert("updated_at".into(), Value::from("2024-01-01T00:00:00Z"));
+    m.insert("workflow_id".into(), Value::from(500000006_i64));
+    m.insert("workflow_state_id".into(), Value::from(500000007_i64));
+    m
+}
+
+/// Build a JSON value representing a valid `StorySlim` response object.
+///
+/// `description` is optional on the slim variant; pass `None` to omit it.
+pub fn story_json(id: i64, name: &str, description: Option<&str>) -> serde_json::Value {
+    let mut m = story_base(id, name);
+    m.insert("comment_ids".into(), serde_json::json!([]));
+    m.insert("file_ids".into(), serde_json::json!([]));
+    m.insert("linked_file_ids".into(), serde_json::json!([]));
+    m.insert("task_ids".into(), serde_json::json!([]));
+    m.insert("num_tasks_completed".into(), serde_json::Value::from(0));
+    if let Some(desc) = description {
+        m.insert(
+            "description".into(),
+            serde_json::Value::String(desc.to_string()),
+        );
+    }
+    serde_json::Value::Object(m)
+}
+
+/// Build a JSON value representing a valid full `Story` response object.
+///
+/// The full `Story` type (returned by create/update/get) requires `description`
+/// as a non-optional `String` and includes full resource arrays instead of IDs.
+pub fn full_story_json(id: i64, name: &str, description: &str) -> serde_json::Value {
+    let mut m = story_base(id, name);
+    m.insert(
+        "description".into(),
+        serde_json::Value::String(description.to_string()),
+    );
+    m.insert("branches".into(), serde_json::json!([]));
+    m.insert("comments".into(), serde_json::json!([]));
+    m.insert("commits".into(), serde_json::json!([]));
+    m.insert("files".into(), serde_json::json!([]));
+    m.insert("linked_files".into(), serde_json::json!([]));
+    m.insert("pull_requests".into(), serde_json::json!([]));
+    m.insert("tasks".into(), serde_json::json!([]));
+    serde_json::Value::Object(m)
+}

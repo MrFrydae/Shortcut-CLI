@@ -19,6 +19,8 @@ enum Command {
     Epic(commands::epic::EpicArgs),
     /// Work with workspace members
     Member(commands::member::MemberArgs),
+    /// Work with stories
+    Story(commands::story::StoryArgs),
     /// Work with workflows
     Workflow(commands::workflow::WorkflowArgs),
 }
@@ -54,6 +56,10 @@ async fn main() {
                     },
                     Command::Member(args) => match api::authenticated_client(&store) {
                         Ok(client) => commands::member::run(&args, &client, root.cache_dir()).await,
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Story(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::story::run(&args, &client, root.cache_dir()).await,
                         Err(e) => Err(e.into()),
                     },
                     Command::Workflow(args) => match api::authenticated_client(&store) {

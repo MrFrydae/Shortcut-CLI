@@ -71,7 +71,7 @@ async fn run_get(
     Ok(())
 }
 
-async fn resolve_member_id(
+pub async fn resolve_member_id(
     id_or_mention: &str,
     client: &api::Client,
     cache_dir: &Path,
