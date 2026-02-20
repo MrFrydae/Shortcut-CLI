@@ -1,10 +1,12 @@
 pub mod epic;
+pub mod epic_comment;
 pub mod init;
 pub mod iteration;
 pub mod label;
 pub mod login;
 pub mod member;
 pub mod story;
+pub mod story_comment;
 pub mod story_link;
 pub mod task;
 pub mod workflow;

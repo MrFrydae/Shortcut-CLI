@@ -7,6 +7,7 @@ use clap::{Args, Subcommand};
 use crate::api;
 
 use super::member;
+use super::story_comment;
 use super::story_link;
 use super::task;
 
@@ -43,6 +44,8 @@ pub enum StoryAction {
     Task(task::TaskArgs),
     /// Manage story links (relationships between stories)
     Link(story_link::LinkArgs),
+    /// Manage comments on a story
+    Comment(story_comment::CommentArgs),
 }
 
 #[derive(Args)]
@@ -177,6 +180,7 @@ pub async fn run(
         StoryAction::Delete { id, confirm } => run_delete(*id, *confirm, client).await,
         StoryAction::Task(task_args) => task::run(task_args, client).await,
         StoryAction::Link(link_args) => story_link::run(link_args, client).await,
+        StoryAction::Comment(args) => story_comment::run(args, client, &cache_dir).await,
     }
 }
 

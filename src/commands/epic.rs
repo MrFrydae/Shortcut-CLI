@@ -6,6 +6,7 @@ use clap::{Args, Subcommand};
 
 use crate::api;
 
+use super::epic_comment;
 use super::member;
 
 #[derive(Args)]
@@ -32,6 +33,8 @@ pub enum EpicAction {
     },
     /// Update an epic
     Update(Box<UpdateArgs>),
+    /// Manage comments on an epic
+    Comment(epic_comment::CommentArgs),
     /// Delete an epic
     Delete {
         /// The ID of the epic to delete
@@ -141,6 +144,7 @@ pub async fn run(
         EpicAction::Create(create_args) => run_create(create_args, client, &cache_dir).await,
         EpicAction::Get { id } => run_get(*id, client, &cache_dir).await,
         EpicAction::Update(update_args) => run_update(update_args, client, &cache_dir).await,
+        EpicAction::Comment(args) => epic_comment::run(args, client, &cache_dir).await,
         EpicAction::Delete { id, confirm } => run_delete(*id, *confirm, client).await,
     }
 }

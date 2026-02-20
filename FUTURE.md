@@ -52,9 +52,9 @@
 |  4.2  | `story link list` |   ✅    |
 |  4.3  | `story link delete` |   ✅    |
 |  4.4  | Relationship display in `story get` |   ✅    |
-|  5.1  | Story comments |        |
-|  5.2  | Epic comments |        |
-|  5.3  | Reactions |        |
+|  5.1  | Story comments |   ✅    |
+|  5.2  | Epic comments |   ✅    |
+|  5.3  | Reactions |   ✅    |
 |  6.1  | `search` |        |
 |  7.1  | `objective list` |        |
 |  7.2  | `objective create` |        |
