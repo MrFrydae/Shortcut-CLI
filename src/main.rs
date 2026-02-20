@@ -17,6 +17,8 @@ enum Command {
     Login(commands::login::LoginArgs),
     /// Work with epics
     Epic(commands::epic::EpicArgs),
+    /// Work with iterations
+    Iteration(commands::iteration::IterationArgs),
     /// Work with workspace members
     Member(commands::member::MemberArgs),
     /// Work with stories
@@ -52,6 +54,12 @@ async fn main() {
                     Command::Init | Command::Login(_) => unreachable!(),
                     Command::Epic(args) => match api::authenticated_client(&store) {
                         Ok(client) => commands::epic::run(&args, &client, root.cache_dir()).await,
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Iteration(args) => match api::authenticated_client(&store) {
+                        Ok(client) => {
+                            commands::iteration::run(&args, &client, root.cache_dir()).await
+                        }
                         Err(e) => Err(e.into()),
                     },
                     Command::Member(args) => match api::authenticated_client(&store) {

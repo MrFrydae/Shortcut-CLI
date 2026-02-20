@@ -75,6 +75,10 @@ pub struct CreateArgs {
     /// Label names (comma-separated)
     #[arg(long, value_delimiter = ',')]
     pub labels: Vec<String>,
+
+    /// The iteration ID to assign this story to
+    #[arg(long)]
+    pub iteration_id: Option<i64>,
 }
 
 #[derive(Args)]
@@ -114,6 +118,10 @@ pub struct UpdateArgs {
     /// Label names (comma-separated)
     #[arg(long, value_delimiter = ',')]
     pub labels: Vec<String>,
+
+    /// The iteration ID to assign this story to
+    #[arg(long)]
+    pub iteration_id: Option<i64>,
 }
 
 #[derive(Args)]
@@ -235,6 +243,9 @@ async fn run_create(
             if !labels.is_empty() {
                 b = b.labels(labels);
             }
+            if let Some(iter_id) = args.iteration_id {
+                b = b.iteration_id(Some(iter_id));
+            }
             b
         })
         .send()
@@ -318,6 +329,9 @@ async fn run_update(
             }
             if !labels.is_empty() {
                 b = b.labels(labels);
+            }
+            if let Some(iter_id) = args.iteration_id {
+                b = b.iteration_id(Some(iter_id));
             }
             b
         })

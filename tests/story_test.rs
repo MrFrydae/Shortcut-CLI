@@ -20,6 +20,7 @@ fn make_create_args(name: &str) -> story::CreateArgs {
         epic_id: None,
         estimate: None,
         labels: vec![],
+        iteration_id: None,
     }
 }
 
@@ -34,6 +35,7 @@ fn make_update_args(id: i64) -> story::UpdateArgs {
         epic_id: None,
         estimate: None,
         labels: vec![],
+        iteration_id: None,
     }
 }
 

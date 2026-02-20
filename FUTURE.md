@@ -36,13 +36,13 @@
 |  1.4  | `story list` |   ✅    |
 |  1.5  | `story delete` |   ✅    |
 |  1.6  | `member` enhancements |   ✅    |
-|  2.1  | `iteration list` |        |
-|  2.2  | `iteration create` |        |
-|  2.3  | `iteration get` |        |
-|  2.4  | `iteration update` |        |
-|  2.5  | `iteration delete` |        |
-|  2.6  | `iteration stories` |        |
-|  2.7  | Sprint planning workflow |        |
+|  2.1  | `iteration list` |   ✅    |
+|  2.2  | `iteration create` |   ✅    |
+|  2.3  | `iteration get` |   ✅    |
+|  2.4  | `iteration update` |   ✅    |
+|  2.5  | `iteration delete` |   ✅    |
+|  2.6  | `iteration stories` |   ✅    |
+|  2.7  | Sprint planning workflow |   ✅    |
 |  3.1  | `label list` |        |
 |  3.2  | `label create` |        |
 |  3.3  | `label update` / `label delete` |        |
@@ -55,7 +55,7 @@
 |  5.1  | Story comments |        |
 |  5.2  | Epic comments |        |
 |  5.3  | Reactions |        |
-|  6.1  | `search` |        |
+|  6.1  | `search` |        |dsa
 |  7.1  | `objective list` |        |
 |  7.2  | `objective create` |        |
 |  7.3  | `objective get` |        |
