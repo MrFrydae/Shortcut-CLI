@@ -27,6 +27,17 @@ pub enum StoryAction {
         #[arg(long)]
         id: i64,
     },
+    /// List/search stories
+    List(Box<ListArgs>),
+    /// Delete a story
+    Delete {
+        /// The ID of the story to delete
+        #[arg(long)]
+        id: i64,
+        /// Confirm the irreversible deletion
+        #[arg(long)]
+        confirm: bool,
+    },
     /// Manage checklist tasks on a story
     Task(task::TaskArgs),
 }
@@ -105,6 +116,41 @@ pub struct UpdateArgs {
     pub labels: Vec<String>,
 }
 
+#[derive(Args)]
+pub struct ListArgs {
+    /// Filter by owner (@mention_name or UUID)
+    #[arg(long)]
+    pub owner: Option<String>,
+
+    /// Filter by workflow state name or ID
+    #[arg(long)]
+    pub state: Option<String>,
+
+    /// Filter by epic ID
+    #[arg(long)]
+    pub epic_id: Option<i64>,
+
+    /// Filter by story type (feature, bug, chore)
+    #[arg(long, name = "type")]
+    pub story_type: Option<String>,
+
+    /// Filter by label name
+    #[arg(long)]
+    pub label: Option<String>,
+
+    /// Filter by project ID
+    #[arg(long)]
+    pub project_id: Option<i64>,
+
+    /// Maximum number of stories to display (default 25)
+    #[arg(long, default_value = "25")]
+    pub limit: i64,
+
+    /// Include story descriptions in output
+    #[arg(long, visible_alias = "descriptions")]
+    pub desc: bool,
+}
+
 pub async fn run(
     args: &StoryArgs,
     client: &api::Client,
@@ -114,6 +160,8 @@ pub async fn run(
         StoryAction::Create(create_args) => run_create(create_args, client, &cache_dir).await,
         StoryAction::Update(update_args) => run_update(update_args, client, &cache_dir).await,
         StoryAction::Get { id } => run_get(*id, client).await,
+        StoryAction::List(list_args) => run_list(list_args, client, &cache_dir).await,
+        StoryAction::Delete { id, confirm } => run_delete(*id, *confirm, client).await,
         StoryAction::Task(task_args) => task::run(task_args, client).await,
     }
 }
@@ -311,6 +359,120 @@ async fn run_get(id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
         println!("  Description: {}", story.description);
     }
 
+    Ok(())
+}
+
+async fn run_list(
+    args: &ListArgs,
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<(), Box<dyn Error>> {
+    let resolved_owner_id = match &args.owner {
+        Some(val) => Some(member::resolve_member_id(val, client, cache_dir).await?),
+        None => None,
+    };
+
+    let resolved_state_id = match &args.state {
+        Some(val) => Some(resolve_workflow_state_id(val, client, cache_dir).await?),
+        None => None,
+    };
+
+    let resolved_story_type = args
+        .story_type
+        .as_ref()
+        .map(|t| t.parse::<api::types::SearchStoriesStoryType>())
+        .transpose()
+        .map_err(|e| format!("Invalid story type: {e}"))?;
+
+    let resolved_label_name = args
+        .label
+        .as_ref()
+        .map(|l| l.parse::<api::types::SearchStoriesLabelName>())
+        .transpose()
+        .map_err(|e| format!("Invalid label name: {e}"))?;
+
+    let include_desc = args.desc;
+    let epic_id = args.epic_id;
+    let project_id = args.project_id;
+
+    let stories = client
+        .query_stories()
+        .body_map(|mut b| {
+            if let Some(owner_id) = resolved_owner_id {
+                b = b.owner_id(Some(owner_id));
+            }
+            if let Some(state_id) = resolved_state_id {
+                b = b.workflow_state_id(Some(state_id));
+            }
+            if let Some(epic_id) = epic_id {
+                b = b.epic_id(Some(epic_id));
+            }
+            if let Some(st) = resolved_story_type {
+                b = b.story_type(Some(st));
+            }
+            if let Some(label) = resolved_label_name {
+                b = b.label_name(Some(label));
+            }
+            if let Some(pid) = project_id {
+                b = b.project_id(Some(pid));
+            }
+            if include_desc {
+                b = b.includes_description(Some(true));
+            }
+            b
+        })
+        .send()
+        .await
+        .map_err(|e| format!("Failed to search stories: {e}"))?;
+
+    let limit = args.limit as usize;
+    let mut count = 0;
+
+    for story in stories.iter() {
+        if count >= limit {
+            break;
+        }
+        println!(
+            "{} - {} ({}, state_id: {})",
+            story.id, story.name, story.story_type, story.workflow_state_id
+        );
+        if args.desc
+            && let Some(d) = &story.description
+        {
+            println!("  {d}");
+        }
+        count += 1;
+    }
+
+    if count == 0 {
+        println!("No stories found");
+    }
+
+    Ok(())
+}
+
+async fn run_delete(id: i64, confirm: bool, client: &api::Client) -> Result<(), Box<dyn Error>> {
+    if !confirm {
+        return Err("Deleting a story is irreversible. Pass --confirm to proceed.".into());
+    }
+
+    let story = client
+        .get_story()
+        .story_public_id(id)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to get story: {e}"))?;
+
+    let name = story.name.clone();
+
+    client
+        .delete_story()
+        .story_public_id(id)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to delete story: {e}"))?;
+
+    println!("Deleted story {id} - {name}");
     Ok(())
 }
 

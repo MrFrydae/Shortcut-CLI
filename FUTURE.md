@@ -28,89 +28,89 @@
 
 ## Completion Tracker
 
-| Item | Description | Status |
-|------|-------------|--------|
-| 1.1 | `epic create` | [ ] |
-| 1.2 | `epic get` | [ ] |
-| 1.3 | `epic delete` | [ ] |
-| 1.4 | `story list` | [ ] |
-| 1.5 | `story delete` | [ ] |
-| 1.6 | `member` enhancements | [ ] |
-| 2.1 | `iteration list` | [ ] |
-| 2.2 | `iteration create` | [ ] |
-| 2.3 | `iteration get` | [ ] |
-| 2.4 | `iteration update` | [ ] |
-| 2.5 | `iteration delete` | [ ] |
-| 2.6 | `iteration stories` | [ ] |
-| 2.7 | Sprint planning workflow | [ ] |
-| 3.1 | `label list` | [ ] |
-| 3.2 | `label create` | [ ] |
-| 3.3 | `label update` / `label delete` | [ ] |
-| 3.4 | `label stories` / `label epics` | [ ] |
-| 3.5 | Label name resolution & cache | [ ] |
-| 4.1 | `story link create` | [ ] |
-| 4.2 | `story link list` | [ ] |
-| 4.3 | `story link delete` | [ ] |
-| 4.4 | Relationship display in `story get` | [ ] |
-| 5.1 | Story comments | [ ] |
-| 5.2 | Epic comments | [ ] |
-| 5.3 | Reactions | [ ] |
-| 6.1 | `search` | [ ] |
-| 7.1 | `objective list` | [ ] |
-| 7.2 | `objective create` | [ ] |
-| 7.3 | `objective get` | [ ] |
-| 7.4 | `objective update` / `objective delete` | [ ] |
-| 7.5 | `objective epics` | [ ] |
-| 8.1 | Milestone CRUD | [ ] |
-| 8.2 | Category CRUD | [ ] |
-| 9.1 | `group list` | [ ] |
-| 9.2 | `group get` | [ ] |
-| 9.3 | `group stories` | [ ] |
-| 9.4 | `group create` / `group update` | [ ] |
-| 10.1 | Document CRUD | [ ] |
-| 10.2 | Epic-document linking | [ ] |
-| 11.1 | Project CRUD | [ ] |
-| 12.1 | `custom-field list` | [ ] |
-| 12.2 | `custom-field get` | [ ] |
-| 12.3 | Display custom fields in `story get` | [ ] |
-| 12.4 | Set custom fields on `story create` / `story update` | [ ] |
-| 13.1 | `story history` | [ ] |
-| 14.1 | `--json` flag | [ ] |
-| 14.2 | `--format` flag (template-based) | [ ] |
-| 14.3 | `--color` / `--no-color` | [ ] |
-| 14.4 | `--quiet` mode | [ ] |
-| 14.5 | Table formatting | [ ] |
-| 15.1 | Shell completions | [ ] |
-| 15.2 | Interactive / wizard mode for create commands | [ ] |
-| 15.3 | Progress spinners for network calls | [ ] |
-| 15.4 | `--dry-run` flag | [ ] |
-| 15.5 | Cache management | [ ] |
-| 15.6 | Configurable defaults | [ ] |
-| 16.1 | `story bulk-update` | [ ] |
-| 16.2 | Batch create from file | [ ] |
-| 16.3 | Piping support | [ ] |
-| 17.1 | `story branch` | [ ] |
-| 17.2 | Auto-link commits to stories | [ ] |
-| 17.3 | Repository info & PR status | [ ] |
-| 18.1 | `template list` | [ ] |
-| 18.2 | `template get` | [ ] |
-| 18.3 | `template use` (create story from template) | [ ] |
-| 18.4 | `template create` / `template update` / `template delete` | [ ] |
-| 19.1 | STL CLI commands | [ ] |
-| 19.2 | STL document structure | [ ] |
-| 19.3 | STL actions | [ ] |
-| 19.4 | STL entities | [ ] |
-| 19.5 | STL cross-reference system | [ ] |
-| 19.6 | STL variables | [ ] |
-| 19.7 | STL null / unset handling | [ ] |
-| 19.8 | STL inline nested entities | [ ] |
-| 19.9 | STL bulk shorthand | [ ] |
-| 19.10 | STL execution semantics | [ ] |
-| 19.11 | STL output | [ ] |
-| 19.12 | STL complete workflow example | [ ] |
-| 19.13 | STL implementation notes | [ ] |
-| 19.14 | STL grammar summary | [ ] |
-| 19.15 | STL real-world example templates | [ ] |
+| Item  | Description | Status |
+|:-----:|-------------|:------:|
+|  1.1  | `epic create` |   ✅    |
+|  1.2  | `epic get` |   ✅    |
+|  1.3  | `epic delete` |   ✅    |
+|  1.4  | `story list` |   ✅    |
+|  1.5  | `story delete` |   ✅    |
+|  1.6  | `member` enhancements |   ✅    |
+|  2.1  | `iteration list` |        |
+|  2.2  | `iteration create` |        |
+|  2.3  | `iteration get` |        |
+|  2.4  | `iteration update` |        |
+|  2.5  | `iteration delete` |        |
+|  2.6  | `iteration stories` |        |
+|  2.7  | Sprint planning workflow |        |
+|  3.1  | `label list` |        |
+|  3.2  | `label create` |        |
+|  3.3  | `label update` / `label delete` |        |
+|  3.4  | `label stories` / `label epics` |        |
+|  3.5  | Label name resolution & cache |        |
+|  4.1  | `story link create` |        |
+|  4.2  | `story link list` |        |
+|  4.3  | `story link delete` |        |
+|  4.4  | Relationship display in `story get` |        |
+|  5.1  | Story comments |        |
+|  5.2  | Epic comments |        |
+|  5.3  | Reactions |        |
+|  6.1  | `search` |        |
+|  7.1  | `objective list` |        |
+|  7.2  | `objective create` |        |
+|  7.3  | `objective get` |        |
+|  7.4  | `objective update` / `objective delete` |        |
+|  7.5  | `objective epics` |        |
+|  8.1  | Milestone CRUD |        |
+|  8.2  | Category CRUD |        |
+|  9.1  | `group list` |        |
+|  9.2  | `group get` |        |
+|  9.3  | `group stories` |        |
+|  9.4  | `group create` / `group update` |        |
+| 10.1  | Document CRUD |        |
+| 10.2  | Epic-document linking |        |
+| 11.1  | Project CRUD |        |
+| 12.1  | `custom-field list` |        |
+| 12.2  | `custom-field get` |        |
+| 12.3  | Display custom fields in `story get` |        |
+| 12.4  | Set custom fields on `story create` / `story update` |        |
+| 13.1  | `story history` |        |
+| 14.1  | `--json` flag |        |
+| 14.2  | `--format` flag (template-based) |        |
+| 14.3  | `--color` / `--no-color` |        |
+| 14.4  | `--quiet` mode |        |
+| 14.5  | Table formatting |        |
+| 15.1  | Shell completions |        |
+| 15.2  | Interactive / wizard mode for create commands |        |
+| 15.3  | Progress spinners for network calls |        |
+| 15.4  | `--dry-run` flag |        |
+| 15.5  | Cache management |        |
+| 15.6  | Configurable defaults |        |
+| 16.1  | `story bulk-update` |        |
+| 16.2  | Batch create from file |        |
+| 16.3  | Piping support |        |
+| 17.1  | `story branch` |        |
+| 17.2  | Auto-link commits to stories |        |
+| 17.3  | Repository info & PR status |        |
+| 18.1  | `template list` |        |
+| 18.2  | `template get` |        |
+| 18.3  | `template use` (create story from template) |        |
+| 18.4  | `template create` / `template update` / `template delete` |        |
+| 19.1  | STL CLI commands |        |
+| 19.2  | STL document structure |        |
+| 19.3  | STL actions |        |
+| 19.4  | STL entities |        |
+| 19.5  | STL cross-reference system |        |
+| 19.6  | STL variables |        |
+| 19.7  | STL null / unset handling |        |
+| 19.8  | STL inline nested entities |        |
+| 19.9  | STL bulk shorthand |        |
+| 19.10 | STL execution semantics |        |
+| 19.11 | STL output |        |
+| 19.12 | STL complete workflow example |        |
+| 19.13 | STL implementation notes |        |
+| 19.14 | STL grammar summary |        |
+| 19.15 | STL real-world example templates |        |
 
 <!--
 AI INSTRUCTION: When a feature listed in the Completion Tracker table above is fully

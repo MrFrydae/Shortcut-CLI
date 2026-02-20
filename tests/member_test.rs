@@ -12,6 +12,8 @@ fn make_args(list: bool, id: Option<&str>) -> member::MemberArgs {
     member::MemberArgs {
         list,
         id: id.map(String::from),
+        role: None,
+        active: false,
     }
 }
 
@@ -220,4 +222,97 @@ async fn no_flags_does_nothing() {
     let args = make_args(false, None);
     let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
     assert!(result.is_ok());
+}
+
+// --- New filter tests ---
+
+#[tokio::test]
+async fn list_members_filter_by_role() {
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    let body = serde_json::json!([
+        member_json(
+            UUID_ALICE,
+            "alice",
+            "Alice Smith",
+            "admin",
+            false,
+            Some(default_icon())
+        ),
+        member_json(UUID_BOB, "bob", "Bob Jones", "member", false, None),
+    ]);
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/members"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = member::MemberArgs {
+        list: true,
+        id: None,
+        role: Some("admin".to_string()),
+        active: false,
+    };
+    // Should succeed; only Alice (admin) would be printed
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn list_members_filter_active_only() {
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    let body = serde_json::json!([
+        member_json(
+            UUID_ALICE,
+            "alice",
+            "Alice Smith",
+            "admin",
+            false,
+            Some(default_icon())
+        ),
+        member_json(UUID_BOB, "bob", "Bob Jones", "member", true, None), // disabled
+    ]);
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/members"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = member::MemberArgs {
+        list: true,
+        id: None,
+        role: None,
+        active: true,
+    };
+    // Should succeed; only Alice (non-disabled) would be printed
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn list_members_invalid_role_errors() {
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = member::MemberArgs {
+        list: true,
+        id: None,
+        role: Some("superadmin".to_string()),
+        active: false,
+    };
+    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    assert!(err.contains("Invalid role"));
+    assert!(err.contains("superadmin"));
 }

@@ -15,7 +15,17 @@ pub struct MemberArgs {
     /// Get a member by UUID or @mention_name
     #[arg(long)]
     pub id: Option<String>,
+
+    /// Filter by role (admin, member, owner, observer)
+    #[arg(long)]
+    pub role: Option<String>,
+
+    /// Show only active (non-disabled) members
+    #[arg(long)]
+    pub active: bool,
 }
+
+const VALID_ROLES: &[&str] = &["admin", "member", "owner", "observer"];
 
 pub async fn run(
     args: &MemberArgs,
@@ -23,7 +33,17 @@ pub async fn run(
     cache_dir: PathBuf,
 ) -> Result<(), Box<dyn Error>> {
     if args.list {
-        run_list(client, &cache_dir).await
+        if let Some(role) = &args.role {
+            let lower = role.to_lowercase();
+            if !VALID_ROLES.contains(&lower.as_str()) {
+                return Err(format!(
+                    "Invalid role '{role}'. Valid roles: {}",
+                    VALID_ROLES.join(", ")
+                )
+                .into());
+            }
+        }
+        run_list(args.role.as_deref(), args.active, client, &cache_dir).await
     } else if let Some(id) = &args.id {
         run_get(id, client, &cache_dir).await
     } else {
@@ -31,7 +51,12 @@ pub async fn run(
     }
 }
 
-async fn run_list(client: &api::Client, cache_dir: &Path) -> Result<(), Box<dyn Error>> {
+async fn run_list(
+    role_filter: Option<&str>,
+    active_only: bool,
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<(), Box<dyn Error>> {
     let members = client
         .list_members()
         .send()
@@ -39,6 +64,14 @@ async fn run_list(client: &api::Client, cache_dir: &Path) -> Result<(), Box<dyn 
         .map_err(|e| format!("Failed to list members: {e}"))?;
 
     for m in members.iter() {
+        if active_only && m.disabled {
+            continue;
+        }
+        if let Some(role) = role_filter
+            && !m.role.eq_ignore_ascii_case(role)
+        {
+            continue;
+        }
         println!(
             "{} - @{} - {} ({})",
             m.id,
