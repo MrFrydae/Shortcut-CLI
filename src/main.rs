@@ -15,6 +15,8 @@ enum Command {
     Init,
     /// Authenticate with your Shortcut API token
     Login(commands::login::LoginArgs),
+    /// Work with categories
+    Category(commands::category::CategoryArgs),
     /// Work with epics
     Epic(commands::epic::EpicArgs),
     /// Work with iterations
@@ -58,6 +60,10 @@ async fn main() {
                 };
                 match command {
                     Command::Init | Command::Login(_) => unreachable!(),
+                    Command::Category(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::category::run(&args, &client).await,
+                        Err(e) => Err(e.into()),
+                    },
                     Command::Epic(args) => match api::authenticated_client(&store) {
                         Ok(client) => commands::epic::run(&args, &client, root.cache_dir()).await,
                         Err(e) => Err(e.into()),

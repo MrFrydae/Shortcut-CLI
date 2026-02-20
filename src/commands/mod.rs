@@ -1,3 +1,4 @@
+pub mod category;
 pub mod epic;
 pub mod epic_comment;
 pub mod init;

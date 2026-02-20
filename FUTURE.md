@@ -61,8 +61,8 @@
 |  7.3  | `objective get` |   ✅    |
 |  7.4  | `objective update` / `objective delete` |   ✅    |
 |  7.5  | `objective epics` |   ✅    |
-|  8.1  | Milestone CRUD |        |
-|  8.2  | Category CRUD |        |
+|  8.1  | Milestone CRUD |  N/A   |
+|  8.2  | Category CRUD |   ✅    |
 |  9.1  | `group list` |        |
 |  9.2  | `group get` |        |
 |  9.3  | `group stories` |        |
