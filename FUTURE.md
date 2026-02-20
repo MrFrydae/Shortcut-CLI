@@ -48,10 +48,10 @@
 |  3.3  | `label update` / `label delete` |   ✅    |
 |  3.4  | `label stories` / `label epics` |   ✅    |
 |  3.5  | Label name resolution & cache |   ✅    |
-|  4.1  | `story link create` |        |
-|  4.2  | `story link list` |        |
-|  4.3  | `story link delete` |        |
-|  4.4  | Relationship display in `story get` |        |
+|  4.1  | `story link create` |   ✅    |
+|  4.2  | `story link list` |   ✅    |
+|  4.3  | `story link delete` |   ✅    |
+|  4.4  | Relationship display in `story get` |   ✅    |
 |  5.1  | Story comments |        |
 |  5.2  | Epic comments |        |
 |  5.3  | Reactions |        |

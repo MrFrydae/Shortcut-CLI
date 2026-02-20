@@ -382,6 +382,53 @@ pub fn full_story_json_with_tasks(
     story
 }
 
+/// Build a full `Story` JSON with a custom story_links array.
+pub fn full_story_json_with_links(
+    id: i64,
+    name: &str,
+    description: &str,
+    links: Vec<serde_json::Value>,
+) -> serde_json::Value {
+    let mut story = full_story_json(id, name, description);
+    story["story_links"] = serde_json::Value::Array(links);
+    story
+}
+
+/// Build a JSON value representing a valid `TypedStoryLink` (embedded in Story response).
+pub fn typed_story_link_json(
+    id: i64,
+    subject_id: i64,
+    object_id: i64,
+    verb: &str,
+    type_: &str,
+) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "subject_id": subject_id,
+        "object_id": object_id,
+        "verb": verb,
+        "type": type_,
+        "entity_type": "story-link",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "subject_workflow_state_id": 500000007
+    })
+}
+
+/// Build a JSON value representing a valid `StoryLink` response object (from create/get).
+pub fn story_link_json(id: i64, subject_id: i64, object_id: i64, verb: &str) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "subject_id": subject_id,
+        "object_id": object_id,
+        "verb": verb,
+        "entity_type": "story-link",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "subject_workflow_state_id": 500000007
+    })
+}
+
 /// Build a JSON value representing a valid `Task` response object.
 pub fn task_json(id: i64, story_id: i64, description: &str, complete: bool) -> serde_json::Value {
     use serde_json::Value;

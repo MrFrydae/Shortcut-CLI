@@ -74,6 +74,24 @@ fn main() {
         required.retain(|v| v.as_str() != Some("display_icon"));
     }
 
+    // Fix PullRequestLabel `id` type.
+    // The Shortcut API returns VCS label IDs as strings (GitHub label IDs),
+    // but the spec declares them as int64.
+    if let Some(id_prop) = spec_value
+        .get_mut("components")
+        .and_then(|c| c.get_mut("schemas"))
+        .and_then(|s| s.get_mut("PullRequestLabel"))
+        .and_then(|p| p.get_mut("properties"))
+        .and_then(|p| p.get_mut("id"))
+        .and_then(|id| id.as_object_mut())
+    {
+        id_prop.insert(
+            "type".to_string(),
+            serde_json::Value::String("string".to_string()),
+        );
+        id_prop.remove("format");
+    }
+
     let spec: openapiv3::OpenAPI =
         serde_json::from_value(spec_value).expect("failed to deserialize OpenAPI spec");
 

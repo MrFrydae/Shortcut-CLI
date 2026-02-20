@@ -7,6 +7,7 @@ use clap::{Args, Subcommand};
 use crate::api;
 
 use super::member;
+use super::story_link;
 use super::task;
 
 #[derive(Args)]
@@ -40,6 +41,8 @@ pub enum StoryAction {
     },
     /// Manage checklist tasks on a story
     Task(task::TaskArgs),
+    /// Manage story links (relationships between stories)
+    Link(story_link::LinkArgs),
 }
 
 #[derive(Args)]
@@ -173,6 +176,7 @@ pub async fn run(
         StoryAction::List(list_args) => run_list(list_args, client, &cache_dir).await,
         StoryAction::Delete { id, confirm } => run_delete(*id, *confirm, client).await,
         StoryAction::Task(task_args) => task::run(task_args, client).await,
+        StoryAction::Link(link_args) => story_link::run(link_args, client).await,
     }
 }
 
@@ -373,6 +377,17 @@ async fn run_get(id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
     }
     if !story.description.is_empty() {
         println!("  Description: {}", story.description);
+    }
+    if !story.story_links.is_empty() {
+        println!("  Links:");
+        for link in &story.story_links {
+            let (display_verb, other_id) = if link.type_ == "subject" {
+                (link.verb.as_str(), link.object_id)
+            } else {
+                (story_link::invert_verb(&link.verb), link.subject_id)
+            };
+            println!("    {display_verb} {other_id} (link {})", link.id);
+        }
     }
 
     Ok(())
