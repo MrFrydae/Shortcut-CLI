@@ -859,3 +859,33 @@ pub fn task_json(id: i64, story_id: i64, description: &str, complete: bool) -> s
     m.insert("updated_at".into(), Value::from("2024-01-01T00:00:00Z"));
     Value::Object(m)
 }
+
+/// Build a JSON value representing a valid `Project` response object.
+pub fn project_json(id: i64, name: &str, description: Option<&str>) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "description": description,
+        "abbreviation": null,
+        "app_url": format!("https://app.shortcut.com/test/project/{id}"),
+        "archived": false,
+        "color": null,
+        "created_at": "2024-01-01T00:00:00Z",
+        "days_to_thermometer": 60,
+        "entity_type": "project",
+        "external_id": null,
+        "follower_ids": [],
+        "global_id": format!("global-project-{id}"),
+        "iteration_length": 2,
+        "show_thermometer": true,
+        "start_time": "2024-01-01T00:00:00Z",
+        "stats": {
+            "num_stories": 10,
+            "num_points": 25,
+            "num_related_documents": 2
+        },
+        "team_id": 1,
+        "updated_at": "2024-01-01T00:00:00Z",
+        "workflow_id": 500000006
+    })
+}

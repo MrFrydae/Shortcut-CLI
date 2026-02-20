@@ -69,7 +69,7 @@
 |  9.4  | `group create` / `group update` |   ✅    |
 | 10.1  | Document CRUD |   ✅    |
 | 10.2  | Epic-document linking |   ✅    |
-| 11.1  | Project CRUD |        |
+| 11.1  | Project CRUD |   ✅    |
 | 12.1  | `custom-field list` |        |
 | 12.2  | `custom-field get` |        |
 | 12.3  | Display custom fields in `story get` |        |

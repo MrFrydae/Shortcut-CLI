@@ -31,6 +31,8 @@ enum Command {
     Member(commands::member::MemberArgs),
     /// Work with objectives
     Objective(commands::objective::ObjectiveArgs),
+    /// Work with projects
+    Project(commands::project::ProjectArgs),
     /// Search across Shortcut entities
     Search(commands::search::SearchArgs),
     /// Work with stories
@@ -96,6 +98,10 @@ async fn main() {
                     },
                     Command::Objective(args) => match api::authenticated_client(&store) {
                         Ok(client) => commands::objective::run(&args, &client).await,
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Project(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::project::run(&args, &client).await,
                         Err(e) => Err(e.into()),
                     },
                     Command::Search(args) => match api::authenticated_client(&store) {
