@@ -7,6 +7,7 @@ use clap::{Args, Subcommand};
 use crate::api;
 
 use super::member;
+use super::task;
 
 #[derive(Args)]
 pub struct StoryArgs {
@@ -26,6 +27,8 @@ pub enum StoryAction {
         #[arg(long)]
         id: i64,
     },
+    /// Manage checklist tasks on a story
+    Task(task::TaskArgs),
 }
 
 #[derive(Args)]
@@ -111,6 +114,7 @@ pub async fn run(
         StoryAction::Create(create_args) => run_create(create_args, client, &cache_dir).await,
         StoryAction::Update(update_args) => run_update(update_args, client, &cache_dir).await,
         StoryAction::Get { id } => run_get(*id, client).await,
+        StoryAction::Task(task_args) => task::run(task_args, client).await,
     }
 }
 

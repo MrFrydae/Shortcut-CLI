@@ -369,3 +369,45 @@ pub fn full_story_json(id: i64, name: &str, description: &str) -> serde_json::Va
     m.insert("tasks".into(), serde_json::json!([]));
     serde_json::Value::Object(m)
 }
+
+/// Build a full `Story` JSON with a custom tasks array.
+pub fn full_story_json_with_tasks(
+    id: i64,
+    name: &str,
+    description: &str,
+    tasks: Vec<serde_json::Value>,
+) -> serde_json::Value {
+    let mut story = full_story_json(id, name, description);
+    story["tasks"] = serde_json::Value::Array(tasks);
+    story
+}
+
+/// Build a JSON value representing a valid `Task` response object.
+pub fn task_json(id: i64, story_id: i64, description: &str, complete: bool) -> serde_json::Value {
+    use serde_json::Value;
+
+    let mut m = serde_json::Map::new();
+    m.insert("id".into(), Value::from(id));
+    m.insert("story_id".into(), Value::from(story_id));
+    m.insert("description".into(), Value::from(description));
+    m.insert("complete".into(), Value::from(complete));
+    m.insert(
+        "completed_at".into(),
+        if complete {
+            Value::from("2024-01-02T00:00:00Z")
+        } else {
+            Value::Null
+        },
+    );
+    m.insert("created_at".into(), Value::from("2024-01-01T00:00:00Z"));
+    m.insert("entity_type".into(), Value::from("task"));
+    m.insert("external_id".into(), Value::Null);
+    m.insert("global_id".into(), Value::from(format!("global-task-{id}")));
+    m.insert("group_mention_ids".into(), serde_json::json!([]));
+    m.insert("member_mention_ids".into(), serde_json::json!([]));
+    m.insert("mention_ids".into(), serde_json::json!([]));
+    m.insert("owner_ids".into(), serde_json::json!([]));
+    m.insert("position".into(), Value::from(1));
+    m.insert("updated_at".into(), Value::from("2024-01-01T00:00:00Z"));
+    Value::Object(m)
+}
