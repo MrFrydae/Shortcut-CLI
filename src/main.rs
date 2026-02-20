@@ -19,6 +19,8 @@ enum Command {
     Epic(commands::epic::EpicArgs),
     /// Work with iterations
     Iteration(commands::iteration::IterationArgs),
+    /// Work with labels
+    Label(commands::label::LabelArgs),
     /// Work with workspace members
     Member(commands::member::MemberArgs),
     /// Work with stories
@@ -60,6 +62,10 @@ async fn main() {
                         Ok(client) => {
                             commands::iteration::run(&args, &client, root.cache_dir()).await
                         }
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Label(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::label::run(&args, &client, root.cache_dir()).await,
                         Err(e) => Err(e.into()),
                     },
                     Command::Member(args) => match api::authenticated_client(&store) {

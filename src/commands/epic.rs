@@ -44,6 +44,7 @@ pub enum EpicAction {
 }
 
 #[derive(Args)]
+#[command(arg_required_else_help = true)]
 pub struct CreateArgs {
     /// The epic's name
     #[arg(long)]
@@ -83,6 +84,7 @@ pub struct CreateArgs {
 }
 
 #[derive(Args)]
+#[command(arg_required_else_help = true)]
 pub struct UpdateArgs {
     /// The ID of the epic to update
     #[arg(long)]

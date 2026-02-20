@@ -43,6 +43,7 @@ pub enum StoryAction {
 }
 
 #[derive(Args)]
+#[command(arg_required_else_help = true)]
 pub struct CreateArgs {
     /// The name of the story
     #[arg(long)]
@@ -82,6 +83,7 @@ pub struct CreateArgs {
 }
 
 #[derive(Args)]
+#[command(arg_required_else_help = true)]
 pub struct UpdateArgs {
     /// The ID of the story to update
     #[arg(long)]

@@ -43,11 +43,11 @@
 |  2.5  | `iteration delete` |   ✅    |
 |  2.6  | `iteration stories` |   ✅    |
 |  2.7  | Sprint planning workflow |   ✅    |
-|  3.1  | `label list` |        |
-|  3.2  | `label create` |        |
-|  3.3  | `label update` / `label delete` |        |
-|  3.4  | `label stories` / `label epics` |        |
-|  3.5  | Label name resolution & cache |        |
+|  3.1  | `label list` |   ✅    |
+|  3.2  | `label create` |   ✅    |
+|  3.3  | `label update` / `label delete` |   ✅    |
+|  3.4  | `label stories` / `label epics` |   ✅    |
+|  3.5  | Label name resolution & cache |   ✅    |
 |  4.1  | `story link create` |        |
 |  4.2  | `story link list` |        |
 |  4.3  | `story link delete` |        |
@@ -55,7 +55,7 @@
 |  5.1  | Story comments |        |
 |  5.2  | Epic comments |        |
 |  5.3  | Reactions |        |
-|  6.1  | `search` |        |dsa
+|  6.1  | `search` |        |
 |  7.1  | `objective list` |        |
 |  7.2  | `objective create` |        |
 |  7.3  | `objective get` |        |

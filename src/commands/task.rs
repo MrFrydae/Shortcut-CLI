@@ -61,6 +61,7 @@ pub enum TaskAction {
 }
 
 #[derive(Args)]
+#[command(arg_required_else_help = true)]
 pub struct AddArgs {
     /// The story ID
     #[arg(long)]
@@ -71,6 +72,7 @@ pub struct AddArgs {
 }
 
 #[derive(Args)]
+#[command(arg_required_else_help = true)]
 pub struct UpdateTaskArgs {
     /// The story ID
     #[arg(long)]
