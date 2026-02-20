@@ -23,6 +23,8 @@ enum Command {
     Label(commands::label::LabelArgs),
     /// Work with workspace members
     Member(commands::member::MemberArgs),
+    /// Work with objectives
+    Objective(commands::objective::ObjectiveArgs),
     /// Search across Shortcut entities
     Search(commands::search::SearchArgs),
     /// Work with stories
@@ -72,6 +74,10 @@ async fn main() {
                     },
                     Command::Member(args) => match api::authenticated_client(&store) {
                         Ok(client) => commands::member::run(&args, &client, root.cache_dir()).await,
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Objective(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::objective::run(&args, &client).await,
                         Err(e) => Err(e.into()),
                     },
                     Command::Search(args) => match api::authenticated_client(&store) {

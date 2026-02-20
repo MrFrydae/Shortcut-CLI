@@ -5,6 +5,7 @@ pub mod iteration;
 pub mod label;
 pub mod login;
 pub mod member;
+pub mod objective;
 pub mod search;
 pub mod story;
 pub mod story_comment;

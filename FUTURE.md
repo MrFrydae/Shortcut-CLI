@@ -56,11 +56,11 @@
 |  5.2  | Epic comments |   ✅    |
 |  5.3  | Reactions |   ✅    |
 |  6.1  | `search` |   ✅    |
-|  7.1  | `objective list` |        |
-|  7.2  | `objective create` |        |
-|  7.3  | `objective get` |        |
-|  7.4  | `objective update` / `objective delete` |        |
-|  7.5  | `objective epics` |        |
+|  7.1  | `objective list` |   ✅    |
+|  7.2  | `objective create` |   ✅    |
+|  7.3  | `objective get` |   ✅    |
+|  7.4  | `objective update` / `objective delete` |   ✅    |
+|  7.5  | `objective epics` |   ✅    |
 |  8.1  | Milestone CRUD |        |
 |  8.2  | Category CRUD |        |
 |  9.1  | `group list` |        |
