@@ -67,8 +67,8 @@
 |  9.2  | `group get` |   ✅    |
 |  9.3  | `group stories` |   ✅    |
 |  9.4  | `group create` / `group update` |   ✅    |
-| 10.1  | Document CRUD |        |
-| 10.2  | Epic-document linking |        |
+| 10.1  | Document CRUD |   ✅    |
+| 10.2  | Epic-document linking |   ✅    |
 | 11.1  | Project CRUD |        |
 | 12.1  | `custom-field list` |        |
 | 12.2  | `custom-field get` |        |

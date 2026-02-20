@@ -1,4 +1,5 @@
 pub mod category;
+pub mod doc;
 pub mod epic;
 pub mod epic_comment;
 pub mod group;

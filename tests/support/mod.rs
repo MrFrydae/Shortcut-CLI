@@ -777,12 +777,30 @@ pub fn search_objective_result_json(id: i64, name: &str, state: &str) -> serde_j
     })
 }
 
-/// Build a JSON value representing a valid `DocSlim` search result.
+/// Build a JSON value representing a valid `DocSlim` response object.
 pub fn doc_slim_json(id: &str, title: Option<&str>) -> serde_json::Value {
     serde_json::json!({
         "id": id,
         "title": title,
         "app_url": format!("https://app.shortcut.com/test/doc/{id}")
+    })
+}
+
+/// Build a JSON value representing a valid full `Doc` response object.
+pub fn doc_json(
+    id: &str,
+    title: Option<&str>,
+    content_markdown: Option<&str>,
+) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "title": title,
+        "content_markdown": content_markdown,
+        "content_html": null,
+        "app_url": format!("https://app.shortcut.com/test/doc/{id}"),
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "archived": false
     })
 }
 

@@ -17,6 +17,8 @@ enum Command {
     Login(commands::login::LoginArgs),
     /// Work with categories
     Category(commands::category::CategoryArgs),
+    /// Work with documents
+    Doc(commands::doc::DocArgs),
     /// Work with epics
     Epic(commands::epic::EpicArgs),
     /// Work with groups
@@ -64,6 +66,10 @@ async fn main() {
                     Command::Init | Command::Login(_) => unreachable!(),
                     Command::Category(args) => match api::authenticated_client(&store) {
                         Ok(client) => commands::category::run(&args, &client).await,
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Doc(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::doc::run(&args, &client).await,
                         Err(e) => Err(e.into()),
                     },
                     Command::Epic(args) => match api::authenticated_client(&store) {

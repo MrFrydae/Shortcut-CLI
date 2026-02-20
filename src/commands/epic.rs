@@ -44,6 +44,12 @@ pub enum EpicAction {
         #[arg(long)]
         confirm: bool,
     },
+    /// List documents linked to an epic
+    Docs {
+        /// The ID of the epic
+        #[arg(long)]
+        id: i64,
+    },
 }
 
 #[derive(Args)]
@@ -146,6 +152,7 @@ pub async fn run(
         EpicAction::Update(update_args) => run_update(update_args, client, &cache_dir).await,
         EpicAction::Comment(args) => epic_comment::run(args, client, &cache_dir).await,
         EpicAction::Delete { id, confirm } => run_delete(*id, *confirm, client).await,
+        EpicAction::Docs { id } => run_docs(*id, client).await,
     }
 }
 
@@ -409,6 +416,26 @@ async fn run_delete(id: i64, confirm: bool, client: &api::Client) -> Result<(), 
         .map_err(|e| format!("Failed to delete epic: {e}"))?;
 
     println!("Deleted epic {id} - {name}");
+    Ok(())
+}
+
+async fn run_docs(id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
+    let docs = client
+        .list_epic_documents()
+        .epic_public_id(id)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to list epic documents: {e}"))?;
+
+    for doc in docs.iter() {
+        let title = doc.title.as_deref().unwrap_or("(untitled)");
+        println!("{} - {}", doc.id, title);
+    }
+
+    if docs.is_empty() {
+        println!("No documents linked to this epic");
+    }
+
     Ok(())
 }
 
