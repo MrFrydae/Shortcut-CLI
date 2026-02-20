@@ -429,6 +429,363 @@ pub fn story_link_json(id: i64, subject_id: i64, object_id: i64, verb: &str) -> 
     })
 }
 
+/// Build a JSON value representing a valid `StoryComment` response object.
+pub fn story_comment_json(
+    id: i64,
+    story_id: i64,
+    text: &str,
+    author_id: &str,
+) -> serde_json::Value {
+    use serde_json::Value;
+
+    let mut m = serde_json::Map::new();
+    m.insert("id".into(), Value::from(id));
+    m.insert("story_id".into(), Value::from(story_id));
+    m.insert("text".into(), Value::from(text));
+    m.insert("author_id".into(), Value::from(author_id));
+    m.insert(
+        "app_url".into(),
+        Value::from(format!(
+            "https://app.shortcut.com/test/story/{story_id}#comment-{id}"
+        )),
+    );
+    m.insert("created_at".into(), Value::from("2024-01-01T00:00:00Z"));
+    m.insert("updated_at".into(), Value::from("2024-01-01T00:00:00Z"));
+    m.insert("deleted".into(), Value::from(false));
+    m.insert("entity_type".into(), Value::from("story-comment"));
+    m.insert("external_id".into(), Value::Null);
+    m.insert("group_mention_ids".into(), serde_json::json!([]));
+    m.insert("linked_to_slack".into(), Value::from(false));
+    m.insert("member_mention_ids".into(), serde_json::json!([]));
+    m.insert("mention_ids".into(), serde_json::json!([]));
+    m.insert("position".into(), Value::from(0));
+    m.insert("reactions".into(), serde_json::json!([]));
+    Value::Object(m)
+}
+
+/// Build a `StoryComment` JSON with custom reactions.
+pub fn story_comment_json_with_reactions(
+    id: i64,
+    story_id: i64,
+    text: &str,
+    author_id: &str,
+    reactions: Vec<serde_json::Value>,
+) -> serde_json::Value {
+    let mut comment = story_comment_json(id, story_id, text, author_id);
+    comment["reactions"] = serde_json::Value::Array(reactions);
+    comment
+}
+
+/// Build a JSON value representing a valid `StoryReaction`.
+pub fn story_reaction_json(emoji: &str, permission_ids: Vec<&str>) -> serde_json::Value {
+    serde_json::json!({
+        "emoji": emoji,
+        "permission_ids": permission_ids,
+    })
+}
+
+/// Build a JSON value representing a valid `ThreadedComment` response object.
+pub fn threaded_comment_json(
+    id: i64,
+    text: &str,
+    author_id: &str,
+    children: Vec<serde_json::Value>,
+) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "text": text,
+        "author_id": author_id,
+        "app_url": format!("https://app.shortcut.com/test/epic/comment/{id}"),
+        "comments": children,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "deleted": false,
+        "entity_type": "threaded-comment",
+        "external_id": null,
+        "group_mention_ids": [],
+        "member_mention_ids": [],
+        "mention_ids": []
+    })
+}
+
+/// Build a JSON value representing a valid `Objective` response object (full).
+pub fn objective_json(id: i64, name: &str, state: &str, description: &str) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "state": state,
+        "description": description,
+        "archived": false,
+        "started": false,
+        "completed": false,
+        "app_url": format!("https://app.shortcut.com/test/objective/{id}"),
+        "entity_type": "objective",
+        "global_id": format!("global-objective-{id}"),
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "started_at": null,
+        "started_at_override": null,
+        "completed_at": null,
+        "completed_at_override": null,
+        "categories": [],
+        "key_result_ids": [],
+        "position": 1,
+        "stats": {
+            "num_related_documents": 0
+        }
+    })
+}
+
+/// Build a JSON value representing a valid `Category` response object.
+pub fn category_json(id: i64, name: &str, color: Option<&str>) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "color": color,
+        "archived": false,
+        "entity_type": "category",
+        "external_id": null,
+        "global_id": format!("global-category-{id}"),
+        "type": "milestone",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    })
+}
+
+/// Build a JSON value representing a valid `Milestone` response object.
+pub fn milestone_json(id: i64, name: &str, state: &str) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "state": state,
+        "description": "",
+        "archived": false,
+        "started": false,
+        "completed": false,
+        "app_url": format!("https://app.shortcut.com/test/milestone/{id}"),
+        "entity_type": "milestone",
+        "global_id": format!("global-milestone-{id}"),
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "started_at": null,
+        "started_at_override": null,
+        "completed_at": null,
+        "completed_at_override": null,
+        "categories": [],
+        "key_result_ids": [],
+        "position": 1,
+        "stats": {
+            "num_related_documents": 0
+        }
+    })
+}
+
+/// Build a JSON value representing a valid `StorySearchResult`.
+///
+/// Uses `serde_json::Map` to avoid the macro recursion limit.
+pub fn search_story_result_json(id: i64, name: &str, story_type: &str) -> serde_json::Value {
+    use serde_json::Value;
+
+    let mut m = serde_json::Map::new();
+    m.insert("id".into(), Value::from(id));
+    m.insert("name".into(), Value::from(name));
+    m.insert("story_type".into(), Value::from(story_type));
+    m.insert(
+        "app_url".into(),
+        Value::from(format!("https://app.shortcut.com/test/story/{id}")),
+    );
+    m.insert("archived".into(), Value::from(false));
+    m.insert("blocked".into(), Value::from(false));
+    m.insert("blocker".into(), Value::from(false));
+    m.insert("completed".into(), Value::from(false));
+    m.insert("completed_at".into(), Value::Null);
+    m.insert("completed_at_override".into(), Value::Null);
+    m.insert("created_at".into(), Value::from("2024-01-01T00:00:00Z"));
+    m.insert("deadline".into(), Value::Null);
+    m.insert("entity_type".into(), Value::from("story"));
+    m.insert("epic_id".into(), Value::Null);
+    m.insert("estimate".into(), Value::Null);
+    m.insert("external_id".into(), Value::Null);
+    m.insert("external_links".into(), serde_json::json!([]));
+    m.insert("follower_ids".into(), serde_json::json!([]));
+    m.insert(
+        "global_id".into(),
+        Value::from(format!("global-story-{id}")),
+    );
+    m.insert("group_id".into(), Value::Null);
+    m.insert("group_mention_ids".into(), serde_json::json!([]));
+    m.insert("iteration_id".into(), Value::Null);
+    m.insert("label_ids".into(), serde_json::json!([]));
+    m.insert("labels".into(), serde_json::json!([]));
+    m.insert("member_mention_ids".into(), serde_json::json!([]));
+    m.insert("mention_ids".into(), serde_json::json!([]));
+    m.insert("moved_at".into(), Value::Null);
+    m.insert("owner_ids".into(), serde_json::json!([]));
+    m.insert("position".into(), Value::from(1));
+    m.insert("previous_iteration_ids".into(), serde_json::json!([]));
+    m.insert("project_id".into(), Value::Null);
+    m.insert(
+        "requested_by_id".into(),
+        Value::from("00000000-0000-0000-0000-000000000001"),
+    );
+    m.insert("started".into(), Value::from(false));
+    m.insert("started_at".into(), Value::Null);
+    m.insert("started_at_override".into(), Value::Null);
+    m.insert(
+        "stats".into(),
+        serde_json::json!({ "num_related_documents": 0 }),
+    );
+    m.insert("story_links".into(), serde_json::json!([]));
+    m.insert("story_template_id".into(), Value::Null);
+    m.insert("updated_at".into(), Value::from("2024-01-01T00:00:00Z"));
+    m.insert("workflow_id".into(), Value::from(500000006_i64));
+    m.insert("workflow_state_id".into(), Value::from(500000007_i64));
+    Value::Object(m)
+}
+
+/// Build a JSON value representing a valid `EpicSearchResult`.
+pub fn search_epic_result_json(id: i64, name: &str) -> serde_json::Value {
+    let stats = serde_json::json!({
+        "num_points": 0,
+        "num_points_backlog": 0,
+        "num_points_done": 0,
+        "num_points_started": 0,
+        "num_points_unstarted": 0,
+        "num_related_documents": 0,
+        "num_stories_backlog": 0,
+        "num_stories_done": 0,
+        "num_stories_started": 0,
+        "num_stories_total": 0,
+        "num_stories_unestimated": 0,
+        "num_stories_unstarted": 0,
+        "last_story_update": null
+    });
+
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "archived": false,
+        "started": false,
+        "completed": false,
+        "state": "to do",
+        "entity_type": "epic",
+        "app_url": format!("https://app.shortcut.com/test/epic/{id}"),
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "started_at": null,
+        "started_at_override": null,
+        "completed_at": null,
+        "completed_at_override": null,
+        "deadline": null,
+        "planned_start_date": null,
+        "milestone_id": null,
+        "global_id": format!("global-epic-{id}"),
+        "group_id": null,
+        "group_ids": [],
+        "group_mention_ids": [],
+        "label_ids": [],
+        "labels": [],
+        "member_mention_ids": [],
+        "mention_ids": [],
+        "owner_ids": [],
+        "follower_ids": [],
+        "project_ids": [],
+        "objective_ids": [],
+        "associated_groups": null,
+        "position": 1,
+        "requested_by_id": "00000000-0000-0000-0000-000000000001",
+        "epic_state_id": 1,
+        "external_id": null,
+        "productboard_id": null,
+        "productboard_name": null,
+        "productboard_plugin_id": null,
+        "productboard_url": null,
+        "stories_without_projects": 0,
+        "stats": stats
+    })
+}
+
+/// Build a JSON value representing a valid `IterationSlim` search result.
+pub fn search_iteration_result_json(
+    id: i64,
+    name: &str,
+    status: &str,
+    start_date: &str,
+    end_date: &str,
+) -> serde_json::Value {
+    let stats = serde_json::json!({
+        "num_points": 0,
+        "num_points_backlog": 0,
+        "num_points_done": 0,
+        "num_points_started": 0,
+        "num_points_unstarted": 0,
+        "num_related_documents": 0,
+        "num_stories_backlog": 0,
+        "num_stories_done": 0,
+        "num_stories_started": 0,
+        "num_stories_unestimated": 0,
+        "num_stories_unstarted": 0
+    });
+
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "status": status,
+        "start_date": start_date,
+        "end_date": end_date,
+        "entity_type": "iteration",
+        "app_url": format!("https://app.shortcut.com/test/iteration/{id}"),
+        "global_id": format!("global-iteration-{id}"),
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "associated_groups": null,
+        "follower_ids": [],
+        "group_ids": [],
+        "group_mention_ids": [],
+        "label_ids": [],
+        "labels": [],
+        "member_mention_ids": [],
+        "mention_ids": [],
+        "stats": stats
+    })
+}
+
+/// Build a JSON value representing a valid `ObjectiveSearchResult`.
+pub fn search_objective_result_json(id: i64, name: &str, state: &str) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "state": state,
+        "archived": false,
+        "started": false,
+        "completed": false,
+        "app_url": format!("https://app.shortcut.com/test/objective/{id}"),
+        "entity_type": "objective",
+        "global_id": format!("global-objective-{id}"),
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "started_at": null,
+        "started_at_override": null,
+        "completed_at": null,
+        "completed_at_override": null,
+        "categories": [],
+        "key_result_ids": [],
+        "position": 1,
+        "stats": {
+            "num_related_documents": 0
+        }
+    })
+}
+
+/// Build a JSON value representing a valid `DocSlim` search result.
+pub fn doc_slim_json(id: &str, title: Option<&str>) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "title": title,
+        "app_url": format!("https://app.shortcut.com/test/doc/{id}")
+    })
+}
+
 /// Build a JSON value representing a valid `Task` response object.
 pub fn task_json(id: i64, story_id: i64, description: &str, complete: bool) -> serde_json::Value {
     use serde_json::Value;
