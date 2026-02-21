@@ -1,6 +1,9 @@
+pub mod branch;
+pub mod commit;
 mod create;
 mod delete;
 mod get;
+pub mod git;
 mod helpers;
 mod history;
 mod list;
@@ -10,6 +13,8 @@ pub mod comment;
 pub mod link;
 pub mod task;
 
+pub use branch::BranchArgs;
+pub use commit::CommitArgs;
 pub use create::CreateArgs;
 pub use history::HistoryArgs;
 pub use list::ListArgs;
@@ -60,6 +65,10 @@ pub enum StoryAction {
     Comment(comment::CommentArgs),
     /// Show the change history of a story
     History(history::HistoryArgs),
+    /// Generate a git branch name from a story
+    Branch(branch::BranchArgs),
+    /// Create a git commit with story ID prefix
+    Commit(commit::CommitArgs),
 }
 
 pub async fn run(
@@ -80,5 +89,7 @@ pub async fn run(
         StoryAction::History(history_args) => {
             history::run(history_args, client, &cache_dir, out).await
         }
+        StoryAction::Branch(branch_args) => branch::run(branch_args, client, out).await,
+        StoryAction::Commit(commit_args) => commit::run(commit_args, out),
     }
 }

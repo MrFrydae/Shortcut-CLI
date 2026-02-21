@@ -1,7 +1,11 @@
 mod support;
 
+#[path = "story/branch.rs"]
+mod branch;
 #[path = "story/comment.rs"]
 mod comment;
+#[path = "story/commit.rs"]
+mod commit;
 #[path = "story/create.rs"]
 mod create;
 #[path = "story/custom_field.rs"]

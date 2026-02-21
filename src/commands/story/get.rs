@@ -33,6 +33,20 @@ pub async fn run(
             "owner_ids": story.owner_ids,
             "labels": story.labels.iter().map(|l| &l.name).collect::<Vec<_>>(),
             "description": story.description,
+            "branches": story.branches.iter().map(|b| serde_json::json!({
+                "name": b.name,
+                "url": b.url,
+                "repository_id": b.repository_id,
+            })).collect::<Vec<_>>(),
+            "pull_requests": story.pull_requests.iter().map(|pr| {
+                serde_json::json!({
+                    "number": pr.number,
+                    "title": pr.title,
+                    "url": pr.url,
+                    "status": pr_status(pr),
+                    "repository_id": pr.repository_id,
+                })
+            }).collect::<Vec<_>>(),
         });
         out_println!(out, "{}", serde_json::to_string_pretty(&json)?);
         return Ok(());
@@ -86,6 +100,38 @@ pub async fn run(
             out_println!(out, "  {}: {}", field_name, cf.value);
         }
     }
+    if !story.branches.is_empty() {
+        out_println!(out, "  Branches:");
+        for branch in &story.branches {
+            out_println!(out, "    {} (repo {})", branch.name, branch.repository_id);
+        }
+    }
+    if !story.pull_requests.is_empty() {
+        out_println!(out, "  Pull Requests:");
+        for pr in &story.pull_requests {
+            let status = pr_status(pr);
+            out_println!(
+                out,
+                "    #{} \"{}\" ({}) — {}",
+                pr.number,
+                pr.title,
+                status,
+                pr.url
+            );
+        }
+    }
 
     Ok(())
+}
+
+fn pr_status(pr: &crate::api::types::PullRequest) -> &'static str {
+    if pr.merged {
+        "merged"
+    } else if pr.closed {
+        "closed"
+    } else if pr.draft {
+        "draft"
+    } else {
+        "open"
+    }
 }

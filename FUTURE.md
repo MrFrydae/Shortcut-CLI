@@ -89,9 +89,9 @@
 | 16.1  | `story bulk-update` |        |
 | 16.2  | Batch create from file |        |
 | 16.3  | Piping support |        |
-| 17.1  | `story branch` |        |
-| 17.2  | Auto-link commits to stories |        |
-| 17.3  | Repository info & PR status |        |
+| 17.1  | `story branch` |   ✅    |
+| 17.2  | Auto-link commits to stories |   ✅    |
+| 17.3  | Repository info & PR status |   ✅    |
 | 18.1  | `template list` |        |
 | 18.2  | `template get` |        |
 | 18.3  | `template use` (create story from template) |        |

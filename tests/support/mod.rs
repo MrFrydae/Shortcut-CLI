@@ -959,6 +959,71 @@ pub fn project_json(id: i64, name: &str, description: Option<&str>) -> serde_jso
     })
 }
 
+// --- VCS fixtures ---
+
+/// Build a JSON value representing a valid `Branch` response object.
+pub fn branch_json(id: i64, name: &str, repo_id: i64) -> serde_json::Value {
+    serde_json::json!({
+        "created_at": "2024-01-01T00:00:00Z",
+        "deleted": false,
+        "entity_type": "branch",
+        "id": id,
+        "merged_branch_ids": [],
+        "name": name,
+        "persistent": false,
+        "pull_requests": [],
+        "repository_id": repo_id,
+        "updated_at": "2024-01-01T00:00:00Z",
+        "url": format!("https://github.com/test/repo/tree/{name}")
+    })
+}
+
+/// Build a JSON value representing a valid `PullRequest` response object.
+pub fn pull_request_json(
+    id: i64,
+    number: i64,
+    title: &str,
+    merged: bool,
+    closed: bool,
+    draft: bool,
+) -> serde_json::Value {
+    serde_json::json!({
+        "branch_id": 1,
+        "branch_name": "feature/branch",
+        "closed": closed,
+        "created_at": "2024-01-01T00:00:00Z",
+        "draft": draft,
+        "entity_type": "pull-request",
+        "has_overlapping_stories": false,
+        "id": id,
+        "merged": merged,
+        "num_added": 10,
+        "num_commits": 3,
+        "num_removed": 2,
+        "number": number,
+        "repository_id": 42,
+        "target_branch_id": 2,
+        "target_branch_name": "main",
+        "title": title,
+        "updated_at": "2024-01-01T00:00:00Z",
+        "url": format!("https://github.com/test/repo/pull/{number}")
+    })
+}
+
+/// Build a full `Story` JSON with branches and pull requests.
+pub fn full_story_json_with_branches_and_prs(
+    id: i64,
+    name: &str,
+    description: &str,
+    branches: Vec<serde_json::Value>,
+    prs: Vec<serde_json::Value>,
+) -> serde_json::Value {
+    let mut story = full_story_json(id, name, description);
+    story["branches"] = serde_json::Value::Array(branches);
+    story["pull_requests"] = serde_json::Value::Array(prs);
+    story
+}
+
 // --- History fixtures ---
 
 /// Build a top-level `History` entry.
