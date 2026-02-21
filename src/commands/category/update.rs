@@ -38,6 +38,25 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid name: {e}"))?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(name) = &args.name {
+            body.insert("name".into(), serde_json::json!(name));
+        }
+        if let Some(color) = &args.color {
+            body.insert("color".into(), serde_json::json!(color));
+        }
+        if let Some(archived) = args.archived {
+            body.insert("archived".into(), serde_json::json!(archived));
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request(
+            "PUT",
+            &format!("/api/v3/categories/{}", args.id),
+            Some(&body),
+        );
+    }
+
     let category = client
         .update_category()
         .category_public_id(args.id)

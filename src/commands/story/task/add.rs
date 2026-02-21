@@ -35,6 +35,18 @@ pub async fn run(
         })
         .collect::<Result<_, _>>()?;
 
+    if out.is_dry_run() {
+        for desc in &args.description {
+            let body = serde_json::json!({ "description": desc });
+            out.dry_run_request(
+                "POST",
+                &format!("/api/v3/stories/{}/tasks", args.story_id),
+                Some(&body),
+            )?;
+        }
+        return Ok(());
+    }
+
     let mut errors = Vec::new();
     for desc in descriptions {
         match client

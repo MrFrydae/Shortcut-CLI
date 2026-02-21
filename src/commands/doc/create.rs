@@ -48,6 +48,17 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid content format: {e}"))?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::json!({
+            "title": args.title,
+            "content": content,
+        });
+        if let Some(fmt) = &args.content_format {
+            body["content_format"] = serde_json::json!(fmt);
+        }
+        return out.dry_run_request("POST", "/api/v3/docs", Some(&body));
+    }
+
     let doc = client
         .create_doc()
         .body_map(|mut b| {

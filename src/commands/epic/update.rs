@@ -102,6 +102,53 @@ pub async fn run(
         None => None,
     };
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(name) = &args.name {
+            body.insert("name".into(), serde_json::json!(name));
+        }
+        if let Some(desc) = &args.description {
+            body.insert("description".into(), serde_json::json!(desc));
+        }
+        if let Some(dl) = &args.deadline {
+            body.insert("deadline".into(), serde_json::json!(dl));
+        }
+        if let Some(archived) = args.archived {
+            body.insert("archived".into(), serde_json::json!(archived));
+        }
+        if let Some(state_id) = resolved_state_id {
+            body.insert("epic_state_id".into(), serde_json::json!(state_id));
+        }
+        if !args.labels.is_empty() {
+            body.insert(
+                "labels".into(),
+                serde_json::json!(
+                    args.labels
+                        .iter()
+                        .map(|n| serde_json::json!({"name": n}))
+                        .collect::<Vec<_>>()
+                ),
+            );
+        }
+        if !args.objective_ids.is_empty() {
+            body.insert(
+                "objective_ids".into(),
+                serde_json::json!(args.objective_ids),
+            );
+        }
+        if !args.owner_ids.is_empty() {
+            body.insert("owner_ids".into(), serde_json::json!(args.owner_ids));
+        }
+        if !args.follower_ids.is_empty() {
+            body.insert("follower_ids".into(), serde_json::json!(args.follower_ids));
+        }
+        if let Some(req_id) = args.requested_by_id {
+            body.insert("requested_by_id".into(), serde_json::json!(req_id));
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request("PUT", &format!("/api/v3/epics/{}", args.id), Some(&body));
+    }
+
     let epic = client
         .update_epic()
         .epic_public_id(args.id)

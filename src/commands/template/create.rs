@@ -106,6 +106,56 @@ pub async fn run(
     let custom_field_params =
         resolve_custom_field_args(&args.custom_fields, client, cache_dir).await?;
 
+    if out.is_dry_run() {
+        let mut sc = serde_json::Map::new();
+        if let Some(sn) = &args.story_name {
+            sc.insert("name".into(), serde_json::json!(sn));
+        }
+        if let Some(desc) = &description {
+            sc.insert("description".into(), serde_json::json!(desc));
+        }
+        if let Some(st) = &args.story_type {
+            sc.insert("story_type".into(), serde_json::json!(st));
+        }
+        if !owner_ids.is_empty() {
+            sc.insert("owner_ids".into(), serde_json::json!(owner_ids));
+        }
+        if let Some(state_id) = resolved_state_id {
+            sc.insert("workflow_state_id".into(), serde_json::json!(state_id));
+        }
+        if let Some(epic_id) = args.epic_id {
+            sc.insert("epic_id".into(), serde_json::json!(epic_id));
+        }
+        if let Some(estimate) = args.estimate {
+            sc.insert("estimate".into(), serde_json::json!(estimate));
+        }
+        if !args.labels.is_empty() {
+            sc.insert(
+                "labels".into(),
+                serde_json::json!(
+                    args.labels
+                        .iter()
+                        .map(|n| serde_json::json!({"name": n}))
+                        .collect::<Vec<_>>()
+                ),
+            );
+        }
+        if let Some(iter_id) = args.iteration_id {
+            sc.insert("iteration_id".into(), serde_json::json!(iter_id));
+        }
+        if !custom_field_params.is_empty() {
+            sc.insert(
+                "custom_fields".into(),
+                serde_json::json!(custom_field_params),
+            );
+        }
+        let body = serde_json::json!({
+            "name": args.name,
+            "story_contents": serde_json::Value::Object(sc),
+        });
+        return out.dry_run_request("POST", "/api/v3/entity-templates", Some(&body));
+    }
+
     let story_name = args
         .story_name
         .as_ref()

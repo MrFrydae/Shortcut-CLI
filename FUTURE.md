@@ -83,7 +83,7 @@
 | 15.1  | Shell completions |        |
 | 15.2  | Interactive / wizard mode for create commands |        |
 | 15.3  | Progress spinners for network calls |        |
-| 15.4  | `--dry-run` flag |        |
+| 15.4  | `--dry-run` flag |   ✅   |
 | 15.5  | Cache management |        |
 | 15.6  | Configurable defaults |        |
 | 16.1  | `story bulk-update` |        |

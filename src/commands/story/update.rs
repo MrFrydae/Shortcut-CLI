@@ -107,6 +107,53 @@ pub async fn run(
     let custom_field_params =
         resolve_custom_field_args(&args.custom_fields, client, cache_dir).await?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(name) = &args.name {
+            body.insert("name".into(), serde_json::json!(name));
+        }
+        if let Some(desc) = &args.description {
+            body.insert("description".into(), serde_json::json!(desc));
+        }
+        if let Some(st) = &args.story_type {
+            body.insert("story_type".into(), serde_json::json!(st));
+        }
+        if !owner_ids.is_empty() {
+            body.insert("owner_ids".into(), serde_json::json!(owner_ids));
+        }
+        if let Some(state_id) = resolved_state_id {
+            body.insert("workflow_state_id".into(), serde_json::json!(state_id));
+        }
+        if let Some(epic_id) = args.epic_id {
+            body.insert("epic_id".into(), serde_json::json!(epic_id));
+        }
+        if let Some(estimate) = args.estimate {
+            body.insert("estimate".into(), serde_json::json!(estimate));
+        }
+        if !args.labels.is_empty() {
+            body.insert(
+                "labels".into(),
+                serde_json::json!(
+                    args.labels
+                        .iter()
+                        .map(|n| serde_json::json!({"name": n}))
+                        .collect::<Vec<_>>()
+                ),
+            );
+        }
+        if let Some(iter_id) = args.iteration_id {
+            body.insert("iteration_id".into(), serde_json::json!(iter_id));
+        }
+        if !custom_field_params.is_empty() {
+            body.insert(
+                "custom_fields".into(),
+                serde_json::json!(custom_field_params),
+            );
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request("PUT", &format!("/api/v3/stories/{}", args.id), Some(&body));
+    }
+
     let story = client
         .update_story()
         .story_public_id(args.id)

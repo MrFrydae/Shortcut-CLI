@@ -54,6 +54,25 @@ pub async fn run(
 
     let categories = build_categories(&args.categories)?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::json!({ "name": args.name });
+        if let Some(desc) = &args.description {
+            body["description"] = serde_json::json!(desc);
+        }
+        if let Some(state) = &args.state {
+            body["state"] = serde_json::json!(state);
+        }
+        if !args.categories.is_empty() {
+            body["categories"] = serde_json::json!(
+                args.categories
+                    .iter()
+                    .map(|n| serde_json::json!({"name": n}))
+                    .collect::<Vec<_>>()
+            );
+        }
+        return out.dry_run_request("POST", "/api/v3/objectives", Some(&body));
+    }
+
     let objective = client
         .create_objective()
         .body_map(|mut b| {

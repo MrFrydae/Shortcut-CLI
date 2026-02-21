@@ -34,6 +34,17 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid description: {e}"))?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::json!({ "name": args.name });
+        if let Some(color) = &args.color {
+            body["color"] = serde_json::json!(color);
+        }
+        if let Some(desc) = &args.description {
+            body["description"] = serde_json::json!(desc);
+        }
+        return out.dry_run_request("POST", "/api/v3/labels", Some(&body));
+    }
+
     let label = client
         .create_label()
         .body_map(|mut b| {

@@ -28,6 +28,10 @@ struct Cli {
     /// Disable colored output
     #[arg(long, global = true)]
     no_color: bool,
+
+    /// Preview the API request without sending it
+    #[arg(long, global = true)]
+    dry_run: bool,
 }
 
 #[derive(Subcommand)]
@@ -101,7 +105,7 @@ async fn main() {
         }
     }
 
-    let output = OutputConfig::new(mode, color_mode);
+    let output = OutputConfig::new(mode, color_mode).with_dry_run(cli.dry_run);
 
     let result = match cli.command {
         Command::Init => commands::init::run(),

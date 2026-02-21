@@ -21,6 +21,15 @@ pub async fn run(
 ) -> Result<(), Box<dyn Error>> {
     let emoji_str = format_emoji(emoji);
 
+    if out.is_dry_run() {
+        let body = serde_json::json!({ "emoji": emoji_str });
+        return out.dry_run_request(
+            "POST",
+            &format!("/api/v3/stories/{story_id}/comments/{comment_id}/reactions"),
+            Some(&body),
+        );
+    }
+
     client
         .create_story_reaction()
         .story_public_id(story_id)

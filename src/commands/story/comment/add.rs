@@ -25,6 +25,15 @@ pub async fn run(
         .parse::<api::types::CreateStoryCommentText>()
         .map_err(|e| format!("Invalid comment text: {e}"))?;
 
+    if out.is_dry_run() {
+        let body = serde_json::json!({ "text": body });
+        return out.dry_run_request(
+            "POST",
+            &format!("/api/v3/stories/{story_id}/comments"),
+            Some(&body),
+        );
+    }
+
     let comment = client
         .create_story_comment()
         .story_public_id(story_id)

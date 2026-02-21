@@ -11,6 +11,15 @@ pub async fn run(
     client: &api::Client,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
+    if out.is_dry_run() {
+        let body = serde_json::json!({ "text": text });
+        return out.dry_run_request(
+            "PUT",
+            &format!("/api/v3/epics/{epic_id}/comments/{comment_id}"),
+            Some(&body),
+        );
+    }
+
     client
         .update_epic_comment()
         .epic_public_id(epic_id)

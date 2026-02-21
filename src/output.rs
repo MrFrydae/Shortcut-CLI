@@ -32,6 +32,7 @@ pub type SharedBuffer = Arc<Mutex<Vec<u8>>>;
 pub struct OutputConfig {
     pub mode: OutputMode,
     pub color_mode: ColorMode,
+    pub dry_run: bool,
     writer: Mutex<Box<dyn Write + Send>>,
 }
 
@@ -41,6 +42,7 @@ impl OutputConfig {
         Self {
             mode,
             color_mode,
+            dry_run: false,
             writer: Mutex::new(Box::new(std::io::stdout())),
         }
     }
@@ -52,9 +54,16 @@ impl OutputConfig {
         let config = Self {
             mode,
             color_mode,
+            dry_run: false,
             writer: Mutex::new(Box::new(writer)),
         };
         (config, buf)
+    }
+
+    /// Enable or disable dry-run mode.
+    pub fn with_dry_run(mut self, enabled: bool) -> Self {
+        self.dry_run = enabled;
+        self
     }
 
     /// Write a formatted line to the output.
@@ -88,6 +97,25 @@ impl OutputConfig {
             OutputMode::Format(s) => Some(s),
             _ => None,
         }
+    }
+
+    pub fn is_dry_run(&self) -> bool {
+        self.dry_run
+    }
+
+    /// Print a dry-run summary of the request that would be sent.
+    pub fn dry_run_request<T: serde::Serialize>(
+        &self,
+        method: &str,
+        path: &str,
+        body: Option<&T>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.writeln(format_args!("[dry-run] {method} {path}"))?;
+        if let Some(body) = body {
+            let json = serde_json::to_string_pretty(body)?;
+            self.writeln(format_args!("{json}"))?;
+        }
+        Ok(())
     }
 
     pub fn use_color(&self) -> bool {
@@ -348,6 +376,47 @@ mod tests {
         out.writeln(format_args!("hello {}", "world")).unwrap();
         let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
         assert_eq!(output, "hello world\n");
+    }
+
+    #[test]
+    fn dry_run_default_false() {
+        let out = OutputConfig::new(OutputMode::Human, ColorMode::Never);
+        assert!(!out.is_dry_run());
+    }
+
+    #[test]
+    fn dry_run_with_builder() {
+        let out = OutputConfig::new(OutputMode::Human, ColorMode::Never).with_dry_run(true);
+        assert!(out.is_dry_run());
+    }
+
+    #[test]
+    fn dry_run_buffer_default_false() {
+        let (out, _buf) = OutputConfig::with_buffer(OutputMode::Human, ColorMode::Never);
+        assert!(!out.is_dry_run());
+    }
+
+    #[test]
+    fn dry_run_request_with_body() {
+        let (out, buf) = OutputConfig::with_buffer(OutputMode::Human, ColorMode::Never);
+        let out = out.with_dry_run(true);
+        let body = serde_json::json!({"name": "Test", "type": "bug"});
+        out.dry_run_request("POST", "/api/v3/stories", Some(&body))
+            .unwrap();
+        let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+        assert!(output.contains("[dry-run] POST /api/v3/stories"));
+        assert!(output.contains("\"name\": \"Test\""));
+        assert!(output.contains("\"type\": \"bug\""));
+    }
+
+    #[test]
+    fn dry_run_request_without_body() {
+        let (out, buf) = OutputConfig::with_buffer(OutputMode::Human, ColorMode::Never);
+        let out = out.with_dry_run(true);
+        out.dry_run_request::<serde_json::Value>("DELETE", "/api/v3/stories/42", None)
+            .unwrap();
+        let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+        assert_eq!(output, "[dry-run] DELETE /api/v3/stories/42\n");
     }
 
     #[test]

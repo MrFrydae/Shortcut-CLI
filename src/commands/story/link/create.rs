@@ -57,6 +57,15 @@ pub async fn run(
 
     let display = verb_display(&api_verb);
 
+    if out.is_dry_run() {
+        let body = serde_json::json!({
+            "subject_id": subject_id,
+            "object_id": object_id,
+            "verb": display,
+        });
+        return out.dry_run_request("POST", "/api/v3/story-links", Some(&body));
+    }
+
     let link = client
         .create_story_link()
         .body_map(|b| b.subject_id(subject_id).object_id(object_id).verb(api_verb))

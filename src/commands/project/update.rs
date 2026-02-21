@@ -65,6 +65,36 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid description: {e}"))?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(name) = &args.name {
+            body.insert("name".into(), serde_json::json!(name));
+        }
+        if let Some(desc) = &args.description {
+            body.insert("description".into(), serde_json::json!(desc));
+        }
+        if let Some(color) = &args.color {
+            body.insert("color".into(), serde_json::json!(color));
+        }
+        if let Some(abbr) = &args.abbreviation {
+            body.insert("abbreviation".into(), serde_json::json!(abbr));
+        }
+        if let Some(archived) = args.archived {
+            body.insert("archived".into(), serde_json::json!(archived));
+        }
+        if let Some(team_id) = args.team_id {
+            body.insert("team_id".into(), serde_json::json!(team_id));
+        }
+        if let Some(days) = args.days_to_thermometer {
+            body.insert("days_to_thermometer".into(), serde_json::json!(days));
+        }
+        if let Some(show) = args.show_thermometer {
+            body.insert("show_thermometer".into(), serde_json::json!(show));
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request("PUT", &format!("/api/v3/projects/{}", args.id), Some(&body));
+    }
+
     let project = client
         .update_project()
         .project_public_id(args.id)

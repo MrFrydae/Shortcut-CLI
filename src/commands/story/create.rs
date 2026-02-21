@@ -101,6 +101,43 @@ pub async fn run(
     let custom_field_params =
         resolve_custom_field_args(&args.custom_fields, client, cache_dir).await?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::json!({ "name": args.name });
+        if let Some(desc) = &args.description {
+            body["description"] = serde_json::json!(desc);
+        }
+        if let Some(st) = &args.story_type {
+            body["story_type"] = serde_json::json!(st);
+        }
+        if !owner_ids.is_empty() {
+            body["owner_ids"] = serde_json::json!(owner_ids);
+        }
+        if let Some(state_id) = resolved_state_id {
+            body["workflow_state_id"] = serde_json::json!(state_id);
+        }
+        if let Some(epic_id) = args.epic_id {
+            body["epic_id"] = serde_json::json!(epic_id);
+        }
+        if let Some(estimate) = args.estimate {
+            body["estimate"] = serde_json::json!(estimate);
+        }
+        if !args.labels.is_empty() {
+            body["labels"] = serde_json::json!(
+                args.labels
+                    .iter()
+                    .map(|n| serde_json::json!({"name": n}))
+                    .collect::<Vec<_>>()
+            );
+        }
+        if let Some(iter_id) = args.iteration_id {
+            body["iteration_id"] = serde_json::json!(iter_id);
+        }
+        if !custom_field_params.is_empty() {
+            body["custom_fields"] = serde_json::json!(custom_field_params);
+        }
+        return out.dry_run_request("POST", "/api/v3/stories", Some(&body));
+    }
+
     let story = client
         .create_story()
         .body_map(|mut b| {

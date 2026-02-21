@@ -71,6 +71,45 @@ pub async fn run(
         })
         .collect::<Result<_, _>>()?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(name) = &args.name {
+            body.insert("name".into(), serde_json::json!(name));
+        }
+        if let Some(start) = &args.start_date {
+            body.insert("start_date".into(), serde_json::json!(start));
+        }
+        if let Some(end) = &args.end_date {
+            body.insert("end_date".into(), serde_json::json!(end));
+        }
+        if let Some(desc) = &args.description {
+            body.insert("description".into(), serde_json::json!(desc));
+        }
+        if !follower_ids.is_empty() {
+            body.insert("follower_ids".into(), serde_json::json!(follower_ids));
+        }
+        if !args.labels.is_empty() {
+            body.insert(
+                "labels".into(),
+                serde_json::json!(
+                    args.labels
+                        .iter()
+                        .map(|n| serde_json::json!({"name": n}))
+                        .collect::<Vec<_>>()
+                ),
+            );
+        }
+        if !args.group_ids.is_empty() {
+            body.insert("group_ids".into(), serde_json::json!(args.group_ids));
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request(
+            "PUT",
+            &format!("/api/v3/iterations/{}", args.id),
+            Some(&body),
+        );
+    }
+
     let iteration = client
         .update_iteration()
         .iteration_public_id(args.id)

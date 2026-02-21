@@ -76,6 +76,33 @@ pub async fn run(
 
     let member_ids = resolve_members(&args.member_ids, client, cache_dir).await?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(name) = &args.name {
+            body.insert("name".into(), serde_json::json!(name));
+        }
+        if let Some(mention) = &args.mention_name {
+            body.insert("mention_name".into(), serde_json::json!(mention));
+        }
+        if let Some(desc) = &args.description {
+            body.insert("description".into(), serde_json::json!(desc));
+        }
+        if let Some(archived) = args.archived {
+            body.insert("archived".into(), serde_json::json!(archived));
+        }
+        if let Some(color) = &args.color {
+            body.insert("color".into(), serde_json::json!(color));
+        }
+        if !member_ids.is_empty() {
+            body.insert("member_ids".into(), serde_json::json!(member_ids));
+        }
+        if !args.workflow_ids.is_empty() {
+            body.insert("workflow_ids".into(), serde_json::json!(args.workflow_ids));
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request("PUT", &format!("/api/v3/groups/{group_id}"), Some(&body));
+    }
+
     let group = client
         .update_group()
         .group_public_id(group_id)

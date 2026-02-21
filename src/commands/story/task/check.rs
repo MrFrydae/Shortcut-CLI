@@ -11,6 +11,15 @@ pub async fn run(
     client: &api::Client,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
+    if out.is_dry_run() {
+        let body = serde_json::json!({ "complete": complete });
+        return out.dry_run_request(
+            "PUT",
+            &format!("/api/v3/stories/{story_id}/tasks/{task_id}"),
+            Some(&body),
+        );
+    }
+
     let task = client
         .update_task()
         .story_public_id(story_id)

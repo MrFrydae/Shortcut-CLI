@@ -1,12 +1,18 @@
 use std::cell::RefCell;
 
 use sc::auth::{AuthError, TokenStore};
-use sc::output::{ColorMode, OutputConfig, OutputMode};
+use sc::output::{ColorMode, OutputConfig, OutputMode, SharedBuffer};
 
 /// Create an `OutputConfig` for tests that writes to an in-memory buffer.
 pub fn make_output() -> OutputConfig {
     let (out, _buf) = OutputConfig::with_buffer(OutputMode::Human, ColorMode::Never);
     out
+}
+
+/// Create a dry-run `OutputConfig` backed by a shared buffer.
+pub fn make_dry_run_output() -> (OutputConfig, SharedBuffer) {
+    let (out, buf) = OutputConfig::with_buffer(OutputMode::Human, ColorMode::Never);
+    (out.with_dry_run(true), buf)
 }
 
 /// In-memory token store for tests.

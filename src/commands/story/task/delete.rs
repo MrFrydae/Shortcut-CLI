@@ -10,6 +10,14 @@ pub async fn run(
     client: &api::Client,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
+    if out.is_dry_run() {
+        return out.dry_run_request::<serde_json::Value>(
+            "DELETE",
+            &format!("/api/v3/stories/{story_id}/tasks/{task_id}"),
+            None,
+        );
+    }
+
     client
         .delete_task()
         .story_public_id(story_id)

@@ -38,6 +38,24 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid description: {e}"))?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(name) = &args.name {
+            body.insert("name".into(), serde_json::json!(name));
+        }
+        if let Some(color) = &args.color {
+            body.insert("color".into(), serde_json::json!(color));
+        }
+        if let Some(desc) = &args.description {
+            body.insert("description".into(), serde_json::json!(desc));
+        }
+        if let Some(archived) = args.archived {
+            body.insert("archived".into(), serde_json::json!(archived));
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request("PUT", &format!("/api/v3/labels/{}", args.id), Some(&body));
+    }
+
     let label = client
         .update_label()
         .label_public_id(args.id)

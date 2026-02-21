@@ -64,6 +64,39 @@ pub async fn run(
 
     let categories = build_categories(&args.categories)?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(name) = &args.name {
+            body.insert("name".into(), serde_json::json!(name));
+        }
+        if let Some(desc) = &args.description {
+            body.insert("description".into(), serde_json::json!(desc));
+        }
+        if let Some(state) = &args.state {
+            body.insert("state".into(), serde_json::json!(state));
+        }
+        if let Some(archived) = args.archived {
+            body.insert("archived".into(), serde_json::json!(archived));
+        }
+        if !args.categories.is_empty() {
+            body.insert(
+                "categories".into(),
+                serde_json::json!(
+                    args.categories
+                        .iter()
+                        .map(|n| serde_json::json!({"name": n}))
+                        .collect::<Vec<_>>()
+                ),
+            );
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request(
+            "PUT",
+            &format!("/api/v3/objectives/{}", args.id),
+            Some(&body),
+        );
+    }
+
     let objective = client
         .update_objective()
         .objective_public_id(args.id)

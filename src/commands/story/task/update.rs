@@ -35,6 +35,22 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid description: {e}"))?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(desc) = &args.description {
+            body.insert("description".into(), serde_json::json!(desc));
+        }
+        if let Some(complete) = args.complete {
+            body.insert("complete".into(), serde_json::json!(complete));
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request(
+            "PUT",
+            &format!("/api/v3/stories/{}/tasks/{}", args.story_id, args.id),
+            Some(&body),
+        );
+    }
+
     let task = client
         .update_task()
         .story_public_id(args.story_id)

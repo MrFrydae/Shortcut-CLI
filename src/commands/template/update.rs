@@ -168,6 +168,61 @@ pub async fn run(
         None
     };
 
+    if out.is_dry_run() {
+        let mut body = serde_json::Map::new();
+        if let Some(name) = &args.name {
+            body.insert("name".into(), serde_json::json!(name));
+        }
+        if let Some(sc) = &story_contents {
+            let mut sc_json = serde_json::Map::new();
+            if let Some(name) = &sc.name {
+                sc_json.insert("name".into(), serde_json::json!(name));
+            }
+            if let Some(desc) = &sc.description {
+                sc_json.insert("description".into(), serde_json::json!(desc));
+            }
+            if let Some(st) = &sc.story_type {
+                sc_json.insert("story_type".into(), serde_json::json!(st));
+            }
+            if !sc.owner_ids.is_empty() {
+                sc_json.insert("owner_ids".into(), serde_json::json!(sc.owner_ids));
+            }
+            if let Some(state_id) = sc.workflow_state_id {
+                sc_json.insert("workflow_state_id".into(), serde_json::json!(state_id));
+            }
+            if let Some(epic_id) = sc.epic_id {
+                sc_json.insert("epic_id".into(), serde_json::json!(epic_id));
+            }
+            if let Some(estimate) = sc.estimate {
+                sc_json.insert("estimate".into(), serde_json::json!(estimate));
+            }
+            if !sc.labels.is_empty() {
+                sc_json.insert(
+                    "labels".into(),
+                    serde_json::json!(
+                        args.labels
+                            .iter()
+                            .map(|n| serde_json::json!({"name": n}))
+                            .collect::<Vec<_>>()
+                    ),
+                );
+            }
+            if let Some(iter_id) = sc.iteration_id {
+                sc_json.insert("iteration_id".into(), serde_json::json!(iter_id));
+            }
+            if !sc.custom_fields.is_empty() {
+                sc_json.insert("custom_fields".into(), serde_json::json!(sc.custom_fields));
+            }
+            body.insert("story_contents".into(), serde_json::Value::Object(sc_json));
+        }
+        let body = serde_json::Value::Object(body);
+        return out.dry_run_request(
+            "PUT",
+            &format!("/api/v3/entity-templates/{}", args.id),
+            Some(&body),
+        );
+    }
+
     let template = client
         .update_entity_template()
         .entity_template_public_id(uuid)

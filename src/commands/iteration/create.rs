@@ -63,6 +63,32 @@ pub async fn run(
         })
         .collect::<Result<_, _>>()?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::json!({
+            "name": args.name,
+            "start_date": args.start_date,
+            "end_date": args.end_date,
+        });
+        if let Some(desc) = &args.description {
+            body["description"] = serde_json::json!(desc);
+        }
+        if !follower_ids.is_empty() {
+            body["follower_ids"] = serde_json::json!(follower_ids);
+        }
+        if !args.labels.is_empty() {
+            body["labels"] = serde_json::json!(
+                args.labels
+                    .iter()
+                    .map(|n| serde_json::json!({"name": n}))
+                    .collect::<Vec<_>>()
+            );
+        }
+        if !args.group_ids.is_empty() {
+            body["group_ids"] = serde_json::json!(args.group_ids);
+        }
+        return out.dry_run_request("POST", "/api/v3/iterations", Some(&body));
+    }
+
     let iteration = client
         .create_iteration()
         .body_map(|mut b| {

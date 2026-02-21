@@ -43,6 +43,20 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid external ID: {e}"))?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::json!({ "name": args.name });
+        if let Some(color) = &args.color {
+            body["color"] = serde_json::json!(color);
+        }
+        if let Some(t) = &args.category_type {
+            body["type"] = serde_json::json!(t);
+        }
+        if let Some(ext_id) = &args.external_id {
+            body["external_id"] = serde_json::json!(ext_id);
+        }
+        return out.dry_run_request("POST", "/api/v3/categories", Some(&body));
+    }
+
     let category = client
         .create_category()
         .body_map(|mut b| {

@@ -9,6 +9,14 @@ pub async fn run(
     client: &api::Client,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
+    if out.is_dry_run() {
+        return out.dry_run_request::<serde_json::Value>(
+            "DELETE",
+            &format!("/api/v3/labels/{id}"),
+            None,
+        );
+    }
+
     if !confirm {
         return Err("Deleting a label is irreversible. Pass --confirm to proceed.".into());
     }

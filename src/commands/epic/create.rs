@@ -101,6 +101,40 @@ pub async fn run(
         })
         .collect::<Result<_, _>>()?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::json!({ "name": args.name });
+        if let Some(desc) = &args.description {
+            body["description"] = serde_json::json!(desc);
+        }
+        if let Some(dl) = &args.deadline {
+            body["deadline"] = serde_json::json!(dl);
+        }
+        if let Some(state_id) = resolved_state_id {
+            body["epic_state_id"] = serde_json::json!(state_id);
+        }
+        if !owner_ids.is_empty() {
+            body["owner_ids"] = serde_json::json!(owner_ids);
+        }
+        if !follower_ids.is_empty() {
+            body["follower_ids"] = serde_json::json!(follower_ids);
+        }
+        if let Some(req_id) = &requested_by_id {
+            body["requested_by_id"] = serde_json::json!(req_id);
+        }
+        if !args.labels.is_empty() {
+            body["labels"] = serde_json::json!(
+                args.labels
+                    .iter()
+                    .map(|n| serde_json::json!({"name": n}))
+                    .collect::<Vec<_>>()
+            );
+        }
+        if !args.objective_ids.is_empty() {
+            body["objective_ids"] = serde_json::json!(args.objective_ids);
+        }
+        return out.dry_run_request("POST", "/api/v3/epics", Some(&body));
+    }
+
     let epic = client
         .create_epic()
         .body_map(|mut b| {

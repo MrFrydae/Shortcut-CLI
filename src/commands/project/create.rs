@@ -69,6 +69,29 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid external ID: {e}"))?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::json!({
+            "name": args.name,
+            "team_id": args.team_id,
+        });
+        if let Some(desc) = &args.description {
+            body["description"] = serde_json::json!(desc);
+        }
+        if let Some(color) = &args.color {
+            body["color"] = serde_json::json!(color);
+        }
+        if let Some(abbr) = &args.abbreviation {
+            body["abbreviation"] = serde_json::json!(abbr);
+        }
+        if let Some(iter_len) = args.iteration_length {
+            body["iteration_length"] = serde_json::json!(iter_len);
+        }
+        if let Some(ext_id) = &args.external_id {
+            body["external_id"] = serde_json::json!(ext_id);
+        }
+        return out.dry_run_request("POST", "/api/v3/projects", Some(&body));
+    }
+
     let project = client
         .create_project()
         .body_map(|mut b| {

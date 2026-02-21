@@ -25,6 +25,15 @@ pub async fn run(
         .parse::<api::types::CreateEpicCommentText>()
         .map_err(|e| format!("Invalid comment text: {e}"))?;
 
+    if out.is_dry_run() {
+        let req_body = serde_json::json!({ "text": body });
+        return out.dry_run_request(
+            "POST",
+            &format!("/api/v3/epics/{epic_id}/comments"),
+            Some(&req_body),
+        );
+    }
+
     let comment = client
         .create_epic_comment()
         .epic_public_id(epic_id)

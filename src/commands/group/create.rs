@@ -62,6 +62,26 @@ pub async fn run(
 
     let member_ids = resolve_members(&args.member_ids, client, cache_dir).await?;
 
+    if out.is_dry_run() {
+        let mut body = serde_json::json!({
+            "name": args.name,
+            "mention_name": args.mention_name,
+        });
+        if let Some(desc) = &args.description {
+            body["description"] = serde_json::json!(desc);
+        }
+        if let Some(color) = &args.color {
+            body["color"] = serde_json::json!(color);
+        }
+        if !member_ids.is_empty() {
+            body["member_ids"] = serde_json::json!(member_ids);
+        }
+        if !args.workflow_ids.is_empty() {
+            body["workflow_ids"] = serde_json::json!(args.workflow_ids);
+        }
+        return out.dry_run_request("POST", "/api/v3/groups", Some(&body));
+    }
+
     let group = client
         .create_group()
         .body_map(|mut b| {

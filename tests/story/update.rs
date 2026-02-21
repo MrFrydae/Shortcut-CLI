@@ -2,7 +2,8 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{
-    default_icon, full_story_json, member_json, workflow_json, workflow_state_json,
+    default_icon, full_story_json, make_dry_run_output, member_json, workflow_json,
+    workflow_state_json,
 };
 use crate::{UUID_ALICE, make_update_args};
 use sc::{api, commands::story};
@@ -249,4 +250,30 @@ async fn unknown_state_name_errors() {
     assert!(err.contains("Unknown workflow state"));
     assert!(err.contains("Unstarted"));
     assert!(err.contains("In Progress"));
+}
+
+#[tokio::test]
+async fn dry_run_story_update_shows_request() {
+    let (out, buf) = make_dry_run_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    // No PUT mock — dry-run should not send one
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.name = Some("Updated Name".to_string());
+    update_args.estimate = Some(5);
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
+
+    let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+    assert!(output.contains("[dry-run] PUT /api/v3/stories/42"));
+    assert!(output.contains("\"name\": \"Updated Name\""));
+    assert!(output.contains("\"estimate\": 5"));
+    // Fields not set should NOT appear
+    assert!(!output.contains("\"description\""));
 }
