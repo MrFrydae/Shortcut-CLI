@@ -14,6 +14,7 @@ use std::error::Error;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct ObjectiveArgs {
@@ -59,13 +60,17 @@ pub enum ObjectiveAction {
     },
 }
 
-pub async fn run(args: &ObjectiveArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &ObjectiveArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        ObjectiveAction::List { archived } => list::run(*archived, client).await,
-        ObjectiveAction::Create(create_args) => create::run(create_args, client).await,
-        ObjectiveAction::Get { id } => get::run(*id, client).await,
-        ObjectiveAction::Update(update_args) => update::run(update_args, client).await,
-        ObjectiveAction::Delete { id, confirm } => delete::run(*id, *confirm, client).await,
-        ObjectiveAction::Epics { id, desc } => epics::run(*id, *desc, client).await,
+        ObjectiveAction::List { archived } => list::run(*archived, client, out).await,
+        ObjectiveAction::Create(create_args) => create::run(create_args, client, out).await,
+        ObjectiveAction::Get { id } => get::run(*id, client, out).await,
+        ObjectiveAction::Update(update_args) => update::run(update_args, client, out).await,
+        ObjectiveAction::Delete { id, confirm } => delete::run(*id, *confirm, client, out).await,
+        ObjectiveAction::Epics { id, desc } => epics::run(*id, *desc, client, out).await,
     }
 }

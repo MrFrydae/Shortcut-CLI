@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 use clap::Args;
 
 use crate::api;
+use crate::out_println;
+use crate::output::{OutputConfig, Table};
 
 #[derive(Args)]
 pub struct MemberArgs {
@@ -31,6 +33,7 @@ pub async fn run(
     args: &MemberArgs,
     client: &api::Client,
     cache_dir: PathBuf,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     if args.list {
         if let Some(role) = &args.role {
@@ -43,9 +46,9 @@ pub async fn run(
                 .into());
             }
         }
-        run_list(args.role.as_deref(), args.active, client, &cache_dir).await
+        run_list(args.role.as_deref(), args.active, client, &cache_dir, out).await
     } else if let Some(id) = &args.id {
-        run_get(id, client, &cache_dir).await
+        run_get(id, client, &cache_dir, out).await
     } else {
         Ok(())
     }
@@ -56,6 +59,7 @@ async fn run_list(
     active_only: bool,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let members = client
         .list_members()
@@ -63,6 +67,42 @@ async fn run_list(
         .await
         .map_err(|e| format!("Failed to list members: {e}"))?;
 
+    if out.is_json() {
+        let json: Vec<serde_json::Value> = members
+            .iter()
+            .filter(|m| !active_only || !m.disabled)
+            .filter(|m| role_filter.is_none_or(|r| m.role.eq_ignore_ascii_case(r)))
+            .map(|m| {
+                serde_json::json!({
+                    "id": m.id,
+                    "mention_name": m.profile.mention_name,
+                    "name": m.profile.name,
+                    "role": m.role,
+                })
+            })
+            .collect();
+        out_println!(out, "{}", serde_json::to_string_pretty(&json)?);
+        write_cache(&members, cache_dir);
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        for m in members.iter() {
+            if active_only && m.disabled {
+                continue;
+            }
+            if let Some(role) = role_filter
+                && !m.role.eq_ignore_ascii_case(role)
+            {
+                continue;
+            }
+            out_println!(out, "{}", m.id);
+        }
+        write_cache(&members, cache_dir);
+        return Ok(());
+    }
+
+    let mut table = Table::new(vec!["ID", "@Mention", "Name", "Role"]);
     for m in members.iter() {
         if active_only && m.disabled {
             continue;
@@ -72,14 +112,14 @@ async fn run_list(
         {
             continue;
         }
-        println!(
-            "{} - @{} - {} ({})",
-            m.id,
-            m.profile.mention_name,
-            m.profile.name.as_deref().unwrap_or(""),
-            m.role,
-        );
+        table.add_row(vec![
+            m.id.to_string(),
+            format!("@{}", m.profile.mention_name),
+            m.profile.name.as_deref().unwrap_or("").to_string(),
+            m.role.clone(),
+        ]);
     }
+    out.write_str(format_args!("{}", table.render()))?;
 
     write_cache(&members, cache_dir);
 
@@ -90,6 +130,7 @@ async fn run_get(
     id_or_mention: &str,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let uuid = resolve_member_id(id_or_mention, client, cache_dir).await?;
 
@@ -100,7 +141,31 @@ async fn run_get(
         .await
         .map_err(|e| format!("Failed to get member: {e}"))?;
 
-    print_member_detail(&member);
+    if out.is_json() {
+        let json = serde_json::json!({
+            "id": member.id,
+            "mention_name": member.profile.mention_name,
+            "name": member.profile.name,
+            "role": member.role,
+            "disabled": member.disabled,
+        });
+        out_println!(out, "{}", serde_json::to_string_pretty(&json)?);
+        return Ok(());
+    }
+    if out.is_quiet() {
+        out_println!(out, "{}", member.id);
+        return Ok(());
+    }
+
+    let name = member.profile.name.as_deref().unwrap_or("");
+    out_println!(out, "{name} (@{})", member.profile.mention_name);
+    out_println!(out, "  ID:       {}", member.id);
+    out_println!(out, "  Role:     {}", member.role);
+    out_println!(out, "  State:    {:?}", member.state);
+    out_println!(out, "  Disabled: {}", member.disabled);
+    if let Some(email) = &member.profile.email_address {
+        out_println!(out, "  Email:    {email}");
+    }
     Ok(())
 }
 
@@ -110,7 +175,6 @@ pub async fn resolve_member_id(
     cache_dir: &Path,
 ) -> Result<uuid::Uuid, Box<dyn Error>> {
     if let Some(mention) = id_or_mention.strip_prefix('@') {
-        // Try cache first
         if let Some(cache) = read_cache(cache_dir)
             && let Some(uuid_str) = cache.get(mention)
             && let Ok(uuid) = uuid_str.parse::<uuid::Uuid>()
@@ -118,7 +182,6 @@ pub async fn resolve_member_id(
             return Ok(uuid);
         }
 
-        // Cache miss — fetch from API and update cache
         let members = client
             .list_members()
             .send()
@@ -138,18 +201,6 @@ pub async fn resolve_member_id(
         id_or_mention
             .parse::<uuid::Uuid>()
             .map_err(|_| format!("Invalid member ID: {id_or_mention}").into())
-    }
-}
-
-fn print_member_detail(member: &api::types::Member) {
-    let name = member.profile.name.as_deref().unwrap_or("");
-    println!("{name} (@{})", member.profile.mention_name);
-    println!("  ID:       {}", member.id);
-    println!("  Role:     {}", member.role);
-    println!("  State:    {:?}", member.state);
-    println!("  Disabled: {}", member.disabled);
-    if let Some(email) = &member.profile.email_address {
-        println!("  Email:    {email}");
     }
 }
 

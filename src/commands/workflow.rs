@@ -3,6 +3,8 @@ use std::error::Error;
 use clap::Args;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct WorkflowArgs {
@@ -15,7 +17,11 @@ pub struct WorkflowArgs {
     pub id: Option<i64>,
 }
 
-pub async fn run(args: &WorkflowArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &WorkflowArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     if args.list {
         let workflows = client
             .list_workflows()
@@ -23,7 +29,7 @@ pub async fn run(args: &WorkflowArgs, client: &api::Client) -> Result<(), Box<dy
             .await
             .map_err(|e| format!("Failed to list workflows: {e}"))?;
         for wf in workflows.iter() {
-            println!("{} - {}", wf.id, wf.name);
+            out_println!(out, "{} - {}", wf.id, wf.name);
         }
     } else if let Some(id) = args.id {
         let wf = client
@@ -32,7 +38,7 @@ pub async fn run(args: &WorkflowArgs, client: &api::Client) -> Result<(), Box<dy
             .send()
             .await
             .map_err(|e| format!("Failed to get workflow: {e}"))?;
-        println!("{} (id: {})\n", wf.name, wf.id);
+        out_println!(out, "{} (id: {})\n", wf.name, wf.id);
         let mut states: Vec<_> = wf.states.iter().collect();
         states.sort_by_key(|s| s.position);
         let id_width = states
@@ -47,7 +53,8 @@ pub async fn run(args: &WorkflowArgs, client: &api::Client) -> Result<(), Box<dy
             .max()
             .unwrap_or(0)
             .max(4);
-        println!(
+        out_println!(
+            out,
             "  {:<id_w$}  {:<type_w$}  Name",
             "ID",
             "Type",
@@ -55,7 +62,8 @@ pub async fn run(args: &WorkflowArgs, client: &api::Client) -> Result<(), Box<dy
             type_w = type_width
         );
         for state in &states {
-            println!(
+            out_println!(
+                out,
                 "  {:<id_w$}  {:<type_w$}  {}",
                 state.id,
                 state.type_,

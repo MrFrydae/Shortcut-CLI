@@ -6,6 +6,7 @@ use sc::{api, commands::project};
 
 #[tokio::test]
 async fn create_project_minimal() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = project_json(42, "New Project", None);
@@ -29,12 +30,13 @@ async fn create_project_minimal() {
             external_id: None,
         })),
     };
-    let result = project::run(&args, &client).await;
+    let result = project::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_project_with_all_fields() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = project_json(43, "Full Project", Some("A fully specified project"));
@@ -58,6 +60,6 @@ async fn create_project_with_all_fields() {
             external_id: Some("ext-123".to_string()),
         })),
     };
-    let result = project::run(&args, &client).await;
+    let result = project::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

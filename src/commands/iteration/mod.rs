@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct IterationArgs {
@@ -61,13 +62,18 @@ pub async fn run(
     args: &IterationArgs,
     client: &api::Client,
     cache_dir: PathBuf,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        IterationAction::List { state } => list::run(state.as_deref(), client).await,
-        IterationAction::Create(create_args) => create::run(create_args, client, &cache_dir).await,
-        IterationAction::Get { id } => get::run(*id, client).await,
-        IterationAction::Update(update_args) => update::run(update_args, client, &cache_dir).await,
-        IterationAction::Delete { id, confirm } => delete::run(*id, *confirm, client).await,
-        IterationAction::Stories { id, desc } => stories::run(*id, *desc, client).await,
+        IterationAction::List { state } => list::run(state.as_deref(), client, out).await,
+        IterationAction::Create(create_args) => {
+            create::run(create_args, client, &cache_dir, out).await
+        }
+        IterationAction::Get { id } => get::run(*id, client, out).await,
+        IterationAction::Update(update_args) => {
+            update::run(update_args, client, &cache_dir, out).await
+        }
+        IterationAction::Delete { id, confirm } => delete::run(*id, *confirm, client, out).await,
+        IterationAction::Stories { id, desc } => stories::run(*id, *desc, client, out).await,
     }
 }

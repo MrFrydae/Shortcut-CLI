@@ -1,8 +1,10 @@
 use std::error::Error;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
-pub async fn run(id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(id: i64, client: &api::Client, out: &OutputConfig) -> Result<(), Box<dyn Error>> {
     let category = client
         .get_category()
         .category_public_id(id)
@@ -10,13 +12,25 @@ pub async fn run(id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
         .await
         .map_err(|e| format!("Failed to get category: {e}"))?;
 
-    println!("{} - {}", category.id, category.name);
-    println!(
+    if out.is_json() {
+        let json = serde_json::to_string_pretty(&*category)?;
+        out.write_str(format_args!("{json}"))?;
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        out_println!(out, "{}", category.id);
+        return Ok(());
+    }
+
+    out_println!(out, "{} - {}", category.id, category.name);
+    out_println!(
+        out,
         "  Color:       {}",
         category.color.as_deref().unwrap_or("none")
     );
-    println!("  Type:        {}", category.type_);
-    println!("  Archived:    {}", category.archived);
+    out_println!(out, "  Type:        {}", category.type_);
+    out_println!(out, "  Archived:    {}", category.archived);
 
     // Show associated milestones
     let milestones = client
@@ -27,9 +41,9 @@ pub async fn run(id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
         .map_err(|e| format!("Failed to list category milestones: {e}"))?;
 
     if !milestones.is_empty() {
-        println!("  Milestones:");
+        out_println!(out, "  Milestones:");
         for ms in milestones.iter() {
-            println!("    {} - {} ({})", ms.id, ms.name, ms.state);
+            out_println!(out, "    {} - {} ({})", ms.id, ms.name, ms.state);
         }
     }
 
@@ -42,9 +56,9 @@ pub async fn run(id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
         .map_err(|e| format!("Failed to list category objectives: {e}"))?;
 
     if !objectives.is_empty() {
-        println!("  Objectives:");
+        out_println!(out, "  Objectives:");
         for obj in objectives.iter() {
-            println!("    {} - {} ({})", obj.id, obj.name, obj.state);
+            out_println!(out, "    {} - {} ({})", obj.id, obj.name, obj.state);
         }
     }
 

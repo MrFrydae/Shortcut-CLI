@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 pub use helpers::{resolve_custom_field_names, resolve_custom_field_value};
 
@@ -33,9 +34,10 @@ pub async fn run(
     args: &CustomFieldArgs,
     client: &api::Client,
     cache_dir: PathBuf,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        CustomFieldAction::List => list::run(client, &cache_dir).await,
-        CustomFieldAction::Get { id } => get::run(id, client).await,
+        CustomFieldAction::List => list::run(client, &cache_dir, out).await,
+        CustomFieldAction::Get { id } => get::run(id, client, out).await,
     }
 }

@@ -1,11 +1,17 @@
 use std::error::Error;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::SearchQueryArgs;
 use super::helpers::print_pagination;
+use crate::out_println;
 
-pub async fn run(args: &SearchQueryArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &SearchQueryArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let query = args
         .query
         .parse::<api::types::SearchStoriesQuery>()
@@ -31,23 +37,45 @@ pub async fn run(args: &SearchQueryArgs, client: &api::Client) -> Result<(), Box
         .await
         .map_err(|e| format!("Failed to search stories: {e}"))?;
 
+    if out.is_json() {
+        let json = serde_json::to_string_pretty(&*results)?;
+        out.write_str(format_args!("{json}"))?;
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        for story in &results.data {
+            out_println!(out, "{}", story.id);
+        }
+        return Ok(());
+    }
+
     for story in &results.data {
-        println!(
+        out_println!(
+            out,
             "{} - {} ({}, state_id: {})",
-            story.id, story.name, story.story_type, story.workflow_state_id
+            story.id,
+            story.name,
+            story.story_type,
+            story.workflow_state_id
         );
         if args.desc
             && let Some(d) = &story.description
         {
-            println!("  {d}");
+            out_println!(out, "  {d}");
         }
     }
 
     if results.data.is_empty() {
-        println!("No stories found");
+        out_println!(out, "No stories found");
     }
 
-    print_pagination(results.data.len(), results.total, results.next.as_deref());
+    print_pagination(
+        results.data.len(),
+        results.total,
+        results.next.as_deref(),
+        out,
+    );
 
     Ok(())
 }

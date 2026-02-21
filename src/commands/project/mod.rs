@@ -13,6 +13,7 @@ use std::error::Error;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct ProjectArgs {
@@ -58,13 +59,17 @@ pub enum ProjectAction {
     },
 }
 
-pub async fn run(args: &ProjectArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &ProjectArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        ProjectAction::List { archived } => list::run(*archived, client).await,
-        ProjectAction::Create(create_args) => create::run(create_args, client).await,
-        ProjectAction::Get { id } => get::run(*id, client).await,
-        ProjectAction::Update(update_args) => update::run(update_args, client).await,
-        ProjectAction::Delete { id, confirm } => delete::run(*id, *confirm, client).await,
-        ProjectAction::Stories { id, desc } => stories::run(*id, *desc, client).await,
+        ProjectAction::List { archived } => list::run(*archived, client, out).await,
+        ProjectAction::Create(create_args) => create::run(create_args, client, out).await,
+        ProjectAction::Get { id } => get::run(*id, client, out).await,
+        ProjectAction::Update(update_args) => update::run(update_args, client, out).await,
+        ProjectAction::Delete { id, confirm } => delete::run(*id, *confirm, client, out).await,
+        ProjectAction::Stories { id, desc } => stories::run(*id, *desc, client, out).await,
     }
 }

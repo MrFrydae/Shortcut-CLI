@@ -3,6 +3,8 @@ use std::error::Error;
 use clap::Args;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -18,9 +20,6 @@ pub struct CreateLinkArgs {
     pub verb: String,
 }
 
-/// Normalize a user-provided verb string into the canonical API verb,
-/// returning `(api_verb, swapped)` where `swapped` is true if subject/object
-/// should be swapped (for "blocked-by" / "is blocked by").
 fn normalize_verb(verb: &str) -> Result<(api::types::CreateStoryLinkVerb, bool), String> {
     match verb.to_lowercase().trim() {
         "blocks" => Ok((api::types::CreateStoryLinkVerb::Blocks, false)),
@@ -35,7 +34,6 @@ fn normalize_verb(verb: &str) -> Result<(api::types::CreateStoryLinkVerb, bool),
     }
 }
 
-/// Return the display string for a verb enum value.
 fn verb_display(verb: &api::types::CreateStoryLinkVerb) -> &'static str {
     match verb {
         api::types::CreateStoryLinkVerb::Blocks => "blocks",
@@ -44,7 +42,11 @@ fn verb_display(verb: &api::types::CreateStoryLinkVerb) -> &'static str {
     }
 }
 
-pub async fn run(args: &CreateLinkArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &CreateLinkArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let (api_verb, swapped) = normalize_verb(&args.verb)?;
 
     let (subject_id, object_id) = if swapped {
@@ -62,9 +64,12 @@ pub async fn run(args: &CreateLinkArgs, client: &api::Client) -> Result<(), Box<
         .await
         .map_err(|e| format!("Failed to create story link: {e}"))?;
 
-    println!(
+    out_println!(
+        out,
         "Linked: {} {display} {} (link {})",
-        subject_id, object_id, link.id
+        subject_id,
+        object_id,
+        link.id
     );
     Ok(())
 }

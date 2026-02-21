@@ -15,6 +15,7 @@ use std::error::Error;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct DocArgs {
@@ -71,15 +72,19 @@ pub enum DocAction {
     },
 }
 
-pub async fn run(args: &DocArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &DocArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        DocAction::List => list::run(client).await,
-        DocAction::Create(create_args) => create::run(create_args, client).await,
-        DocAction::Get { id } => get::run(id, client).await,
-        DocAction::Update(update_args) => update::run(update_args, client).await,
-        DocAction::Delete { id, confirm } => delete::run(id, *confirm, client).await,
-        DocAction::Link { doc_id, epic_id } => link::run(doc_id, *epic_id, client).await,
-        DocAction::Unlink { doc_id, epic_id } => unlink::run(doc_id, *epic_id, client).await,
-        DocAction::Epics { id } => epics::run(id, client).await,
+        DocAction::List => list::run(client, out).await,
+        DocAction::Create(create_args) => create::run(create_args, client, out).await,
+        DocAction::Get { id } => get::run(id, client, out).await,
+        DocAction::Update(update_args) => update::run(update_args, client, out).await,
+        DocAction::Delete { id, confirm } => delete::run(id, *confirm, client, out).await,
+        DocAction::Link { doc_id, epic_id } => link::run(doc_id, *epic_id, client, out).await,
+        DocAction::Unlink { doc_id, epic_id } => unlink::run(doc_id, *epic_id, client, out).await,
+        DocAction::Epics { id } => epics::run(id, client, out).await,
     }
 }

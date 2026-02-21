@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct CommentArgs {
@@ -103,32 +104,44 @@ pub async fn run(
     args: &CommentArgs,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        CommentAction::List { story_id } => list::run(*story_id, client, cache_dir).await,
+        CommentAction::List { story_id } => list::run(*story_id, client, cache_dir, out).await,
         CommentAction::Add {
             story_id,
             text,
             text_file,
-        } => add::run(*story_id, text.as_deref(), text_file.as_deref(), client).await,
-        CommentAction::Get { story_id, id } => get::run(*story_id, *id, client, cache_dir).await,
+        } => {
+            add::run(
+                *story_id,
+                text.as_deref(),
+                text_file.as_deref(),
+                client,
+                out,
+            )
+            .await
+        }
+        CommentAction::Get { story_id, id } => {
+            get::run(*story_id, *id, client, cache_dir, out).await
+        }
         CommentAction::Update { story_id, id, text } => {
-            update::run(*story_id, *id, text, client).await
+            update::run(*story_id, *id, text, client, out).await
         }
         CommentAction::Delete {
             story_id,
             id,
             confirm,
-        } => delete::run(*story_id, *id, *confirm, client).await,
+        } => delete::run(*story_id, *id, *confirm, client, out).await,
         CommentAction::React {
             story_id,
             comment_id,
             emoji,
-        } => react::run(*story_id, *comment_id, emoji, client).await,
+        } => react::run(*story_id, *comment_id, emoji, client, out).await,
         CommentAction::Unreact {
             story_id,
             comment_id,
             emoji,
-        } => unreact::run(*story_id, *comment_id, emoji, client).await,
+        } => unreact::run(*story_id, *comment_id, emoji, client, out).await,
     }
 }

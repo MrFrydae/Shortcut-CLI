@@ -14,6 +14,7 @@ use std::path::PathBuf;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct GroupArgs {
@@ -60,17 +61,18 @@ pub async fn run(
     args: &GroupArgs,
     client: &api::Client,
     cache_dir: PathBuf,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        GroupAction::List { archived } => list::run(*archived, client, &cache_dir).await,
-        GroupAction::Create(create_args) => create::run(create_args, client, &cache_dir).await,
-        GroupAction::Get { id } => get::run(id, client, &cache_dir).await,
-        GroupAction::Update(update_args) => update::run(update_args, client, &cache_dir).await,
+        GroupAction::List { archived } => list::run(*archived, client, &cache_dir, out).await,
+        GroupAction::Create(create_args) => create::run(create_args, client, &cache_dir, out).await,
+        GroupAction::Get { id } => get::run(id, client, &cache_dir, out).await,
+        GroupAction::Update(update_args) => update::run(update_args, client, &cache_dir, out).await,
         GroupAction::Stories {
             id,
             limit,
             offset,
             desc,
-        } => stories::run(id, *limit, *offset, *desc, client, &cache_dir).await,
+        } => stories::run(id, *limit, *offset, *desc, client, &cache_dir, out).await,
     }
 }

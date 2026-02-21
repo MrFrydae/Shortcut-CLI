@@ -3,6 +3,8 @@ use std::error::Error;
 use clap::Args;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -15,7 +17,11 @@ pub struct AddArgs {
     pub description: Vec<String>,
 }
 
-pub async fn run(args: &AddArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &AddArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     if args.description.is_empty() {
         return Err("At least one --description is required".into());
     }
@@ -38,7 +44,7 @@ pub async fn run(args: &AddArgs, client: &api::Client) -> Result<(), Box<dyn Err
             .send()
             .await
         {
-            Ok(task) => println!("Created task {} - {}", task.id, task.description),
+            Ok(task) => out_println!(out, "Created task {} - {}", task.id, task.description),
             Err(e) => errors.push(format!("Failed to create task '{}': {e}", &*desc)),
         }
     }

@@ -6,6 +6,7 @@ use sc::{api, commands::doc};
 
 #[tokio::test]
 async fn link_doc_to_epic() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("PUT"))
@@ -22,6 +23,6 @@ async fn link_doc_to_epic() {
             epic_id: 42,
         },
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

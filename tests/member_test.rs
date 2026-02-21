@@ -19,6 +19,7 @@ fn make_args(list: bool, id: Option<&str>) -> member::MemberArgs {
 
 #[tokio::test]
 async fn list_members_prints_names() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -43,12 +44,13 @@ async fn list_members_prints_names() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(true, None);
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_members_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -61,12 +63,13 @@ async fn list_members_empty() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(true, None);
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_members_api_error() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -79,12 +82,13 @@ async fn list_members_api_error() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(true, None);
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }
 
 #[tokio::test]
 async fn get_member_by_uuid() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -106,12 +110,13 @@ async fn get_member_by_uuid() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, Some(UUID_ALICE));
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_member_by_mention_name() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -159,12 +164,13 @@ async fn get_member_by_mention_name() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, Some("@alice"));
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_member_mention_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -186,7 +192,7 @@ async fn get_member_mention_not_found() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, Some("@nobody"));
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     assert!(
         result
@@ -198,12 +204,13 @@ async fn get_member_mention_not_found() {
 
 #[tokio::test]
 async fn get_member_invalid_id() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, Some("not-a-uuid"));
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     assert!(
         result
@@ -215,12 +222,13 @@ async fn get_member_invalid_id() {
 
 #[tokio::test]
 async fn no_flags_does_nothing() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, None);
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
@@ -228,6 +236,7 @@ async fn no_flags_does_nothing() {
 
 #[tokio::test]
 async fn list_members_filter_by_role() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -258,12 +267,13 @@ async fn list_members_filter_by_role() {
         active: false,
     };
     // Should succeed; only Alice (admin) would be printed
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_members_filter_active_only() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -294,12 +304,13 @@ async fn list_members_filter_active_only() {
         active: true,
     };
     // Should succeed; only Alice (non-disabled) would be printed
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_members_invalid_role_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -310,7 +321,7 @@ async fn list_members_invalid_role_errors() {
         role: Some("superadmin".to_string()),
         active: false,
     };
-    let result = member::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("Invalid role"));

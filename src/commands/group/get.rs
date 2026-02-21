@@ -3,10 +3,17 @@ use std::error::Error;
 use std::path::Path;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::helpers::resolve_group_id;
+use crate::out_println;
 
-pub async fn run(id: &str, client: &api::Client, cache_dir: &Path) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    id: &str,
+    client: &api::Client,
+    cache_dir: &Path,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let group_id = resolve_group_id(id, client, cache_dir).await?;
 
     let group = client
@@ -16,19 +23,32 @@ pub async fn run(id: &str, client: &api::Client, cache_dir: &Path) -> Result<(),
         .await
         .map_err(|e| format!("Failed to get group: {e}"))?;
 
-    println!(
+    if out.is_json() {
+        let json = serde_json::to_string_pretty(&*group)?;
+        out.write_str(format_args!("{json}"))?;
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        out_println!(out, "{}", group.id);
+        return Ok(());
+    }
+
+    out_println!(
+        out,
         "{} - {} (@{})",
         group.id,
         group.name,
         group.mention_name.as_str()
     );
-    println!("  Description: {}", group.description);
-    println!("  Archived:    {}", group.archived);
-    println!(
+    out_println!(out, "  Description: {}", group.description);
+    out_println!(out, "  Archived:    {}", group.archived);
+    out_println!(
+        out,
         "  Color:       {}",
         group.color.as_deref().unwrap_or("none")
     );
-    println!("  Members:     {}", group.member_ids.len());
+    out_println!(out, "  Members:     {}", group.member_ids.len());
 
     if !group.member_ids.is_empty() {
         let members = client
@@ -42,18 +62,27 @@ pub async fn run(id: &str, client: &api::Client, cache_dir: &Path) -> Result<(),
         for member_id in &group.member_ids {
             if let Some(m) = member_map.get(member_id) {
                 let name = m.profile.name.as_deref().unwrap_or("");
-                println!("    @{} - {} ({})", m.profile.mention_name, name, m.role);
+                out_println!(
+                    out,
+                    "    @{} - {} ({})",
+                    m.profile.mention_name,
+                    name,
+                    m.role
+                );
             } else {
-                println!("    {member_id}");
+                out_println!(out, "    {member_id}");
             }
         }
     }
 
-    println!(
+    out_println!(
+        out,
         "  Stories:     {} total, {} started, {} backlog",
-        group.num_stories, group.num_stories_started, group.num_stories_backlog
+        group.num_stories,
+        group.num_stories_started,
+        group.num_stories_backlog
     );
-    println!("  Epics:       {} started", group.num_epics_started);
+    out_println!(out, "  Epics:       {} started", group.num_epics_started);
 
     Ok(())
 }

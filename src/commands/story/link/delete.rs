@@ -1,8 +1,15 @@
 use std::error::Error;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
-pub async fn run(id: i64, confirm: bool, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    id: i64,
+    confirm: bool,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     if !confirm {
         return Err("Deleting a story link is irreversible. Pass --confirm to proceed.".into());
     }
@@ -21,9 +28,13 @@ pub async fn run(id: i64, confirm: bool, client: &api::Client) -> Result<(), Box
         .await
         .map_err(|e| format!("Failed to delete story link: {e}"))?;
 
-    println!(
+    out_println!(
+        out,
         "Deleted story link {} ({} {} {})",
-        link.id, link.subject_id, link.verb, link.object_id
+        link.id,
+        link.subject_id,
+        link.verb,
+        link.object_id
     );
     Ok(())
 }

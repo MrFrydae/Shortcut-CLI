@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 pub use helpers::resolve_label_id;
 
@@ -73,14 +74,15 @@ pub async fn run(
     args: &LabelArgs,
     client: &api::Client,
     cache_dir: PathBuf,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        LabelAction::List { desc } => list::run(*desc, client, &cache_dir).await,
-        LabelAction::Create(create_args) => create::run(create_args, client, &cache_dir).await,
-        LabelAction::Get { id } => get::run(*id, client).await,
-        LabelAction::Update(update_args) => update::run(update_args, client).await,
-        LabelAction::Delete { id, confirm } => delete::run(*id, *confirm, client).await,
-        LabelAction::Stories { id, desc } => stories::run(*id, *desc, client).await,
-        LabelAction::Epics { id, desc } => epics::run(*id, *desc, client).await,
+        LabelAction::List { desc } => list::run(*desc, client, &cache_dir, out).await,
+        LabelAction::Create(create_args) => create::run(create_args, client, &cache_dir, out).await,
+        LabelAction::Get { id } => get::run(*id, client, out).await,
+        LabelAction::Update(update_args) => update::run(update_args, client, out).await,
+        LabelAction::Delete { id, confirm } => delete::run(*id, *confirm, client, out).await,
+        LabelAction::Stories { id, desc } => stories::run(*id, *desc, client, out).await,
+        LabelAction::Epics { id, desc } => epics::run(*id, *desc, client, out).await,
     }
 }

@@ -1,11 +1,17 @@
 use std::error::Error;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::SearchQueryArgs;
 use super::helpers::print_pagination;
+use crate::out_println;
 
-pub async fn run(args: &SearchQueryArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &SearchQueryArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let query = args
         .query
         .parse::<api::types::SearchMilestonesQuery>()
@@ -31,20 +37,38 @@ pub async fn run(args: &SearchQueryArgs, client: &api::Client) -> Result<(), Box
         .await
         .map_err(|e| format!("Failed to search milestones: {e}"))?;
 
+    if out.is_json() {
+        let json = serde_json::to_string_pretty(&*results)?;
+        out.write_str(format_args!("{json}"))?;
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        for obj in &results.data {
+            out_println!(out, "{}", obj.id);
+        }
+        return Ok(());
+    }
+
     for obj in &results.data {
-        println!("{} - {} ({})", obj.id, obj.name, obj.state);
+        out_println!(out, "{} - {} ({})", obj.id, obj.name, obj.state);
         if args.desc
             && let Some(d) = &obj.description
         {
-            println!("  {d}");
+            out_println!(out, "  {d}");
         }
     }
 
     if results.data.is_empty() {
-        println!("No milestones found");
+        out_println!(out, "No milestones found");
     }
 
-    print_pagination(results.data.len(), results.total, results.next.as_deref());
+    print_pagination(
+        results.data.len(),
+        results.total,
+        results.next.as_deref(),
+        out,
+    );
 
     Ok(())
 }

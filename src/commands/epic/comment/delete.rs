@@ -1,12 +1,15 @@
 use std::error::Error;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 pub async fn run(
     epic_id: i64,
     comment_id: i64,
     confirm: bool,
     client: &api::Client,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     if !confirm {
         return Err("Deleting a comment is irreversible. Pass --confirm to proceed.".into());
@@ -20,6 +23,6 @@ pub async fn run(
         .await
         .map_err(|e| format!("Failed to delete comment: {e}"))?;
 
-    println!("Deleted comment #{comment_id} from epic {epic_id}");
+    out_println!(out, "Deleted comment #{comment_id} from epic {epic_id}");
     Ok(())
 }

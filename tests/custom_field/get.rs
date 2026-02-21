@@ -7,6 +7,7 @@ use sc::{api, commands::custom_field};
 
 #[tokio::test]
 async fn get_custom_field() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -32,12 +33,13 @@ async fn get_custom_field() {
             id: UUID_FIELD_1.to_string(),
         },
     };
-    let result = custom_field::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = custom_field::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_custom_field_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -54,6 +56,6 @@ async fn get_custom_field_not_found() {
             id: UUID_FIELD_1.to_string(),
         },
     };
-    let result = custom_field::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = custom_field::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }

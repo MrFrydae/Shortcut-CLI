@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct CommentArgs {
@@ -77,22 +78,23 @@ pub async fn run(
     args: &CommentArgs,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        CommentAction::List { epic_id } => list::run(*epic_id, client, cache_dir).await,
+        CommentAction::List { epic_id } => list::run(*epic_id, client, cache_dir, out).await,
         CommentAction::Add {
             epic_id,
             text,
             text_file,
-        } => add::run(*epic_id, text.as_deref(), text_file.as_deref(), client).await,
-        CommentAction::Get { epic_id, id } => get::run(*epic_id, *id, client, cache_dir).await,
+        } => add::run(*epic_id, text.as_deref(), text_file.as_deref(), client, out).await,
+        CommentAction::Get { epic_id, id } => get::run(*epic_id, *id, client, cache_dir, out).await,
         CommentAction::Update { epic_id, id, text } => {
-            update::run(*epic_id, *id, text, client).await
+            update::run(*epic_id, *id, text, client, out).await
         }
         CommentAction::Delete {
             epic_id,
             id,
             confirm,
-        } => delete::run(*epic_id, *id, *confirm, client).await,
+        } => delete::run(*epic_id, *id, *confirm, client, out).await,
     }
 }

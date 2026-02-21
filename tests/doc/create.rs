@@ -7,6 +7,7 @@ use sc::{api, commands::doc};
 
 #[tokio::test]
 async fn create_doc_minimal() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = doc_slim_json(DOC_UUID, Some("My Document"));
@@ -27,12 +28,13 @@ async fn create_doc_minimal() {
             content_format: None,
         })),
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_doc_with_format() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = doc_slim_json(DOC_UUID, Some("Markdown Doc"));
@@ -53,12 +55,13 @@ async fn create_doc_with_format() {
             content_format: Some("markdown".to_string()),
         })),
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_doc_with_content_file() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = doc_slim_json(DOC_UUID, Some("File Doc"));
@@ -82,6 +85,6 @@ async fn create_doc_with_content_file() {
             content_format: Some("markdown".to_string()),
         })),
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

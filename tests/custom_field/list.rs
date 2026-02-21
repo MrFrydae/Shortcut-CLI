@@ -7,6 +7,7 @@ use sc::{api, commands::custom_field};
 
 #[tokio::test]
 async fn list_custom_fields() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -39,12 +40,13 @@ async fn list_custom_fields() {
     let args = custom_field::CustomFieldArgs {
         action: custom_field::CustomFieldAction::List,
     };
-    let result = custom_field::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = custom_field::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_custom_fields_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -59,6 +61,6 @@ async fn list_custom_fields_empty() {
     let args = custom_field::CustomFieldArgs {
         action: custom_field::CustomFieldAction::List,
     };
-    let result = custom_field::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = custom_field::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

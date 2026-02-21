@@ -9,6 +9,7 @@ use std::error::Error;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct LinkArgs {
@@ -47,10 +48,14 @@ pub fn invert_verb(verb: &str) -> &'static str {
     }
 }
 
-pub async fn run(args: &LinkArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &LinkArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        LinkAction::Create(create_args) => create::run(create_args, client).await,
-        LinkAction::List { story_id } => list::run(*story_id, client).await,
-        LinkAction::Delete { id, confirm } => delete::run(*id, *confirm, client).await,
+        LinkAction::Create(create_args) => create::run(create_args, client, out).await,
+        LinkAction::List { story_id } => list::run(*story_id, client, out).await,
+        LinkAction::Delete { id, confirm } => delete::run(*id, *confirm, client, out).await,
     }
 }

@@ -6,6 +6,7 @@ use sc::{api, commands::story};
 
 #[tokio::test]
 async fn delete_story_with_confirm() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -32,12 +33,13 @@ async fn delete_story_with_confirm() {
             confirm: true,
         },
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn delete_story_without_confirm_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -48,7 +50,7 @@ async fn delete_story_without_confirm_errors() {
             confirm: false,
         },
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("--confirm"));
@@ -56,6 +58,7 @@ async fn delete_story_without_confirm_errors() {
 
 #[tokio::test]
 async fn delete_story_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -73,6 +76,6 @@ async fn delete_story_not_found() {
             confirm: true,
         },
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }

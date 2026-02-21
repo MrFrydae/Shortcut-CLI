@@ -1,8 +1,14 @@
 use std::error::Error;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
-pub async fn run(story_id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    story_id: i64,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let story = client
         .get_story()
         .story_public_id(story_id)
@@ -11,13 +17,13 @@ pub async fn run(story_id: i64, client: &api::Client) -> Result<(), Box<dyn Erro
         .map_err(|e| format!("Failed to get story: {e}"))?;
 
     if story.tasks.is_empty() {
-        println!("No tasks on story {story_id}");
+        out_println!(out, "No tasks on story {story_id}");
         return Ok(());
     }
 
     for task in &story.tasks {
         let check = if task.complete { "x" } else { " " };
-        println!("[{check}] {} - {}", task.id, task.description);
+        out_println!(out, "[{check}] {} - {}", task.id, task.description);
     }
     Ok(())
 }

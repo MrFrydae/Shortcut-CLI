@@ -5,8 +5,10 @@ use clap::Args;
 
 use crate::api;
 use crate::commands::member;
+use crate::output::OutputConfig;
 
 use super::helpers::{resolve_epic_state_id, resolve_owners};
+use crate::out_println;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -52,6 +54,7 @@ pub async fn run(
     args: &CreateArgs,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let name = args
         .name
@@ -132,6 +135,10 @@ pub async fn run(
         .await
         .map_err(|e| format!("Failed to create epic: {e}"))?;
 
-    println!("Created epic {} - {}", epic.id, epic.name);
+    if out.is_quiet() {
+        out_println!(out, "{}", epic.id);
+        return Ok(());
+    }
+    out_println!(out, "Created epic {} - {}", epic.id, epic.name);
     Ok(())
 }

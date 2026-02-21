@@ -7,6 +7,7 @@ use sc::{api, commands::search};
 
 #[tokio::test]
 async fn search_stories_with_results() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!({
@@ -29,12 +30,13 @@ async fn search_stories_with_results() {
     let args = search::SearchArgs {
         action: search::SearchAction::Stories(make_query("login")),
     };
-    let result = search::run(&args, &client).await;
+    let result = search::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn search_stories_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!({
@@ -54,12 +56,13 @@ async fn search_stories_empty() {
     let args = search::SearchArgs {
         action: search::SearchAction::Stories(make_query("nothing")),
     };
-    let result = search::run(&args, &client).await;
+    let result = search::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn search_stories_with_pagination() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!({
@@ -79,6 +82,6 @@ async fn search_stories_with_pagination() {
     let args = search::SearchArgs {
         action: search::SearchAction::Stories(make_query("story")),
     };
-    let result = search::run(&args, &client).await;
+    let result = search::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

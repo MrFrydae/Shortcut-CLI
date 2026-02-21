@@ -1,6 +1,13 @@
 use std::cell::RefCell;
 
 use sc::auth::{AuthError, TokenStore};
+use sc::output::{ColorMode, OutputConfig, OutputMode};
+
+/// Create an `OutputConfig` for tests that writes to an in-memory buffer.
+pub fn make_output() -> OutputConfig {
+    let (out, _buf) = OutputConfig::with_buffer(OutputMode::Human, ColorMode::Never);
+    out
+}
 
 /// In-memory token store for tests.
 pub struct MockTokenStore {

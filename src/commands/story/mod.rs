@@ -21,6 +21,7 @@ use std::path::PathBuf;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct StoryArgs {
@@ -65,16 +66,19 @@ pub async fn run(
     args: &StoryArgs,
     client: &api::Client,
     cache_dir: PathBuf,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        StoryAction::Create(create_args) => create::run(create_args, client, &cache_dir).await,
-        StoryAction::Update(update_args) => update::run(update_args, client, &cache_dir).await,
-        StoryAction::Get { id } => get::run(*id, client, &cache_dir).await,
-        StoryAction::List(list_args) => list::run(list_args, client, &cache_dir).await,
-        StoryAction::Delete { id, confirm } => delete::run(*id, *confirm, client).await,
-        StoryAction::Task(task_args) => task::run(task_args, client).await,
-        StoryAction::Link(link_args) => link::run(link_args, client).await,
-        StoryAction::Comment(args) => comment::run(args, client, &cache_dir).await,
-        StoryAction::History(history_args) => history::run(history_args, client, &cache_dir).await,
+        StoryAction::Create(create_args) => create::run(create_args, client, &cache_dir, out).await,
+        StoryAction::Update(update_args) => update::run(update_args, client, &cache_dir, out).await,
+        StoryAction::Get { id } => get::run(*id, client, &cache_dir, out).await,
+        StoryAction::List(list_args) => list::run(list_args, client, &cache_dir, out).await,
+        StoryAction::Delete { id, confirm } => delete::run(*id, *confirm, client, out).await,
+        StoryAction::Task(task_args) => task::run(task_args, client, out).await,
+        StoryAction::Link(link_args) => link::run(link_args, client, out).await,
+        StoryAction::Comment(args) => comment::run(args, client, &cache_dir, out).await,
+        StoryAction::History(history_args) => {
+            history::run(history_args, client, &cache_dir, out).await
+        }
     }
 }

@@ -9,6 +9,7 @@ use sc::{api, commands::story};
 
 #[tokio::test]
 async fn create_story_minimal() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -26,12 +27,13 @@ async fn create_story_minimal() {
     let args = story::StoryArgs {
         action: story::StoryAction::Create(Box::new(create_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_story_with_owner_mention() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -69,12 +71,13 @@ async fn create_story_with_owner_mention() {
     let args = story::StoryArgs {
         action: story::StoryAction::Create(Box::new(create_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_story_with_state_name() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -110,6 +113,6 @@ async fn create_story_with_state_name() {
     let args = story::StoryArgs {
         action: story::StoryAction::Create(Box::new(create_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

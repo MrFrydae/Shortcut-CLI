@@ -7,6 +7,7 @@ use sc::{api, commands::doc};
 
 #[tokio::test]
 async fn update_doc_title() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = doc_json(DOC_UUID, Some("New Title"), Some("content"));
@@ -28,12 +29,13 @@ async fn update_doc_title() {
             content_format: None,
         })),
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn update_doc_content() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = doc_json(DOC_UUID, Some("My Doc"), Some("updated content"));
@@ -55,6 +57,6 @@ async fn update_doc_content() {
             content_format: None,
         })),
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

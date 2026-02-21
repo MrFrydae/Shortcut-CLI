@@ -6,6 +6,7 @@ use sc::{api, commands::project};
 
 #[tokio::test]
 async fn list_project_stories() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!([
@@ -27,12 +28,13 @@ async fn list_project_stories() {
             desc: false,
         },
     };
-    let result = project::run(&args, &client).await;
+    let result = project::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_project_stories_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -49,6 +51,6 @@ async fn list_project_stories_empty() {
             desc: false,
         },
     };
-    let result = project::run(&args, &client).await;
+    let result = project::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

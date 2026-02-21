@@ -16,6 +16,7 @@ fn make_history_args(id: i64, limit: Option<usize>) -> story::HistoryArgs {
 
 #[tokio::test]
 async fn history_basic_story_create() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -55,12 +56,13 @@ async fn history_basic_story_create() {
     let args = story::StoryArgs {
         action: story::StoryAction::History(history_args),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn history_story_update_state_change() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -111,12 +113,13 @@ async fn history_story_update_state_change() {
     let args = story::StoryArgs {
         action: story::StoryAction::History(history_args),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn history_story_update_multiple_changes() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -167,12 +170,13 @@ async fn history_story_update_multiple_changes() {
     let args = story::StoryArgs {
         action: story::StoryAction::History(history_args),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn history_with_limit() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -228,12 +232,13 @@ async fn history_with_limit() {
     let args = story::StoryArgs {
         action: story::StoryAction::History(history_args),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn history_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -249,12 +254,13 @@ async fn history_empty() {
     let args = story::StoryArgs {
         action: story::StoryAction::History(history_args),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn history_api_error() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -270,12 +276,13 @@ async fn history_api_error() {
     let args = story::StoryArgs {
         action: story::StoryAction::History(history_args),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }
 
 #[tokio::test]
 async fn history_multiple_action_types() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -361,12 +368,13 @@ async fn history_multiple_action_types() {
     let args = story::StoryArgs {
         action: story::StoryAction::History(history_args),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn history_member_cache_hit() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -402,6 +410,6 @@ async fn history_member_cache_hit() {
     let args = story::StoryArgs {
         action: story::StoryAction::History(history_args),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

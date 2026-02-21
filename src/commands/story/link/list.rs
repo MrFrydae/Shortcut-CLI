@@ -2,10 +2,16 @@ use std::collections::HashMap;
 use std::error::Error;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::invert_verb;
+use crate::out_println;
 
-pub async fn run(story_id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    story_id: i64,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let story = client
         .get_story()
         .story_public_id(story_id)
@@ -14,11 +20,10 @@ pub async fn run(story_id: i64, client: &api::Client) -> Result<(), Box<dyn Erro
         .map_err(|e| format!("Failed to get story: {e}"))?;
 
     if story.story_links.is_empty() {
-        println!("No links on story {story_id}");
+        out_println!(out, "No links on story {story_id}");
         return Ok(());
     }
 
-    // Collect unique other-story IDs to fetch names
     let mut other_ids: Vec<i64> = Vec::new();
     for link in &story.story_links {
         let other_id = if link.type_ == "subject" {
@@ -31,7 +36,6 @@ pub async fn run(story_id: i64, client: &api::Client) -> Result<(), Box<dyn Erro
         }
     }
 
-    // Fetch names for linked stories
     let mut names: HashMap<i64, String> = HashMap::new();
     for id in &other_ids {
         match client.get_story().story_public_id(*id).send().await {
@@ -51,7 +55,7 @@ pub async fn run(story_id: i64, client: &api::Client) -> Result<(), Box<dyn Erro
             (invert_verb(&link.verb), link.subject_id)
         };
         let name = names.get(&other_id).map(|s| s.as_str()).unwrap_or("?");
-        println!("  {}: {display_verb} {other_id} - {name}", link.id);
+        out_println!(out, "  {}: {display_verb} {other_id} - {name}", link.id);
     }
     Ok(())
 }

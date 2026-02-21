@@ -1,30 +1,36 @@
+use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 use std::error::Error;
 
-use crate::api;
-
-pub async fn run(id: i64, desc: bool, client: &api::Client) -> Result<(), Box<dyn Error>> {
-    let mut req = client.list_label_stories().label_public_id(id);
-    if desc {
-        req = req.includes_description(true);
-    }
-    let stories = req
+pub async fn run(
+    id: i64,
+    desc: bool,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
+    let stories = client
+        .list_label_stories()
+        .label_public_id(id)
         .send()
         .await
         .map_err(|e| format!("Failed to list label stories: {e}"))?;
-
+    if stories.is_empty() {
+        out_println!(out, "No stories with this label");
+        return Ok(());
+    }
     for story in stories.iter() {
-        println!(
+        out_println!(
+            out,
             "{} - {} ({}, state_id: {})",
-            story.id, story.name, story.story_type, story.workflow_state_id
+            story.id,
+            story.name,
+            story.story_type,
+            story.workflow_state_id
         );
         if desc && let Some(d) = &story.description {
-            println!("  {d}");
+            out_println!(out, "  {d}");
         }
     }
-
-    if stories.is_empty() {
-        println!("No stories with this label");
-    }
-
     Ok(())
 }

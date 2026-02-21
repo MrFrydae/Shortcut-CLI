@@ -6,6 +6,7 @@ use sc::{api, commands::story};
 
 #[tokio::test]
 async fn get_story_prints_details() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -22,6 +23,6 @@ async fn get_story_prints_details() {
     let args = story::StoryArgs {
         action: story::StoryAction::Get { id: 99 },
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

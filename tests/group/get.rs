@@ -7,6 +7,7 @@ use sc::{api, commands::group};
 
 #[tokio::test]
 async fn get_group() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let mut group = group_json(UUID_GROUP1, "Backend", "backend");
@@ -47,12 +48,13 @@ async fn get_group() {
         },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_group_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -69,12 +71,13 @@ async fn get_group_not_found() {
         },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }
 
 #[tokio::test]
 async fn get_group_by_mention_name() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     // Mock list-groups for cache population (mention name resolution)
@@ -128,12 +131,13 @@ async fn get_group_by_mention_name() {
         },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_group_by_mention_name_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let list_body = serde_json::json!([group_json(UUID_GROUP1, "Backend", "backend"),]);
@@ -151,6 +155,6 @@ async fn get_group_by_mention_name_not_found() {
         },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }

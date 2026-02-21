@@ -6,6 +6,7 @@ use sc::{api, commands::project};
 
 #[tokio::test]
 async fn update_project() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = project_json(42, "Updated Project", Some("Updated description"));
@@ -31,6 +32,6 @@ async fn update_project() {
             show_thermometer: None,
         })),
     };
-    let result = project::run(&args, &client).await;
+    let result = project::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

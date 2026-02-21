@@ -7,6 +7,7 @@ use sc::{api, commands::epic};
 
 #[tokio::test]
 async fn list_epics_prints_names() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -24,12 +25,13 @@ async fn list_epics_prints_names() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_list_args(false);
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_epics_with_descriptions() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -45,12 +47,13 @@ async fn list_epics_with_descriptions() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_list_args(true);
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_epics_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -65,12 +68,13 @@ async fn list_epics_empty() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_list_args(false);
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_epics_api_error() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -83,6 +87,6 @@ async fn list_epics_api_error() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_list_args(false);
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }

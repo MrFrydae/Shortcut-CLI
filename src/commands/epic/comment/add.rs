@@ -2,12 +2,15 @@ use std::error::Error;
 use std::path::Path;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 pub async fn run(
     epic_id: i64,
     text: Option<&str>,
     text_file: Option<&Path>,
     client: &api::Client,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let body = if let Some(path) = text_file {
         std::fs::read_to_string(path)
@@ -30,6 +33,6 @@ pub async fn run(
         .await
         .map_err(|e| format!("Failed to create comment: {e}"))?;
 
-    println!("Created comment #{} on epic {epic_id}", comment.id);
+    out_println!(out, "Created comment #{} on epic {epic_id}", comment.id);
     Ok(())
 }

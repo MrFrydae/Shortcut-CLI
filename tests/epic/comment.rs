@@ -10,6 +10,7 @@ const UUID_AUTHOR: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
 #[tokio::test]
 async fn list_epic_comments() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -29,12 +30,13 @@ async fn list_epic_comments() {
     let args = epic_comment::CommentArgs {
         action: epic_comment::CommentAction::List { epic_id: 42 },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_epic_comments_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -49,12 +51,13 @@ async fn list_epic_comments_empty() {
     let args = epic_comment::CommentArgs {
         action: epic_comment::CommentAction::List { epic_id: 42 },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_epic_comments_with_threads() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -77,7 +80,7 @@ async fn list_epic_comments_with_threads() {
     let args = epic_comment::CommentArgs {
         action: epic_comment::CommentAction::List { epic_id: 42 },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
@@ -85,6 +88,7 @@ async fn list_epic_comments_with_threads() {
 
 #[tokio::test]
 async fn add_epic_comment_with_text() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -105,12 +109,13 @@ async fn add_epic_comment_with_text() {
             text_file: None,
         },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn add_epic_comment_no_text_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -122,7 +127,7 @@ async fn add_epic_comment_no_text_errors() {
             text_file: None,
         },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("--text"));
@@ -132,6 +137,7 @@ async fn add_epic_comment_no_text_errors() {
 
 #[tokio::test]
 async fn get_epic_comment() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -151,12 +157,13 @@ async fn get_epic_comment() {
             id: 100,
         },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_epic_comment_with_replies() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -177,7 +184,7 @@ async fn get_epic_comment_with_replies() {
             id: 100,
         },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
@@ -185,6 +192,7 @@ async fn get_epic_comment_with_replies() {
 
 #[tokio::test]
 async fn update_epic_comment() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -205,7 +213,7 @@ async fn update_epic_comment() {
             text: "Updated text".to_string(),
         },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
@@ -213,6 +221,7 @@ async fn update_epic_comment() {
 
 #[tokio::test]
 async fn delete_epic_comment_with_confirm() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -231,12 +240,13 @@ async fn delete_epic_comment_with_confirm() {
             confirm: true,
         },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn delete_epic_comment_without_confirm_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -248,7 +258,7 @@ async fn delete_epic_comment_without_confirm_errors() {
             confirm: false,
         },
     };
-    let result = epic_comment::run(&args, &client, tmp.path()).await;
+    let result = epic_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("--confirm"));

@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use clap::Args;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -29,7 +31,11 @@ pub struct UpdateArgs {
     pub content_format: Option<String>,
 }
 
-pub async fn run(args: &UpdateArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &UpdateArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let doc_id: uuid::Uuid = args
         .id
         .parse()
@@ -77,7 +83,18 @@ pub async fn run(args: &UpdateArgs, client: &api::Client) -> Result<(), Box<dyn 
         .await
         .map_err(|e| format!("Failed to update document: {e}"))?;
 
+    if out.is_json() {
+        let json = serde_json::to_string_pretty(&*doc)?;
+        out.write_str(format_args!("{json}"))?;
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        out_println!(out, "{}", doc.id);
+        return Ok(());
+    }
+
     let title = doc.title.as_deref().unwrap_or("(untitled)");
-    println!("Updated document {} - {}", doc.id, title);
+    out_println!(out, "Updated document {} - {}", doc.id, title);
     Ok(())
 }

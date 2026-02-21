@@ -7,6 +7,7 @@ use sc::{api, commands::doc};
 
 #[tokio::test]
 async fn list_doc_epics() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!([
@@ -27,12 +28,13 @@ async fn list_doc_epics() {
             id: DOC_UUID.to_string(),
         },
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_doc_epics_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -48,6 +50,6 @@ async fn list_doc_epics_empty() {
             id: DOC_UUID.to_string(),
         },
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

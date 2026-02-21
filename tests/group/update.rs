@@ -7,6 +7,7 @@ use sc::{api, commands::group};
 
 #[tokio::test]
 async fn update_group() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = group_json(UUID_GROUP1, "Renamed Team", "backend");
@@ -32,12 +33,13 @@ async fn update_group() {
         })),
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn update_group_with_members() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     // Mock members endpoint for @mention resolution
@@ -80,6 +82,6 @@ async fn update_group_with_members() {
         })),
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

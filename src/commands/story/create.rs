@@ -4,8 +4,10 @@ use std::path::Path;
 use clap::Args;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::helpers::{resolve_custom_field_args, resolve_owners, resolve_workflow_state_id};
+use crate::out_println;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -55,6 +57,7 @@ pub async fn run(
     args: &CreateArgs,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let name = args
         .name
@@ -135,6 +138,18 @@ pub async fn run(
         .await
         .map_err(|e| format!("Failed to create story: {e}"))?;
 
-    println!("Created story {} - {}", story.id, story.name);
+    if out.is_json() {
+        out_println!(
+            out,
+            "{}",
+            serde_json::json!({"id": story.id, "name": story.name})
+        );
+        return Ok(());
+    }
+    if out.is_quiet() {
+        out_println!(out, "{}", story.id);
+        return Ok(());
+    }
+    out_println!(out, "Created story {} - {}", story.id, story.name);
     Ok(())
 }

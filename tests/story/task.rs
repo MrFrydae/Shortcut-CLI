@@ -8,6 +8,7 @@ use sc::{api, commands::story, commands::story::task};
 
 #[tokio::test]
 async fn add_single_task() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = task_json(1, 123, "Write tests", false);
@@ -35,6 +36,7 @@ async fn add_single_task() {
             _ => unreachable!(),
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_ok());
@@ -42,6 +44,7 @@ async fn add_single_task() {
 
 #[tokio::test]
 async fn add_multiple_tasks() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body1 = task_json(1, 123, "Write tests", false);
@@ -71,6 +74,7 @@ async fn add_multiple_tasks() {
             action: task::TaskAction::Add(add_args),
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_ok());
@@ -78,6 +82,7 @@ async fn add_multiple_tasks() {
 
 #[tokio::test]
 async fn add_empty_description_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let add_args = task::AddArgs {
@@ -89,6 +94,7 @@ async fn add_empty_description_errors() {
             action: task::TaskAction::Add(add_args),
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_err());
@@ -99,6 +105,7 @@ async fn add_empty_description_errors() {
 
 #[tokio::test]
 async fn list_tasks() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let tasks = vec![
@@ -120,6 +127,7 @@ async fn list_tasks() {
             action: task::TaskAction::List { story_id: 123 },
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_ok());
@@ -127,6 +135,7 @@ async fn list_tasks() {
 
 #[tokio::test]
 async fn list_tasks_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = full_story_json_with_tasks(123, "My Story", "desc", vec![]);
@@ -144,6 +153,7 @@ async fn list_tasks_empty() {
             action: task::TaskAction::List { story_id: 123 },
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_ok());
@@ -153,6 +163,7 @@ async fn list_tasks_empty() {
 
 #[tokio::test]
 async fn get_task() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = task_json(456, 123, "Write tests", false);
@@ -173,6 +184,7 @@ async fn get_task() {
             },
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_ok());
@@ -182,6 +194,7 @@ async fn get_task() {
 
 #[tokio::test]
 async fn check_task() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = task_json(456, 123, "Write tests", true);
@@ -202,6 +215,7 @@ async fn check_task() {
             },
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_ok());
@@ -209,6 +223,7 @@ async fn check_task() {
 
 #[tokio::test]
 async fn uncheck_task() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = task_json(456, 123, "Write tests", false);
@@ -229,6 +244,7 @@ async fn uncheck_task() {
             },
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_ok());
@@ -238,6 +254,7 @@ async fn uncheck_task() {
 
 #[tokio::test]
 async fn update_task_description() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = task_json(456, 123, "New text", false);
@@ -261,6 +278,7 @@ async fn update_task_description() {
             action: task::TaskAction::Update(update_args),
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_ok());
@@ -270,6 +288,7 @@ async fn update_task_description() {
 
 #[tokio::test]
 async fn delete_task() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("DELETE"))
@@ -288,6 +307,7 @@ async fn delete_task() {
             },
         },
         &client,
+        &out,
     )
     .await;
     assert!(result.is_ok());

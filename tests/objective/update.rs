@@ -6,6 +6,7 @@ use sc::{api, commands::objective};
 
 #[tokio::test]
 async fn update_objective() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = objective_json(42, "Updated Name", "done", "Updated desc");
@@ -28,6 +29,6 @@ async fn update_objective() {
             categories: vec![],
         })),
     };
-    let result = objective::run(&args, &client).await;
+    let result = objective::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

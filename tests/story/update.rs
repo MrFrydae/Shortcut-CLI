@@ -9,6 +9,7 @@ use sc::{api, commands::story};
 
 #[tokio::test]
 async fn update_story_name_and_description() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -28,12 +29,13 @@ async fn update_story_name_and_description() {
     let args = story::StoryArgs {
         action: story::StoryAction::Update(Box::new(update_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn update_story_state() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -69,12 +71,13 @@ async fn update_story_state() {
     let args = story::StoryArgs {
         action: story::StoryAction::Update(Box::new(update_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn update_story_owner() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -109,7 +112,7 @@ async fn update_story_owner() {
     let args = story::StoryArgs {
         action: story::StoryAction::Update(Box::new(update_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
@@ -117,6 +120,7 @@ async fn update_story_owner() {
 
 #[tokio::test]
 async fn state_resolution_numeric_passes_through() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -136,12 +140,13 @@ async fn state_resolution_numeric_passes_through() {
     let args = story::StoryArgs {
         action: story::StoryAction::Update(Box::new(update_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn state_resolution_cache_hit() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -167,12 +172,13 @@ async fn state_resolution_cache_hit() {
     let args = story::StoryArgs {
         action: story::StoryAction::Update(Box::new(update_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn state_ambiguous_error() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -203,7 +209,7 @@ async fn state_ambiguous_error() {
     let args = story::StoryArgs {
         action: story::StoryAction::Update(Box::new(update_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("Ambiguous"));
@@ -211,6 +217,7 @@ async fn state_ambiguous_error() {
 
 #[tokio::test]
 async fn unknown_state_name_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -236,7 +243,7 @@ async fn unknown_state_name_errors() {
     let args = story::StoryArgs {
         action: story::StoryAction::Update(Box::new(update_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("Unknown workflow state"));

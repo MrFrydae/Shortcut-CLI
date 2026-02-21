@@ -6,6 +6,7 @@ use sc::{api, commands::objective};
 
 #[tokio::test]
 async fn create_objective_minimal() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = objective_json(42, "New Objective", "to do", "");
@@ -26,12 +27,13 @@ async fn create_objective_minimal() {
             categories: vec![],
         })),
     };
-    let result = objective::run(&args, &client).await;
+    let result = objective::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_objective_with_all_fields() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = objective_json(43, "Full Objective", "in progress", "A description");
@@ -52,6 +54,6 @@ async fn create_objective_with_all_fields() {
             categories: vec!["Engineering".to_string()],
         })),
     };
-    let result = objective::run(&args, &client).await;
+    let result = objective::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

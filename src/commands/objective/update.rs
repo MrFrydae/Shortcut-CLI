@@ -3,8 +3,10 @@ use std::error::Error;
 use clap::Args;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::helpers::build_categories;
+use crate::out_println;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -34,7 +36,11 @@ pub struct UpdateArgs {
     pub categories: Vec<String>,
 }
 
-pub async fn run(args: &UpdateArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &UpdateArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let name = args
         .name
         .as_ref()
@@ -83,6 +89,22 @@ pub async fn run(args: &UpdateArgs, client: &api::Client) -> Result<(), Box<dyn 
         .await
         .map_err(|e| format!("Failed to update objective: {e}"))?;
 
-    println!("Updated objective {} - {}", objective.id, objective.name);
+    if out.is_json() {
+        let json = serde_json::to_string_pretty(&*objective)?;
+        out.write_str(format_args!("{json}"))?;
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        out_println!(out, "{}", objective.id);
+        return Ok(());
+    }
+
+    out_println!(
+        out,
+        "Updated objective {} - {}",
+        objective.id,
+        objective.name
+    );
     Ok(())
 }

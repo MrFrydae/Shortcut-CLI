@@ -4,8 +4,10 @@ use std::path::Path;
 use clap::Args;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::helpers::resolve_epic_state_id;
+use crate::out_println;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -59,6 +61,7 @@ pub async fn run(
     args: &UpdateArgs,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let name = args
         .name
@@ -139,6 +142,10 @@ pub async fn run(
         .await
         .map_err(|e| format!("Failed to update epic: {e}"))?;
 
-    println!("Updated epic {} - {}", epic.id, epic.name);
+    if out.is_quiet() {
+        out_println!(out, "{}", epic.id);
+        return Ok(());
+    }
+    out_println!(out, "Updated epic {} - {}", epic.id, epic.name);
     Ok(())
 }

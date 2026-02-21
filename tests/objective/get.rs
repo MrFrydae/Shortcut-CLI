@@ -6,6 +6,7 @@ use sc::{api, commands::objective};
 
 #[tokio::test]
 async fn get_objective() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = objective_json(42, "My Objective", "in progress", "Details here");
@@ -35,12 +36,13 @@ async fn get_objective() {
     let args = objective::ObjectiveArgs {
         action: objective::ObjectiveAction::Get { id: 42 },
     };
-    let result = objective::run(&args, &client).await;
+    let result = objective::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_objective_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -54,6 +56,6 @@ async fn get_objective_not_found() {
     let args = objective::ObjectiveArgs {
         action: objective::ObjectiveAction::Get { id: 999 },
     };
-    let result = objective::run(&args, &client).await;
+    let result = objective::run(&args, &client, &out).await;
     assert!(result.is_err());
 }

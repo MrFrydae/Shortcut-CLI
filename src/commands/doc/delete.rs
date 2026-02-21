@@ -1,8 +1,15 @@
 use std::error::Error;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
-pub async fn run(id: &str, confirm: bool, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    id: &str,
+    confirm: bool,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     if !confirm {
         return Err("Deleting a document is irreversible. Pass --confirm to proceed.".into());
     }
@@ -28,6 +35,10 @@ pub async fn run(id: &str, confirm: bool, client: &api::Client) -> Result<(), Bo
         .await
         .map_err(|e| format!("Failed to delete document: {e}"))?;
 
-    println!("Deleted document {id} - {title}");
+    if out.is_quiet() {
+        return Ok(());
+    }
+
+    out_println!(out, "Deleted document {id} - {title}");
     Ok(())
 }

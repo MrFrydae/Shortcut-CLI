@@ -10,6 +10,7 @@ const UUID_AUTHOR: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
 #[tokio::test]
 async fn list_story_comments() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -29,12 +30,13 @@ async fn list_story_comments() {
     let args = story_comment::CommentArgs {
         action: story_comment::CommentAction::List { story_id: 123 },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_story_comments_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -49,7 +51,7 @@ async fn list_story_comments_empty() {
     let args = story_comment::CommentArgs {
         action: story_comment::CommentAction::List { story_id: 123 },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
@@ -57,6 +59,7 @@ async fn list_story_comments_empty() {
 
 #[tokio::test]
 async fn add_story_comment_with_text() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -77,12 +80,13 @@ async fn add_story_comment_with_text() {
             text_file: None,
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn add_story_comment_no_text_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -94,7 +98,7 @@ async fn add_story_comment_no_text_errors() {
             text_file: None,
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("--text"));
@@ -104,6 +108,7 @@ async fn add_story_comment_no_text_errors() {
 
 #[tokio::test]
 async fn get_story_comment() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -123,12 +128,13 @@ async fn get_story_comment() {
             id: 456,
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_story_comment_with_reactions() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -153,7 +159,7 @@ async fn get_story_comment_with_reactions() {
             id: 456,
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
@@ -161,6 +167,7 @@ async fn get_story_comment_with_reactions() {
 
 #[tokio::test]
 async fn update_story_comment() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -181,7 +188,7 @@ async fn update_story_comment() {
             text: "Updated text".to_string(),
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
@@ -189,6 +196,7 @@ async fn update_story_comment() {
 
 #[tokio::test]
 async fn delete_story_comment_with_confirm() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -207,12 +215,13 @@ async fn delete_story_comment_with_confirm() {
             confirm: true,
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn delete_story_comment_without_confirm_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -224,7 +233,7 @@ async fn delete_story_comment_without_confirm_errors() {
             confirm: false,
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("--confirm"));
@@ -234,6 +243,7 @@ async fn delete_story_comment_without_confirm_errors() {
 
 #[tokio::test]
 async fn react_to_story_comment() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -254,12 +264,13 @@ async fn react_to_story_comment() {
             emoji: "thumbsup".to_string(),
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn react_already_wrapped_emoji() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -280,7 +291,7 @@ async fn react_already_wrapped_emoji() {
             emoji: ":heart:".to_string(),
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }
 
@@ -288,6 +299,7 @@ async fn react_already_wrapped_emoji() {
 
 #[tokio::test]
 async fn unreact_from_story_comment() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -306,6 +318,6 @@ async fn unreact_from_story_comment() {
             emoji: "thumbsup".to_string(),
         },
     };
-    let result = story_comment::run(&args, &client, tmp.path()).await;
+    let result = story_comment::run(&args, &client, tmp.path(), &out).await;
     assert!(result.is_ok());
 }

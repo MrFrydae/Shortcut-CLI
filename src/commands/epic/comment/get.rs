@@ -2,14 +2,17 @@ use std::error::Error;
 use std::path::Path;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::helpers::{print_threaded_comment, resolve_member_name};
+use crate::out_println;
 
 pub async fn run(
     epic_id: i64,
     comment_id: i64,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let comment = client
         .get_epic_comment()
@@ -21,17 +24,18 @@ pub async fn run(
 
     let author = resolve_member_name(&comment.author_id, cache_dir);
 
-    println!("Comment #{} on epic {epic_id}", comment.id);
-    println!("  Author:  {author}");
-    println!("  Created: {}", comment.created_at);
-    println!("  Updated: {}", comment.updated_at);
-    println!();
-    println!("  {}", comment.text);
+    out_println!(out, "Comment #{} on epic {epic_id}", comment.id);
+    out_println!(out, "  Author:  {author}");
+    out_println!(out, "  Created: {}", comment.created_at);
+    out_println!(out, "  Updated: {}", comment.updated_at);
+    out_println!(out, "");
+    out_println!(out, "  {}", comment.text);
+
     if !comment.comments.is_empty() {
-        println!();
-        println!("  Replies:");
-        for child in &comment.comments {
-            print_threaded_comment(child, cache_dir, 2);
+        out_println!(out, "");
+        out_println!(out, "  Replies:");
+        for reply in &comment.comments {
+            print_threaded_comment(reply, cache_dir, 2, out)?;
         }
     }
     Ok(())

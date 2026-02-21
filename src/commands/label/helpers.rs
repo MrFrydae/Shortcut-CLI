@@ -42,6 +42,15 @@ pub fn write_cache(map: &HashMap<String, i64>, cache_dir: &Path) {
     }
 }
 
+/// Update the label cache from a slice of labels (used by list command).
+pub fn update_cache_from_labels(labels: &[api::types::Label], cache_dir: &Path) {
+    let map: HashMap<String, i64> = labels
+        .iter()
+        .map(|l| (normalize_name(&l.name), l.id))
+        .collect();
+    write_cache(&map, cache_dir);
+}
+
 /// Resolve a label name to its ID, using the cache or fetching from the API.
 pub async fn resolve_label_id(
     value: &str,

@@ -1,8 +1,15 @@
 use std::error::Error;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
-pub async fn run(id: i64, confirm: bool, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    id: i64,
+    confirm: bool,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     if !confirm {
         return Err("Deleting an epic is irreversible. Pass --confirm to proceed.".into());
     }
@@ -23,6 +30,6 @@ pub async fn run(id: i64, confirm: bool, client: &api::Client) -> Result<(), Box
         .await
         .map_err(|e| format!("Failed to delete epic: {e}"))?;
 
-    println!("Deleted epic {id} - {name}");
+    out_println!(out, "Deleted epic {id} - {name}");
     Ok(())
 }

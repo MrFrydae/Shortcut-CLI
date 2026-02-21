@@ -6,6 +6,7 @@ use sc::{api, commands::category};
 
 #[tokio::test]
 async fn list_categories() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!([
@@ -24,12 +25,13 @@ async fn list_categories() {
     let args = category::CategoryArgs {
         action: category::CategoryAction::List { archived: false },
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_categories_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -43,12 +45,13 @@ async fn list_categories_empty() {
     let args = category::CategoryArgs {
         action: category::CategoryAction::List { archived: false },
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_categories_filters_archived() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let mut archived_cat = category_json(2, "Old Category", None);
@@ -70,6 +73,6 @@ async fn list_categories_filters_archived() {
     let args = category::CategoryArgs {
         action: category::CategoryAction::List { archived: false },
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

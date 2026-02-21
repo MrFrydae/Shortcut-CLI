@@ -7,6 +7,7 @@ use sc::{api, commands::doc};
 
 #[tokio::test]
 async fn delete_doc_with_confirm() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let get_body = doc_json(DOC_UUID, Some("To Delete"), Some("content"));
@@ -32,12 +33,13 @@ async fn delete_doc_with_confirm() {
             confirm: true,
         },
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn delete_doc_without_confirm_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
@@ -47,7 +49,7 @@ async fn delete_doc_without_confirm_errors() {
             confirm: false,
         },
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("--confirm"));

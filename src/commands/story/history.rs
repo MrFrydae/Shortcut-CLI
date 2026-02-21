@@ -5,8 +5,10 @@ use std::path::Path;
 use clap::Args;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::super::member;
+use crate::out_println;
 
 #[derive(Args)]
 pub struct HistoryArgs {
@@ -22,6 +24,7 @@ pub async fn run(
     args: &HistoryArgs,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let entries = client
         .story_history()
@@ -41,7 +44,7 @@ pub async fn run(
     }
 
     if entries.is_empty() {
-        println!("No history found for story {}", args.id);
+        out_println!(out, "No history found for story {}", args.id);
         return Ok(());
     }
 
@@ -79,7 +82,7 @@ pub async fn run(
 
         for action in &entry.actions {
             if let Some(line) = format_action(action, &state_map, &label_map, &member_map) {
-                println!("[{}] {who}: {line}", entry.changed_at);
+                out_println!(out, "[{}] {who}: {line}", entry.changed_at);
             }
         }
     }

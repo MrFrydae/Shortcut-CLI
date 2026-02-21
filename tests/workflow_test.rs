@@ -11,6 +11,7 @@ fn make_args(list: bool, id: Option<i64>) -> workflow::WorkflowArgs {
 
 #[tokio::test]
 async fn list_workflows_prints_names() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!([
@@ -27,12 +28,13 @@ async fn list_workflows_prints_names() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(true, None);
-    let result = workflow::run(&args, &client).await;
+    let result = workflow::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_workflow_by_id() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let states = vec![
@@ -51,12 +53,13 @@ async fn get_workflow_by_id() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, Some(1));
-    let result = workflow::run(&args, &client).await;
+    let result = workflow::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_workflows_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!([]);
@@ -70,12 +73,13 @@ async fn list_workflows_empty() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(true, None);
-    let result = workflow::run(&args, &client).await;
+    let result = workflow::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_workflows_api_error() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -87,18 +91,19 @@ async fn list_workflows_api_error() {
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(true, None);
-    let result = workflow::run(&args, &client).await;
+    let result = workflow::run(&args, &client, &out).await;
     assert!(result.is_err());
 }
 
 #[tokio::test]
 async fn no_flags_does_nothing() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     // No mocks registered — any HTTP call will cause a panic via expect(0).
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = make_args(false, None);
-    let result = workflow::run(&args, &client).await;
+    let result = workflow::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

@@ -7,6 +7,7 @@ use sc::{api, commands::search};
 
 #[tokio::test]
 async fn search_epics_with_results() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!({
@@ -26,12 +27,13 @@ async fn search_epics_with_results() {
     let args = search::SearchArgs {
         action: search::SearchAction::Epics(make_query("auth")),
     };
-    let result = search::run(&args, &client).await;
+    let result = search::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn search_epics_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!({
@@ -51,6 +53,6 @@ async fn search_epics_empty() {
     let args = search::SearchArgs {
         action: search::SearchAction::Epics(make_query("nothing")),
     };
-    let result = search::run(&args, &client).await;
+    let result = search::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

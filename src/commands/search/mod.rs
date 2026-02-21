@@ -12,6 +12,7 @@ use std::error::Error;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct SearchArgs {
@@ -55,14 +56,18 @@ pub struct SearchQueryArgs {
     pub desc: bool,
 }
 
-pub async fn run(args: &SearchArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &SearchArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        SearchAction::All(q) => all::run(q, client).await,
-        SearchAction::Stories(q) => stories::run(q, client).await,
-        SearchAction::Epics(q) => epics::run(q, client).await,
-        SearchAction::Iterations(q) => iterations::run(q, client).await,
-        SearchAction::Milestones(q) => milestones::run(q, client).await,
-        SearchAction::Objectives(q) => objectives::run(q, client).await,
-        SearchAction::Documents(q) => documents::run(q, client).await,
+        SearchAction::All(q) => all::run(q, client, out).await,
+        SearchAction::Stories(q) => stories::run(q, client, out).await,
+        SearchAction::Epics(q) => epics::run(q, client, out).await,
+        SearchAction::Iterations(q) => iterations::run(q, client, out).await,
+        SearchAction::Milestones(q) => milestones::run(q, client, out).await,
+        SearchAction::Objectives(q) => objectives::run(q, client, out).await,
+        SearchAction::Documents(q) => documents::run(q, client, out).await,
     }
 }

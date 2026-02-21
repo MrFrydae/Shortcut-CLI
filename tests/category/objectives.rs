@@ -6,6 +6,7 @@ use sc::{api, commands::category};
 
 #[tokio::test]
 async fn list_category_objectives() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!([
@@ -27,12 +28,13 @@ async fn list_category_objectives() {
             desc: false,
         },
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_category_objectives_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -49,6 +51,6 @@ async fn list_category_objectives_empty() {
             desc: false,
         },
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

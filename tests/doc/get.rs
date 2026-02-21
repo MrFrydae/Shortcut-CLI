@@ -7,6 +7,7 @@ use sc::{api, commands::doc};
 
 #[tokio::test]
 async fn get_doc() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = doc_json(DOC_UUID, Some("My Document"), Some("# Hello\nWorld"));
@@ -24,12 +25,13 @@ async fn get_doc() {
             id: DOC_UUID.to_string(),
         },
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_doc_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -45,6 +47,6 @@ async fn get_doc_not_found() {
             id: DOC_UUID.to_string(),
         },
     };
-    let result = doc::run(&args, &client).await;
+    let result = doc::run(&args, &client, &out).await;
     assert!(result.is_err());
 }

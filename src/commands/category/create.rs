@@ -3,6 +3,8 @@ use std::error::Error;
 use clap::Args;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -24,7 +26,11 @@ pub struct CreateArgs {
     pub external_id: Option<String>,
 }
 
-pub async fn run(args: &CreateArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &CreateArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let name = args
         .name
         .parse::<api::types::CreateCategoryName>()
@@ -56,10 +62,24 @@ pub async fn run(args: &CreateArgs, client: &api::Client) -> Result<(), Box<dyn 
         .await
         .map_err(|e| format!("Failed to create category: {e}"))?;
 
+    if out.is_json() {
+        let json = serde_json::to_string_pretty(&*category)?;
+        out.write_str(format_args!("{json}"))?;
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        out_println!(out, "{}", category.id);
+        return Ok(());
+    }
+
     let color = category.color.as_deref().unwrap_or("none");
-    println!(
+    out_println!(
+        out,
         "Created category {} - {} ({})",
-        category.id, category.name, color
+        category.id,
+        category.name,
+        color
     );
     Ok(())
 }

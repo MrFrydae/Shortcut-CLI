@@ -6,6 +6,7 @@ use sc::{api, commands::category};
 
 #[tokio::test]
 async fn get_category() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = category_json(42, "My Category", Some("#0000ff"));
@@ -41,12 +42,13 @@ async fn get_category() {
     let args = category::CategoryArgs {
         action: category::CategoryAction::Get { id: 42 },
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_category_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -60,6 +62,6 @@ async fn get_category_not_found() {
     let args = category::CategoryArgs {
         action: category::CategoryAction::Get { id: 999 },
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_err());
 }

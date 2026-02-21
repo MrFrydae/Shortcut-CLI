@@ -7,6 +7,7 @@ use sc::{api, commands::group};
 
 #[tokio::test]
 async fn list_group_stories() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!([
@@ -31,12 +32,13 @@ async fn list_group_stories() {
         },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_group_stories_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -56,12 +58,13 @@ async fn list_group_stories_empty() {
         },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn stories_by_mention_name() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     // Mock list-groups for mention name resolution
@@ -95,6 +98,6 @@ async fn stories_by_mention_name() {
         },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

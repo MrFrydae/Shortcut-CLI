@@ -3,6 +3,8 @@ use std::error::Error;
 use clap::Args;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -21,7 +23,11 @@ pub struct UpdateTaskArgs {
     pub complete: Option<bool>,
 }
 
-pub async fn run(args: &UpdateTaskArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &UpdateTaskArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let description = args
         .description
         .as_ref()
@@ -46,6 +52,6 @@ pub async fn run(args: &UpdateTaskArgs, client: &api::Client) -> Result<(), Box<
         .await
         .map_err(|e| format!("Failed to update task: {e}"))?;
 
-    println!("Updated task {} - {}", task.id, task.description);
+    out_println!(out, "Updated task {} - {}", task.id, task.description);
     Ok(())
 }

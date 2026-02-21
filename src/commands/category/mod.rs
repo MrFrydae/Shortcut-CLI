@@ -14,6 +14,7 @@ use std::error::Error;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct CategoryArgs {
@@ -65,14 +66,18 @@ pub enum CategoryAction {
     },
 }
 
-pub async fn run(args: &CategoryArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &CategoryArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        CategoryAction::List { archived } => list::run(*archived, client).await,
-        CategoryAction::Create(create_args) => create::run(create_args, client).await,
-        CategoryAction::Get { id } => get::run(*id, client).await,
-        CategoryAction::Update(update_args) => update::run(update_args, client).await,
-        CategoryAction::Delete { id, confirm } => delete::run(*id, *confirm, client).await,
-        CategoryAction::Milestones { id } => milestones::run(*id, client).await,
-        CategoryAction::Objectives { id, desc } => objectives::run(*id, *desc, client).await,
+        CategoryAction::List { archived } => list::run(*archived, client, out).await,
+        CategoryAction::Create(create_args) => create::run(create_args, client, out).await,
+        CategoryAction::Get { id } => get::run(*id, client, out).await,
+        CategoryAction::Update(update_args) => update::run(update_args, client, out).await,
+        CategoryAction::Delete { id, confirm } => delete::run(*id, *confirm, client, out).await,
+        CategoryAction::Milestones { id } => milestones::run(*id, client, out).await,
+        CategoryAction::Objectives { id, desc } => objectives::run(*id, *desc, client, out).await,
     }
 }

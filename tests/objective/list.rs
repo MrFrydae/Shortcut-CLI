@@ -6,6 +6,7 @@ use sc::{api, commands::objective};
 
 #[tokio::test]
 async fn list_objectives() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!([
@@ -24,12 +25,13 @@ async fn list_objectives() {
     let args = objective::ObjectiveArgs {
         action: objective::ObjectiveAction::List { archived: false },
     };
-    let result = objective::run(&args, &client).await;
+    let result = objective::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_objectives_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -43,12 +45,13 @@ async fn list_objectives_empty() {
     let args = objective::ObjectiveArgs {
         action: objective::ObjectiveAction::List { archived: false },
     };
-    let result = objective::run(&args, &client).await;
+    let result = objective::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_objectives_filters_archived() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let mut archived_obj = objective_json(2, "Old Goals", "done", "Archived");
@@ -70,6 +73,6 @@ async fn list_objectives_filters_archived() {
     let args = objective::ObjectiveArgs {
         action: objective::ObjectiveAction::List { archived: false },
     };
-    let result = objective::run(&args, &client).await;
+    let result = objective::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

@@ -7,6 +7,7 @@ use sc::{api, commands::search};
 
 #[tokio::test]
 async fn search_documents_with_results() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!({
@@ -29,12 +30,13 @@ async fn search_documents_with_results() {
     let args = search::SearchArgs {
         action: search::SearchAction::Documents(make_query("API")),
     };
-    let result = search::run(&args, &client).await;
+    let result = search::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn search_documents_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!({
@@ -54,6 +56,6 @@ async fn search_documents_empty() {
     let args = search::SearchArgs {
         action: search::SearchAction::Documents(make_query("nothing")),
     };
-    let result = search::run(&args, &client).await;
+    let result = search::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

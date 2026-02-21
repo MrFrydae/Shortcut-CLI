@@ -13,6 +13,7 @@ use std::error::Error;
 use clap::{Args, Subcommand};
 
 use crate::api;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 pub struct TaskArgs {
@@ -70,14 +71,20 @@ pub enum TaskAction {
     },
 }
 
-pub async fn run(args: &TaskArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &TaskArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        TaskAction::Add(add_args) => add::run(add_args, client).await,
-        TaskAction::List { story_id } => list::run(*story_id, client).await,
-        TaskAction::Get { story_id, id } => get::run(*story_id, *id, client).await,
-        TaskAction::Check { story_id, id } => check::run(*story_id, *id, true, client).await,
-        TaskAction::Uncheck { story_id, id } => check::run(*story_id, *id, false, client).await,
-        TaskAction::Update(update_args) => update::run(update_args, client).await,
-        TaskAction::Delete { story_id, id } => delete::run(*story_id, *id, client).await,
+        TaskAction::Add(add_args) => add::run(add_args, client, out).await,
+        TaskAction::List { story_id } => list::run(*story_id, client, out).await,
+        TaskAction::Get { story_id, id } => get::run(*story_id, *id, client, out).await,
+        TaskAction::Check { story_id, id } => check::run(*story_id, *id, true, client, out).await,
+        TaskAction::Uncheck { story_id, id } => {
+            check::run(*story_id, *id, false, client, out).await
+        }
+        TaskAction::Update(update_args) => update::run(update_args, client, out).await,
+        TaskAction::Delete { story_id, id } => delete::run(*story_id, *id, client, out).await,
     }
 }

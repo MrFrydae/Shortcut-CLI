@@ -3,6 +3,8 @@ use std::error::Error;
 use clap::Args;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -36,7 +38,11 @@ pub struct CreateArgs {
     pub external_id: Option<String>,
 }
 
-pub async fn run(args: &CreateArgs, client: &api::Client) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    args: &CreateArgs,
+    client: &api::Client,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
     let name = args
         .name
         .parse::<api::types::CreateProjectName>()
@@ -88,9 +94,23 @@ pub async fn run(args: &CreateArgs, client: &api::Client) -> Result<(), Box<dyn 
         .await
         .map_err(|e| format!("Failed to create project: {e}"))?;
 
-    println!(
+    if out.is_json() {
+        let json = serde_json::to_string_pretty(&*project)?;
+        out.write_str(format_args!("{json}"))?;
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        out_println!(out, "{}", project.id);
+        return Ok(());
+    }
+
+    out_println!(
+        out,
         "Created project {} - {} ({} stories)",
-        project.id, project.name, project.stats.num_stories
+        project.id,
+        project.name,
+        project.stats.num_stories
     );
     Ok(())
 }

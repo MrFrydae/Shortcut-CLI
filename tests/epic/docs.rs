@@ -6,6 +6,7 @@ use sc::{api, commands::epic};
 
 #[tokio::test]
 async fn list_epic_documents() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -25,12 +26,13 @@ async fn list_epic_documents() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Docs { id: 42 },
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_epic_documents_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -45,6 +47,6 @@ async fn list_epic_documents_empty() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Docs { id: 42 },
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

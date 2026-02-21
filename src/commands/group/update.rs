@@ -4,8 +4,10 @@ use std::path::Path;
 use clap::Args;
 
 use crate::api;
+use crate::output::OutputConfig;
 
 use super::helpers::{resolve_group_id, resolve_members};
+use crate::out_println;
 
 #[derive(Args)]
 #[command(arg_required_else_help = true)]
@@ -47,6 +49,7 @@ pub async fn run(
     args: &UpdateArgs,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let group_id = resolve_group_id(&args.id, client, cache_dir).await?;
 
@@ -104,6 +107,17 @@ pub async fn run(
         .await
         .map_err(|e| format!("Failed to update group: {e}"))?;
 
-    println!("Updated group {} - {}", group.id, group.name);
+    if out.is_json() {
+        let json = serde_json::to_string_pretty(&*group)?;
+        out.write_str(format_args!("{json}"))?;
+        return Ok(());
+    }
+
+    if out.is_quiet() {
+        out_println!(out, "{}", group.id);
+        return Ok(());
+    }
+
+    out_println!(out, "Updated group {} - {}", group.id, group.name);
     Ok(())
 }

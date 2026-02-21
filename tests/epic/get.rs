@@ -6,6 +6,7 @@ use sc::{api, commands::epic};
 
 #[tokio::test]
 async fn get_epic_prints_details() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -31,12 +32,13 @@ async fn get_epic_prints_details() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Get { id: 42 },
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_epic_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -51,12 +53,13 @@ async fn get_epic_not_found() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Get { id: 999 },
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }
 
 #[tokio::test]
 async fn get_epic_with_cached_state() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -79,6 +82,6 @@ async fn get_epic_with_cached_state() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Get { id: 42 },
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

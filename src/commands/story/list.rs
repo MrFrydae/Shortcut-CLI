@@ -4,9 +4,11 @@ use std::path::Path;
 use clap::Args;
 
 use crate::api;
+use crate::output::{OutputConfig, Table, format_template};
 
 use super::super::member;
 use super::helpers::resolve_workflow_state_id;
+use crate::out_println;
 
 #[derive(Args)]
 pub struct ListArgs {
@@ -47,6 +49,7 @@ pub async fn run(
     args: &ListArgs,
     client: &api::Client,
     cache_dir: &Path,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let resolved_owner_id = match &args.owner {
         Some(val) => Some(member::resolve_member_id(val, client, cache_dir).await?),
@@ -107,26 +110,66 @@ pub async fn run(
         .map_err(|e| format!("Failed to search stories: {e}"))?;
 
     let limit = args.limit as usize;
-    let mut count = 0;
+    let items: Vec<_> = stories.iter().take(limit).collect();
 
-    for story in stories.iter() {
-        if count >= limit {
-            break;
-        }
-        println!(
-            "{} - {} ({}, state_id: {})",
-            story.id, story.name, story.story_type, story.workflow_state_id
-        );
-        if args.desc
-            && let Some(d) = &story.description
-        {
-            println!("  {d}");
-        }
-        count += 1;
+    if out.is_json() {
+        let json: Vec<serde_json::Value> = items
+            .iter()
+            .map(|s| {
+                serde_json::json!({
+                    "id": s.id,
+                    "name": s.name,
+                    "story_type": s.story_type,
+                    "workflow_state_id": s.workflow_state_id,
+                })
+            })
+            .collect();
+        out_println!(out, "{}", serde_json::to_string_pretty(&json)?);
+        return Ok(());
     }
 
-    if count == 0 {
-        println!("No stories found");
+    if out.is_quiet() {
+        for story in &items {
+            out_println!(out, "{}", story.id);
+        }
+        return Ok(());
+    }
+
+    if let Some(template) = out.format_template() {
+        for story in &items {
+            let val = serde_json::json!({
+                "id": story.id,
+                "name": story.name,
+                "story_type": story.story_type,
+                "workflow_state_id": story.workflow_state_id,
+            });
+            out_println!(out, "{}", format_template(template, &val)?);
+        }
+        return Ok(());
+    }
+
+    if items.is_empty() {
+        out_println!(out, "No stories found");
+        return Ok(());
+    }
+
+    let mut table = Table::new(vec!["ID", "Type", "State", "Name"]);
+    for story in &items {
+        table.add_row(vec![
+            story.id.to_string(),
+            story.story_type.to_string(),
+            story.workflow_state_id.to_string(),
+            story.name.clone(),
+        ]);
+    }
+    out.write_str(format_args!("{}", table.render()))?;
+
+    if args.desc {
+        for story in &items {
+            if let Some(d) = &story.description {
+                out_println!(out, "  {}: {d}", story.id);
+            }
+        }
     }
 
     Ok(())

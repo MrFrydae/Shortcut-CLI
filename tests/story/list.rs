@@ -7,6 +7,7 @@ use sc::{api, commands::story};
 
 #[tokio::test]
 async fn list_stories_minimal() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -27,12 +28,13 @@ async fn list_stories_minimal() {
     let args = story::StoryArgs {
         action: story::StoryAction::List(Box::new(list_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_stories_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -48,12 +50,13 @@ async fn list_stories_empty() {
     let args = story::StoryArgs {
         action: story::StoryAction::List(Box::new(list_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_stories_with_owner_filter() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -88,12 +91,13 @@ async fn list_stories_with_owner_filter() {
     let args = story::StoryArgs {
         action: story::StoryAction::List(Box::new(list_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_stories_with_state_filter() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -129,12 +133,13 @@ async fn list_stories_with_state_filter() {
     let args = story::StoryArgs {
         action: story::StoryAction::List(Box::new(list_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_stories_with_descriptions() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -153,12 +158,13 @@ async fn list_stories_with_descriptions() {
     let args = story::StoryArgs {
         action: story::StoryAction::List(Box::new(list_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_stories_api_error() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -174,6 +180,6 @@ async fn list_stories_api_error() {
     let args = story::StoryArgs {
         action: story::StoryAction::List(Box::new(list_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }

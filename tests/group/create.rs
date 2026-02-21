@@ -7,6 +7,7 @@ use sc::{api, commands::group};
 
 #[tokio::test]
 async fn create_group_minimal() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = group_json(UUID_GROUP1, "New Team", "new-team");
@@ -30,12 +31,13 @@ async fn create_group_minimal() {
         })),
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_group_with_members() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     // Mock members endpoint for @mention resolution
@@ -76,6 +78,6 @@ async fn create_group_with_members() {
         })),
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

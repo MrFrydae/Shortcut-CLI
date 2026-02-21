@@ -7,6 +7,7 @@ use sc::{api, commands::group};
 
 #[tokio::test]
 async fn list_groups() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = serde_json::json!([
@@ -26,12 +27,13 @@ async fn list_groups() {
         action: group::GroupAction::List { archived: false },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_groups_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -46,12 +48,13 @@ async fn list_groups_empty() {
         action: group::GroupAction::List { archived: false },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn list_groups_filters_archived() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let mut archived_group = group_json(UUID_GROUP2, "Old Team", "old-team");
@@ -74,6 +77,6 @@ async fn list_groups_filters_archived() {
         action: group::GroupAction::List { archived: false },
     };
     let tmp = tempfile::tempdir().unwrap();
-    let result = group::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = group::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

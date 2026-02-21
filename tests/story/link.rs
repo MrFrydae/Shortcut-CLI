@@ -8,6 +8,7 @@ use sc::{api, commands::story, commands::story::link as story_link};
 
 #[tokio::test]
 async fn link_create_blocks() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = story_link_json(1, 10, 20, "blocks");
@@ -27,12 +28,13 @@ async fn link_create_blocks() {
             verb: "blocks".to_string(),
         }),
     };
-    let result = story_link::run(&args, &client).await;
+    let result = story_link::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn link_create_blocked_by_swaps() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     // When verb is "blocked-by", subject/object are swapped:
@@ -54,12 +56,13 @@ async fn link_create_blocked_by_swaps() {
             verb: "blocked-by".to_string(),
         }),
     };
-    let result = story_link::run(&args, &client).await;
+    let result = story_link::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn link_create_relates_to() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = story_link_json(3, 10, 20, "relates to");
@@ -79,12 +82,13 @@ async fn link_create_relates_to() {
             verb: "relates-to".to_string(),
         }),
     };
-    let result = story_link::run(&args, &client).await;
+    let result = story_link::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn link_list_shows_links() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let links = vec![
@@ -121,12 +125,13 @@ async fn link_list_shows_links() {
     let args = story_link::LinkArgs {
         action: story_link::LinkAction::List { story_id: 42 },
     };
-    let result = story_link::run(&args, &client).await;
+    let result = story_link::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn link_list_empty() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let story_body = full_story_json(42, "My Story", "desc");
@@ -142,12 +147,13 @@ async fn link_list_empty() {
     let args = story_link::LinkArgs {
         action: story_link::LinkAction::List { story_id: 42 },
     };
-    let result = story_link::run(&args, &client).await;
+    let result = story_link::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn link_delete_with_confirm() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let link_body = story_link_json(5, 10, 20, "blocks");
@@ -173,12 +179,13 @@ async fn link_delete_with_confirm() {
             confirm: true,
         },
     };
-    let result = story_link::run(&args, &client).await;
+    let result = story_link::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn link_delete_without_confirm_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
@@ -188,7 +195,7 @@ async fn link_delete_without_confirm_errors() {
             confirm: false,
         },
     };
-    let result = story_link::run(&args, &client).await;
+    let result = story_link::run(&args, &client, &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("--confirm"));
@@ -196,6 +203,7 @@ async fn link_delete_without_confirm_errors() {
 
 #[tokio::test]
 async fn get_story_with_links() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -216,6 +224,6 @@ async fn get_story_with_links() {
     let args = story::StoryArgs {
         action: story::StoryAction::Get { id: 42 },
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }

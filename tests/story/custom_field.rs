@@ -10,6 +10,7 @@ use sc::{api, commands::story};
 
 #[tokio::test]
 async fn get_story_with_custom_fields() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -49,12 +50,13 @@ async fn get_story_with_custom_fields() {
     let args = story::StoryArgs {
         action: story::StoryAction::Get { id: 42 },
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_story_with_custom_field() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -90,12 +92,13 @@ async fn create_story_with_custom_field() {
     let args = story::StoryArgs {
         action: story::StoryAction::Create(Box::new(create_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn update_story_with_custom_field() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -131,12 +134,13 @@ async fn update_story_with_custom_field() {
     let args = story::StoryArgs {
         action: story::StoryAction::Update(Box::new(update_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_story_custom_field_invalid_format() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -146,7 +150,7 @@ async fn create_story_custom_field_invalid_format() {
     let args = story::StoryArgs {
         action: story::StoryAction::Create(Box::new(create_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("FieldName=Value"));
@@ -154,6 +158,7 @@ async fn create_story_custom_field_invalid_format() {
 
 #[tokio::test]
 async fn create_story_custom_field_unknown_field() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -177,7 +182,7 @@ async fn create_story_custom_field_unknown_field() {
     let args = story::StoryArgs {
         action: story::StoryAction::Create(Box::new(create_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("Unknown custom field"));
@@ -186,6 +191,7 @@ async fn create_story_custom_field_unknown_field() {
 
 #[tokio::test]
 async fn create_story_custom_field_unknown_value() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -209,7 +215,7 @@ async fn create_story_custom_field_unknown_value() {
     let args = story::StoryArgs {
         action: story::StoryAction::Create(Box::new(create_args)),
     };
-    let result = story::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("Unknown value"));

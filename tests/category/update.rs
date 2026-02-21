@@ -6,6 +6,7 @@ use sc::{api, commands::category};
 
 #[tokio::test]
 async fn update_category() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = category_json(42, "Updated Category", Some("#00ff00"));
@@ -26,6 +27,6 @@ async fn update_category() {
             archived: None,
         })),
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

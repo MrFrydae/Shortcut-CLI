@@ -6,6 +6,7 @@ use sc::{api, commands::category};
 
 #[tokio::test]
 async fn create_category_minimal() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = category_json(42, "New Category", None);
@@ -26,12 +27,13 @@ async fn create_category_minimal() {
             external_id: None,
         })),
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn create_category_with_color() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = category_json(43, "Colored Category", Some("#ff00ff"));
@@ -52,6 +54,6 @@ async fn create_category_with_color() {
             external_id: None,
         })),
     };
-    let result = category::run(&args, &client).await;
+    let result = category::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }

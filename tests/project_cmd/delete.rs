@@ -6,6 +6,7 @@ use sc::{api, commands::project};
 
 #[tokio::test]
 async fn delete_project_with_confirm() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = project_json(42, "To Delete", None);
@@ -31,12 +32,13 @@ async fn delete_project_with_confirm() {
             confirm: true,
         },
     };
-    let result = project::run(&args, &client).await;
+    let result = project::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn delete_project_without_confirm_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
@@ -46,7 +48,7 @@ async fn delete_project_without_confirm_errors() {
             confirm: false,
         },
     };
-    let result = project::run(&args, &client).await;
+    let result = project::run(&args, &client, &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("--confirm"));

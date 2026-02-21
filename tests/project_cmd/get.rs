@@ -6,6 +6,7 @@ use sc::{api, commands::project};
 
 #[tokio::test]
 async fn get_project() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let body = project_json(42, "My Project", Some("A great project"));
@@ -21,12 +22,13 @@ async fn get_project() {
     let args = project::ProjectArgs {
         action: project::ProjectAction::Get { id: 42 },
     };
-    let result = project::run(&args, &client).await;
+    let result = project::run(&args, &client, &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn get_project_not_found() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -40,6 +42,6 @@ async fn get_project_not_found() {
     let args = project::ProjectArgs {
         action: project::ProjectAction::Get { id: 999 },
     };
-    let result = project::run(&args, &client).await;
+    let result = project::run(&args, &client, &out).await;
     assert!(result.is_err());
 }

@@ -1,12 +1,15 @@
 use std::error::Error;
 
 use crate::api;
+use crate::out_println;
+use crate::output::OutputConfig;
 
 pub async fn run(
     story_id: i64,
     task_id: i64,
     complete: bool,
     client: &api::Client,
+    out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     let task = client
         .update_task()
@@ -22,6 +25,6 @@ pub async fn run(
     } else {
         "incomplete"
     };
-    println!("Task {} marked {status}", task.id);
+    out_println!(out, "Task {} marked {status}", task.id);
     Ok(())
 }

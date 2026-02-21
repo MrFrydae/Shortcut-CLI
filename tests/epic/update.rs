@@ -7,6 +7,7 @@ use sc::{api, commands::epic};
 
 #[tokio::test]
 async fn update_epic_sets_description() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -25,12 +26,13 @@ async fn update_epic_sets_description() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Update(Box::new(update_args)),
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn update_epic_api_error() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -46,7 +48,7 @@ async fn update_epic_api_error() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Update(Box::new(update_args)),
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
 }
 
@@ -54,6 +56,7 @@ async fn update_epic_api_error() {
 
 #[tokio::test]
 async fn update_epic_numeric_state_id_passes_through() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -73,12 +76,13 @@ async fn update_epic_numeric_state_id_passes_through() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Update(Box::new(update_args)),
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn update_epic_resolves_state_name_via_api() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -110,12 +114,13 @@ async fn update_epic_resolves_state_name_via_api() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Update(Box::new(update_args)),
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn update_epic_state_cache_hit_skips_api() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -141,12 +146,13 @@ async fn update_epic_state_cache_hit_skips_api() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Update(Box::new(update_args)),
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn update_epic_unknown_state_name_errors() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
@@ -168,7 +174,7 @@ async fn update_epic_unknown_state_name_errors() {
     let args = epic::EpicArgs {
         action: epic::EpicAction::Update(Box::new(update_args)),
     };
-    let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+    let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("Unknown epic state"));
@@ -178,6 +184,7 @@ async fn update_epic_unknown_state_name_errors() {
 
 #[tokio::test]
 async fn update_epic_state_name_normalization_variants() {
+    let out = crate::support::make_output();
     let server = MockServer::start().await;
 
     let workflow_body = epic_workflow_json(vec![
@@ -219,7 +226,7 @@ async fn update_epic_state_name_normalization_variants() {
         let args = epic::EpicArgs {
             action: epic::EpicAction::Update(Box::new(update_args)),
         };
-        let result = epic::run(&args, &client, tmp.path().to_path_buf()).await;
+        let result = epic::run(&args, &client, tmp.path().to_path_buf(), &out).await;
         assert!(result.is_ok(), "Failed for variant '{variant}': {result:?}");
 
         server.reset().await;
