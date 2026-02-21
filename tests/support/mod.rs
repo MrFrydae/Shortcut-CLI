@@ -951,3 +951,174 @@ pub fn project_json(id: i64, name: &str, description: Option<&str>) -> serde_jso
         "workflow_id": 500000006
     })
 }
+
+// --- History fixtures ---
+
+/// Build a top-level `History` entry.
+pub fn history_entry_json(
+    id: &str,
+    changed_at: &str,
+    member_id: Option<&str>,
+    actions: Vec<serde_json::Value>,
+    references: Vec<serde_json::Value>,
+) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "changed_at": changed_at,
+        "member_id": member_id,
+        "primary_id": null,
+        "version": "v1",
+        "actions": actions,
+        "references": references,
+        "external_id": null,
+        "webhook_id": null,
+        "automation_id": null,
+        "actor_name": null
+    })
+}
+
+/// Build a `HistoryActionStoryCreate` action.
+pub fn history_action_story_create_json(
+    id: i64,
+    name: &str,
+    story_type: &str,
+) -> serde_json::Value {
+    use serde_json::Value;
+
+    let mut m = serde_json::Map::new();
+    m.insert("action".into(), Value::from("create"));
+    m.insert("id".into(), Value::from(id));
+    m.insert("name".into(), Value::from(name));
+    m.insert("story_type".into(), Value::from(story_type));
+    m.insert(
+        "app_url".into(),
+        Value::from(format!("https://app.shortcut.com/test/story/{id}")),
+    );
+    m.insert("entity_type".into(), Value::from("story"));
+    m.insert("blocked".into(), Value::from(false));
+    m.insert("blocker".into(), Value::from(false));
+    m.insert("completed".into(), Value::from(false));
+    m.insert("started".into(), Value::from(false));
+    m.insert("custom_field_value_ids".into(), serde_json::json!([]));
+    m.insert("deadline".into(), Value::Null);
+    m.insert("description".into(), Value::from(""));
+    m.insert("epic_id".into(), Value::Null);
+    m.insert("estimate".into(), Value::Null);
+    m.insert("follower_ids".into(), serde_json::json!([]));
+    m.insert("group_id".into(), Value::Null);
+    m.insert("iteration_id".into(), Value::Null);
+    m.insert("label_ids".into(), serde_json::json!([]));
+    m.insert("object_story_link_ids".into(), serde_json::json!([]));
+    m.insert("owner_ids".into(), serde_json::json!([]));
+    m.insert("parent_story_id".into(), Value::Null);
+    m.insert("project_id".into(), Value::Null);
+    m.insert("requested_by_id".into(), Value::Null);
+    m.insert("subject_story_link_ids".into(), serde_json::json!([]));
+    m.insert("task_ids".into(), serde_json::json!([]));
+    m.insert("workflow_state_id".into(), Value::Null);
+    Value::Object(m)
+}
+
+/// Build a `HistoryActionStoryUpdate` action.
+pub fn history_action_story_update_json(
+    id: i64,
+    name: &str,
+    story_type: &str,
+    changes: serde_json::Value,
+) -> serde_json::Value {
+    serde_json::json!({
+        "action": "update",
+        "id": id,
+        "name": name,
+        "story_type": story_type,
+        "app_url": format!("https://app.shortcut.com/test/story/{id}"),
+        "entity_type": "story",
+        "changes": changes
+    })
+}
+
+/// Build a `HistoryActionStoryDelete` action.
+pub fn history_action_story_delete_json(
+    id: i64,
+    name: &str,
+    story_type: &str,
+) -> serde_json::Value {
+    serde_json::json!({
+        "action": "delete",
+        "id": id,
+        "name": name,
+        "story_type": story_type,
+        "entity_type": "story"
+    })
+}
+
+/// Build a `HistoryActionTaskCreate` action.
+pub fn history_action_task_create_json(id: i64, description: &str) -> serde_json::Value {
+    serde_json::json!({
+        "action": "create",
+        "id": id,
+        "description": description,
+        "complete": false,
+        "entity_type": "task",
+        "group_mention_ids": [],
+        "mention_ids": [],
+        "owner_ids": []
+    })
+}
+
+/// Build a `HistoryActionStoryCommentCreate` action.
+pub fn history_action_comment_create_json(id: i64, author_id: &str) -> serde_json::Value {
+    serde_json::json!({
+        "action": "create",
+        "id": id,
+        "author_id": author_id,
+        "app_url": format!("https://app.shortcut.com/test/story/comment/{id}"),
+        "entity_type": "story-comment"
+    })
+}
+
+/// Build a `HistoryActionLabelCreate` action.
+pub fn history_action_label_create_json(id: i64, name: &str) -> serde_json::Value {
+    serde_json::json!({
+        "action": "create",
+        "id": id,
+        "name": name,
+        "app_url": format!("https://app.shortcut.com/test/label/{id}"),
+        "entity_type": "label"
+    })
+}
+
+/// Build a `HistoryActionBranchCreate` action.
+pub fn history_action_branch_create_json(id: i64, name: &str) -> serde_json::Value {
+    serde_json::json!({
+        "action": "create",
+        "id": id,
+        "name": name,
+        "url": format!("https://github.com/test/repo/tree/{name}"),
+        "entity_type": "branch"
+    })
+}
+
+/// Build a `HistoryReferenceWorkflowState` reference.
+pub fn history_reference_workflow_state_json(
+    id: i64,
+    name: &str,
+    type_: &str,
+) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "type": type_,
+        "entity_type": "workflow-state"
+    })
+}
+
+/// Build a `HistoryReferenceLabel` reference.
+pub fn history_reference_label_json(id: i64, name: &str) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "app_url": format!("https://app.shortcut.com/test/label/{id}"),
+        "entity_type": "label"
+    })
+}

@@ -74,7 +74,7 @@
 | 12.2  | `custom-field get` |   ✅    |
 | 12.3  | Display custom fields in `story get` |   ✅    |
 | 12.4  | Set custom fields on `story create` / `story update` |   ✅    |
-| 13.1  | `story history` |        |
+| 13.1  | `story history` |   ✅    |
 | 14.1  | `--json` flag |        |
 | 14.2  | `--format` flag (template-based) |        |
 | 14.3  | `--color` / `--no-color` |        |
