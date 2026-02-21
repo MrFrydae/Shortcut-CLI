@@ -860,6 +860,68 @@ pub fn task_json(id: i64, story_id: i64, description: &str, complete: bool) -> s
     Value::Object(m)
 }
 
+/// Build a JSON value representing a valid `CustomField` response object.
+pub fn custom_field_json(
+    id: &str,
+    name: &str,
+    values: Vec<serde_json::Value>,
+) -> serde_json::Value {
+    serde_json::json!({
+        "canonical_name": null,
+        "created_at": "2024-01-01T00:00:00Z",
+        "description": "A custom field",
+        "enabled": true,
+        "entity_type": "custom-field",
+        "field_type": "enum",
+        "fixed_position": false,
+        "icon_set_identifier": null,
+        "id": id,
+        "name": name,
+        "position": 0,
+        "story_types": [],
+        "updated_at": "2024-01-01T00:00:00Z",
+        "values": values
+    })
+}
+
+/// Build a JSON value representing a valid `CustomFieldEnumValue`.
+pub fn custom_field_enum_value_json(
+    id: &str,
+    value: &str,
+    position: i64,
+    enabled: bool,
+) -> serde_json::Value {
+    serde_json::json!({
+        "color_key": null,
+        "enabled": enabled,
+        "entity_type": "custom-field-enum-value",
+        "id": id,
+        "position": position,
+        "value": value
+    })
+}
+
+/// Build a full `Story` JSON with custom fields.
+pub fn full_story_json_with_custom_fields(
+    id: i64,
+    name: &str,
+    description: &str,
+    custom_fields: Vec<serde_json::Value>,
+) -> serde_json::Value {
+    let mut story = full_story_json(id, name, description);
+    story["custom_fields"] = serde_json::Value::Array(custom_fields);
+    story
+}
+
+/// Build a JSON value representing a valid `StoryCustomField` entry.
+pub fn story_custom_field_json(field_id: &str, value_id: &str, value: &str) -> serde_json::Value {
+    serde_json::json!({
+        "field_id": field_id,
+        "value_id": value_id,
+        "value": value
+    })
+}
+
 /// Build a JSON value representing a valid `Project` response object.
 pub fn project_json(id: i64, name: &str, description: Option<&str>) -> serde_json::Value {
     serde_json::json!({

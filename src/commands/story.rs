@@ -6,6 +6,7 @@ use clap::{Args, Subcommand};
 
 use crate::api;
 
+use super::custom_field;
 use super::member;
 use super::story_comment;
 use super::story_link;
@@ -86,6 +87,10 @@ pub struct CreateArgs {
     /// The iteration ID to assign this story to
     #[arg(long)]
     pub iteration_id: Option<i64>,
+
+    /// Set a custom field value (format: "FieldName=Value", repeatable)
+    #[arg(long = "custom-field")]
+    pub custom_fields: Vec<String>,
 }
 
 #[derive(Args)]
@@ -130,6 +135,10 @@ pub struct UpdateArgs {
     /// The iteration ID to assign this story to
     #[arg(long)]
     pub iteration_id: Option<i64>,
+
+    /// Set a custom field value (format: "FieldName=Value", repeatable)
+    #[arg(long = "custom-field")]
+    pub custom_fields: Vec<String>,
 }
 
 #[derive(Args)]
@@ -175,7 +184,7 @@ pub async fn run(
     match &args.action {
         StoryAction::Create(create_args) => run_create(create_args, client, &cache_dir).await,
         StoryAction::Update(update_args) => run_update(update_args, client, &cache_dir).await,
-        StoryAction::Get { id } => run_get(*id, client).await,
+        StoryAction::Get { id } => run_get(*id, client, &cache_dir).await,
         StoryAction::List(list_args) => run_list(list_args, client, &cache_dir).await,
         StoryAction::Delete { id, confirm } => run_delete(*id, *confirm, client).await,
         StoryAction::Task(task_args) => task::run(task_args, client).await,
@@ -228,6 +237,9 @@ async fn run_create(
         })
         .collect::<Result<_, _>>()?;
 
+    let custom_field_params =
+        resolve_custom_field_args(&args.custom_fields, client, cache_dir).await?;
+
     let story = client
         .create_story()
         .body_map(|mut b| {
@@ -255,6 +267,9 @@ async fn run_create(
             }
             if let Some(iter_id) = args.iteration_id {
                 b = b.iteration_id(Some(iter_id));
+            }
+            if !custom_field_params.is_empty() {
+                b = b.custom_fields(custom_field_params);
             }
             b
         })
@@ -312,6 +327,9 @@ async fn run_update(
         })
         .collect::<Result<_, _>>()?;
 
+    let custom_field_params =
+        resolve_custom_field_args(&args.custom_fields, client, cache_dir).await?;
+
     let story = client
         .update_story()
         .story_public_id(args.id)
@@ -343,6 +361,9 @@ async fn run_update(
             if let Some(iter_id) = args.iteration_id {
                 b = b.iteration_id(Some(iter_id));
             }
+            if !custom_field_params.is_empty() {
+                b = b.custom_fields(custom_field_params);
+            }
             b
         })
         .send()
@@ -353,7 +374,7 @@ async fn run_update(
     Ok(())
 }
 
-async fn run_get(id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
+async fn run_get(id: i64, client: &api::Client, cache_dir: &Path) -> Result<(), Box<dyn Error>> {
     let story = client
         .get_story()
         .story_public_id(id)
@@ -391,6 +412,17 @@ async fn run_get(id: i64, client: &api::Client) -> Result<(), Box<dyn Error>> {
                 (story_link::invert_verb(&link.verb), link.subject_id)
             };
             println!("    {display_verb} {other_id} (link {})", link.id);
+        }
+    }
+    if !story.custom_fields.is_empty() {
+        let field_ids: Vec<uuid::Uuid> = story.custom_fields.iter().map(|cf| cf.field_id).collect();
+        let names = custom_field::resolve_custom_field_names(&field_ids, client, cache_dir).await?;
+        for cf in &story.custom_fields {
+            let field_name = names
+                .get(&cf.field_id.to_string())
+                .map(|s| s.as_str())
+                .unwrap_or("Unknown");
+            println!("  {}: {}", field_name, cf.value);
         }
     }
 
@@ -509,6 +541,43 @@ async fn run_delete(id: i64, confirm: bool, client: &api::Client) -> Result<(), 
 
     println!("Deleted story {id} - {name}");
     Ok(())
+}
+
+// --- Custom field argument parsing ---
+
+fn parse_custom_field_arg(arg: &str) -> Result<(&str, &str), Box<dyn Error>> {
+    let (name, value) = arg.split_once('=').ok_or_else(|| {
+        format!("Invalid custom field format '{arg}': expected 'FieldName=Value'")
+    })?;
+    let name = name.trim();
+    let value = value.trim();
+    if name.is_empty() || value.is_empty() {
+        return Err(format!(
+            "Invalid custom field format '{arg}': name and value must not be empty"
+        )
+        .into());
+    }
+    Ok((name, value))
+}
+
+async fn resolve_custom_field_args(
+    args: &[String],
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<Vec<api::types::CustomFieldValueParams>, Box<dyn Error>> {
+    let mut params = Vec::with_capacity(args.len());
+    for arg in args {
+        let (field_name, value_name) = parse_custom_field_arg(arg)?;
+        let (field_id, value_id) =
+            custom_field::resolve_custom_field_value(field_name, value_name, client, cache_dir)
+                .await?;
+        params.push(api::types::CustomFieldValueParams {
+            field_id,
+            value: None,
+            value_id,
+        });
+    }
+    Ok(params)
 }
 
 // --- Owner resolution ---
