@@ -1,0 +1,41 @@
+mod get;
+pub mod helpers;
+mod list;
+
+use std::error::Error;
+use std::path::PathBuf;
+
+use clap::{Args, Subcommand};
+
+use crate::api;
+
+pub use helpers::{resolve_custom_field_names, resolve_custom_field_value};
+
+#[derive(Args)]
+pub struct CustomFieldArgs {
+    #[command(subcommand)]
+    pub action: CustomFieldAction,
+}
+
+#[derive(Subcommand)]
+pub enum CustomFieldAction {
+    /// List all custom fields
+    List,
+    /// Get a custom field by ID
+    Get {
+        /// The UUID of the custom field
+        #[arg(long)]
+        id: String,
+    },
+}
+
+pub async fn run(
+    args: &CustomFieldArgs,
+    client: &api::Client,
+    cache_dir: PathBuf,
+) -> Result<(), Box<dyn Error>> {
+    match &args.action {
+        CustomFieldAction::List => list::run(client, &cache_dir).await,
+        CustomFieldAction::Get { id } => get::run(id, client).await,
+    }
+}
