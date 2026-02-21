@@ -60,6 +60,8 @@ enum Command {
     Search(commands::search::SearchArgs),
     /// Work with stories
     Story(commands::story::StoryArgs),
+    /// Work with entity templates
+    Template(commands::template::TemplateArgs),
     /// Work with workflows
     Workflow(commands::workflow::WorkflowArgs),
 }
@@ -183,6 +185,12 @@ async fn main() {
                     Command::Story(args) => match api::authenticated_client(&store) {
                         Ok(client) => {
                             commands::story::run(&args, &client, root.cache_dir(), &output).await
+                        }
+                        Err(e) => Err(e.into()),
+                    },
+                    Command::Template(args) => match api::authenticated_client(&store) {
+                        Ok(client) => {
+                            commands::template::run(&args, &client, root.cache_dir(), &output).await
                         }
                         Err(e) => Err(e.into()),
                     },

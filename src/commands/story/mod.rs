@@ -4,7 +4,7 @@ mod create;
 mod delete;
 mod get;
 pub mod git;
-mod helpers;
+pub mod helpers;
 mod history;
 mod list;
 mod update;

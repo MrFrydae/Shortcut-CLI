@@ -92,10 +92,10 @@
 | 17.1  | `story branch` |   ✅    |
 | 17.2  | Auto-link commits to stories |   ✅    |
 | 17.3  | Repository info & PR status |   ✅    |
-| 18.1  | `template list` |        |
-| 18.2  | `template get` |        |
-| 18.3  | `template use` (create story from template) |        |
-| 18.4  | `template create` / `template update` / `template delete` |        |
+| 18.1  | `template list` |   ✅    |
+| 18.2  | `template get` |   ✅    |
+| 18.3  | `template use` (create story from template) |   ✅    |
+| 18.4  | `template create` / `template update` / `template delete` |   ✅    |
 | 19.1  | STL CLI commands |        |
 | 19.2  | STL document structure |        |
 | 19.3  | STL actions |        |
@@ -2222,7 +2222,7 @@ sc story get --id 123 --branches    # show linked branches and PRs
 
 **Motivation.** Teams often create stories with the same structure: bug reports need reproduction steps, features need acceptance criteria, spikes need timeboxes. Entity templates (called "Story Templates" in the Shortcut UI) pre-fill these fields. CLI access enables template-driven story creation in scripts and automation.
 
-### 18.1 `sc template list`
+### 18.1 `sc template list` ✅
 
 **Proposed syntax:**
 
@@ -2243,7 +2243,7 @@ sc template list
 
 ---
 
-### 18.2 `sc template get`
+### 18.2 `sc template get` ✅
 
 **Proposed syntax:**
 
@@ -2284,7 +2284,7 @@ sc template get --id 900
 
 ---
 
-### 18.3 `sc template use` (Create Story from Template)
+### 18.3 `sc template use` (Create Story from Template) ✅
 
 **Proposed syntax:**
 
@@ -2309,7 +2309,7 @@ Created story 250 - Safari login crash (from template "Bug Report Template")
 
 ---
 
-### 18.4 `sc template create` / `sc template update` / `sc template delete`
+### 18.4 `sc template create` / `sc template update` / `sc template delete` ✅
 
 **Proposed syntax:**
 

@@ -1194,3 +1194,67 @@ pub fn history_reference_label_json(id: i64, name: &str) -> serde_json::Value {
         "entity_type": "label"
     })
 }
+
+// --- Entity Template fixtures ---
+
+/// Build a JSON value representing a `StoryContents` object for an entity template.
+pub fn story_contents_json() -> serde_json::Value {
+    serde_json::json!({
+        "description": "Template description",
+        "story_type": "feature",
+        "estimate": 3,
+        "labels": [
+            {
+                "app_url": "https://app.shortcut.com/test/label/1",
+                "archived": false,
+                "color": null,
+                "created_at": null,
+                "description": null,
+                "entity_type": "label",
+                "external_id": null,
+                "global_id": "global-label-1",
+                "id": 1,
+                "name": "bug",
+                "updated_at": null
+            }
+        ],
+        "tasks": [
+            {
+                "description": "Write tests",
+                "complete": false
+            },
+            {
+                "description": "Update docs",
+                "complete": false
+            }
+        ]
+    })
+}
+
+/// Build a JSON value representing an `EntityTemplate` response object.
+pub fn entity_template_json(id: &str, name: &str) -> serde_json::Value {
+    serde_json::json!({
+        "author_id": "00000000-0000-0000-0000-000000000001",
+        "created_at": "2024-01-01T00:00:00Z",
+        "entity_type": "entity-template",
+        "id": id,
+        "last_used_at": "2024-06-01T00:00:00Z",
+        "name": name,
+        "story_contents": story_contents_json(),
+        "updated_at": "2024-03-01T00:00:00Z"
+    })
+}
+
+/// Build an `EntityTemplate` JSON with minimal story contents (empty).
+pub fn entity_template_json_minimal(id: &str, name: &str) -> serde_json::Value {
+    serde_json::json!({
+        "author_id": "00000000-0000-0000-0000-000000000001",
+        "created_at": "2024-01-01T00:00:00Z",
+        "entity_type": "entity-template",
+        "id": id,
+        "last_used_at": "2024-06-01T00:00:00Z",
+        "name": name,
+        "story_contents": {},
+        "updated_at": "2024-03-01T00:00:00Z"
+    })
+}

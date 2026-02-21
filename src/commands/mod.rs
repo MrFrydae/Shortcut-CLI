@@ -12,4 +12,5 @@ pub mod objective;
 pub mod project;
 pub mod search;
 pub mod story;
+pub mod template;
 pub mod workflow;
