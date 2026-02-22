@@ -1,7 +1,10 @@
-use wiremock::matchers::{body_json_string, body_partial_json, method, path};
+use wiremock::matchers::{body_partial_json, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use crate::support::{full_story_json, make_dry_run_output, make_output};
+use crate::support::{
+    full_epic_json, full_story_json, iteration_json, label_json, make_dry_run_output, make_output,
+    story_comment_json, story_link_json,
+};
 use sc::output::{ColorMode, OutputConfig, OutputMode};
 use sc::{api, commands::template};
 
@@ -30,15 +33,6 @@ fn write_template(dir: &tempfile::TempDir, yaml: &str) -> String {
     let path = dir.path().join("test.sc.yml");
     std::fs::write(&path, yaml).unwrap();
     path.to_str().unwrap().to_string()
-}
-
-/// Helper to build a simple API response for a created entity.
-fn created_response(id: i64, name: &str, entity_type: &str) -> serde_json::Value {
-    serde_json::json!({
-        "id": id,
-        "name": name,
-        "entity_type": entity_type
-    })
 }
 
 #[tokio::test]
@@ -77,7 +71,7 @@ async fn run_create_epic_then_story_with_ref() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
-    let epic_response = created_response(55, "Auth Hardening", "epic");
+    let epic_response = full_epic_json(55, "Auth Hardening", "");
     let story_response = full_story_json(200, "JWT Story", "");
 
     Mock::given(method("POST"))
@@ -179,11 +173,7 @@ async fn run_comment_on_story() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
-    let response = serde_json::json!({
-        "id": 1,
-        "text": "A comment",
-        "entity_type": "story-comment"
-    });
+    let response = story_comment_json(1, 500, "A comment", "00000000-0000-0000-0000-000000000001");
 
     Mock::given(method("POST"))
         .and(path("/api/v3/stories/500/comments"))
@@ -214,13 +204,7 @@ async fn run_link_stories() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
-    let response = serde_json::json!({
-        "id": 1,
-        "subject_id": 100,
-        "object_id": 200,
-        "verb": "blocks",
-        "entity_type": "story-link"
-    });
+    let response = story_link_json(1, 100, 200, "blocks");
 
     Mock::given(method("POST"))
         .and(path("/api/v3/story-links"))
@@ -289,7 +273,7 @@ async fn run_var_override() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
-    let response = created_response(10, "Sprint 25", "iteration");
+    let response = iteration_json(10, "Sprint 25", "2026-03-02", "2026-03-15");
 
     Mock::given(method("POST"))
         .and(path("/api/v3/iterations"))
@@ -328,7 +312,7 @@ async fn run_fail_fast_stops_on_error() {
     // First operation succeeds
     Mock::given(method("POST"))
         .and(path("/api/v3/epics"))
-        .respond_with(ResponseTemplate::new(201).set_body_json(created_response(1, "Epic", "epic")))
+        .respond_with(ResponseTemplate::new(201).set_body_json(full_epic_json(1, "Epic", "")))
         .expect(1)
         .mount(&server)
         .await;
@@ -344,9 +328,7 @@ async fn run_fail_fast_stops_on_error() {
     // Third operation should NOT be called (fail-fast)
     Mock::given(method("POST"))
         .and(path("/api/v3/labels"))
-        .respond_with(
-            ResponseTemplate::new(201).set_body_json(created_response(1, "Label", "label")),
-        )
+        .respond_with(ResponseTemplate::new(201).set_body_json(label_json(1, "Label")))
         .expect(0)
         .mount(&server)
         .await;
@@ -391,9 +373,7 @@ async fn run_on_error_continue() {
     // Second operation should still execute
     Mock::given(method("POST"))
         .and(path("/api/v3/labels"))
-        .respond_with(
-            ResponseTemplate::new(201).set_body_json(created_response(1, "Label", "label")),
-        )
+        .respond_with(ResponseTemplate::new(201).set_body_json(label_json(1, "Label")))
         .expect(1)
         .mount(&server)
         .await;
@@ -445,8 +425,8 @@ operations:
     assert!(result.is_ok(), "Expected ok, got: {result:?}");
 
     let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
-    assert!(output.contains("[1/2] POST /api/v3/stories"));
-    assert!(output.contains("[2/2] POST /api/v3/epics"));
+    assert!(output.contains("[1/2] create story"));
+    assert!(output.contains("[2/2] create epic"));
     assert!(output.contains("\"name\": \"Dry Run Story\""));
     assert!(output.contains("\"name\": \"Dry Run Epic\""));
 }
@@ -457,7 +437,7 @@ async fn run_json_output() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
-    let response = created_response(42, "Test Label", "label");
+    let response = label_json(42, "Test Label");
 
     Mock::given(method("POST"))
         .and(path("/api/v3/labels"))
@@ -594,15 +574,9 @@ async fn run_parent_with_children_and_tasks() {
     // Story links (2 link operations)
     Mock::given(method("POST"))
         .and(path("/api/v3/story-links"))
-        .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
-            "id": 5001,
-            "subject_id": 1001,
-            "object_id": 1000,
-            "verb": "blocks",
-            "entity_type": "story-link",
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
-        })))
+        .respond_with(
+            ResponseTemplate::new(201).set_body_json(story_link_json(5001, 1001, 1000, "blocks")),
+        )
         .expect(2)
         .mount(&server)
         .await;

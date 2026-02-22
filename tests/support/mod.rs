@@ -565,6 +565,66 @@ pub fn category_json(id: i64, name: &str, color: Option<&str>) -> serde_json::Va
     })
 }
 
+/// Build a JSON value representing a valid `Label` response object.
+pub fn label_json(id: i64, name: &str) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "archived": false,
+        "entity_type": "label",
+        "app_url": format!("https://app.shortcut.com/test/label/{id}"),
+        "global_id": format!("global-label-{id}"),
+        "color": null,
+        "description": null,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "external_id": null
+    })
+}
+
+/// Build a JSON value representing a valid `Iteration` response object.
+///
+/// `start_date` and `end_date` are formatted as full ISO 8601 timestamps
+/// because the generated `Iteration` type uses `DateTime<Utc>`.
+pub fn iteration_json(id: i64, name: &str, start_date: &str, end_date: &str) -> serde_json::Value {
+    let stats = serde_json::json!({
+        "num_points": 0,
+        "num_points_backlog": 0,
+        "num_points_done": 0,
+        "num_points_started": 0,
+        "num_points_unstarted": 0,
+        "num_related_documents": 0,
+        "num_stories_backlog": 0,
+        "num_stories_done": 0,
+        "num_stories_started": 0,
+        "num_stories_unestimated": 0,
+        "num_stories_unstarted": 0
+    });
+
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "status": "unstarted",
+        "start_date": format!("{start_date}T00:00:00Z"),
+        "end_date": format!("{end_date}T00:00:00Z"),
+        "description": "",
+        "entity_type": "iteration",
+        "app_url": format!("https://app.shortcut.com/test/iteration/{id}"),
+        "global_id": format!("global-iteration-{id}"),
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "associated_groups": null,
+        "follower_ids": [],
+        "group_ids": [],
+        "group_mention_ids": [],
+        "label_ids": [],
+        "labels": [],
+        "member_mention_ids": [],
+        "mention_ids": [],
+        "stats": stats
+    })
+}
+
 /// Build a JSON value representing a valid `Milestone` response object.
 pub fn milestone_json(id: i64, name: &str, state: &str) -> serde_json::Value {
     serde_json::json!({

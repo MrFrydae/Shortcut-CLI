@@ -2,8 +2,6 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
 
-use progenitor_client::ClientInfo;
-
 use crate::api;
 use crate::commands::{custom_field, epic, group, member, story};
 use crate::out_println;
@@ -60,9 +58,6 @@ pub async fn execute(
     let mut op_results: Vec<OperationResult> = Vec::new();
     let mut op_counter = 0;
 
-    let base_url = extract_base_url(client);
-    let http = build_http_client(client)?;
-
     for op in template.operations.iter() {
         let should_continue_on_error = op
             .on_error
@@ -110,9 +105,8 @@ pub async fn execute(
                     continue;
                 }
 
-                // Build URL before resolve_entity_fields, which may remove
-                // fields (e.g. story_id) that are needed for URL construction.
-                let (method, path) = resolve_api_path(&op.action, &op.entity, None, &json_body)?;
+                // Extract story_id before resolve_entity_fields removes it.
+                let story_id = json_body.get("story_id").and_then(|v| v.as_i64());
 
                 // Resolve entity-specific fields
                 if let Err(e) =
@@ -147,7 +141,14 @@ pub async fn execute(
 
                 if out.is_dry_run() {
                     if show_progress {
-                        out_println!(out, "[{}/{}] {} {}", op_counter, total, method, path);
+                        out_println!(
+                            out,
+                            "[{}/{}] {} {}",
+                            op_counter,
+                            total,
+                            op.action,
+                            op.entity
+                        );
                         let pretty = serde_json::to_string_pretty(&json_body)?;
                         out_println!(out, "  {}", pretty.replace('\n', "\n  "));
                         out_println!(out, "");
@@ -165,8 +166,10 @@ pub async fn execute(
                     continue;
                 }
 
-                // Execute the API call
-                match execute_request(&http, &base_url, &method, &path, &json_body).await {
+                // Execute the API call via generated client
+                match dispatch_api_call(client, &op.action, &op.entity, None, story_id, json_body)
+                    .await
+                {
                     Ok(response) => {
                         if show_progress {
                             let name = response.get("name").and_then(|v| v.as_str()).unwrap_or("");
@@ -287,10 +290,8 @@ pub async fn execute(
                 continue;
             }
 
-            // Build URL before resolve_entity_fields, which may remove
-            // fields (e.g. story_id) that are needed for URL construction.
-            let (method, path) =
-                resolve_api_path(&op.action, &op.entity, resolved_id.as_ref(), &json_body)?;
+            // Extract story_id before resolve_entity_fields removes it.
+            let story_id = json_body.get("story_id").and_then(|v| v.as_i64());
 
             // Resolve entity-specific fields
             if let Err(e) =
@@ -325,7 +326,14 @@ pub async fn execute(
 
             if out.is_dry_run() {
                 if show_progress {
-                    out_println!(out, "[{}/{}] {} {}", op_counter, total, method, path);
+                    out_println!(
+                        out,
+                        "[{}/{}] {} {}",
+                        op_counter,
+                        total,
+                        op.action,
+                        op.entity
+                    );
                     if !json_body_is_empty(&json_body) {
                         let pretty = serde_json::to_string_pretty(&json_body)?;
                         out_println!(out, "  {}", pretty.replace('\n', "\n  "));
@@ -347,8 +355,17 @@ pub async fn execute(
                 continue;
             }
 
-            // Execute the API call
-            match execute_request(&http, &base_url, &method, &path, &json_body).await {
+            // Execute the API call via generated client
+            match dispatch_api_call(
+                client,
+                &op.action,
+                &op.entity,
+                resolved_id.as_ref(),
+                story_id,
+                json_body,
+            )
+            .await
+            {
                 Ok(response) => {
                     if show_progress {
                         let action_past = action_past_tense(&op.action);
@@ -490,180 +507,6 @@ fn merge_mappings(
         merged.insert(k.clone(), v.clone());
     }
     merged
-}
-
-/// Resolve the HTTP method and API path for an operation.
-fn resolve_api_path(
-    action: &Action,
-    entity: &Entity,
-    id: Option<&serde_json::Value>,
-    body: &serde_json::Value,
-) -> Result<(String, String), Box<dyn Error>> {
-    let id_str = id.map(json_value_display);
-
-    match (action, entity) {
-        // Story
-        (Action::Create, Entity::Story) => Ok(("POST".into(), "/api/v3/stories".into())),
-        (Action::Update, Entity::Story) => {
-            let id = id_str.ok_or("update story requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/stories/{id}")))
-        }
-        (Action::Delete, Entity::Story) => {
-            let id = id_str.ok_or("delete story requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/stories/{id}")))
-        }
-
-        // Epic
-        (Action::Create, Entity::Epic) => Ok(("POST".into(), "/api/v3/epics".into())),
-        (Action::Update, Entity::Epic) => {
-            let id = id_str.ok_or("update epic requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/epics/{id}")))
-        }
-        (Action::Delete, Entity::Epic) => {
-            let id = id_str.ok_or("delete epic requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/epics/{id}")))
-        }
-
-        // Iteration
-        (Action::Create, Entity::Iteration) => Ok(("POST".into(), "/api/v3/iterations".into())),
-        (Action::Update, Entity::Iteration) => {
-            let id = id_str.ok_or("update iteration requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/iterations/{id}")))
-        }
-        (Action::Delete, Entity::Iteration) => {
-            let id = id_str.ok_or("delete iteration requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/iterations/{id}")))
-        }
-
-        // Label
-        (Action::Create, Entity::Label) => Ok(("POST".into(), "/api/v3/labels".into())),
-        (Action::Update, Entity::Label) => {
-            let id = id_str.ok_or("update label requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/labels/{id}")))
-        }
-        (Action::Delete, Entity::Label) => {
-            let id = id_str.ok_or("delete label requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/labels/{id}")))
-        }
-
-        // Objective
-        (Action::Create, Entity::Objective) => Ok(("POST".into(), "/api/v3/objectives".into())),
-        (Action::Update, Entity::Objective) => {
-            let id = id_str.ok_or("update objective requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/objectives/{id}")))
-        }
-        (Action::Delete, Entity::Objective) => {
-            let id = id_str.ok_or("delete objective requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/objectives/{id}")))
-        }
-
-        // Milestone
-        (Action::Create, Entity::Milestone) => Ok(("POST".into(), "/api/v3/milestones".into())),
-        (Action::Update, Entity::Milestone) => {
-            let id = id_str.ok_or("update milestone requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/milestones/{id}")))
-        }
-        (Action::Delete, Entity::Milestone) => {
-            let id = id_str.ok_or("delete milestone requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/milestones/{id}")))
-        }
-
-        // Category
-        (Action::Create, Entity::Category) => Ok(("POST".into(), "/api/v3/categories".into())),
-        (Action::Update, Entity::Category) => {
-            let id = id_str.ok_or("update category requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/categories/{id}")))
-        }
-        (Action::Delete, Entity::Category) => {
-            let id = id_str.ok_or("delete category requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/categories/{id}")))
-        }
-
-        // Group
-        (Action::Create, Entity::Group) => Ok(("POST".into(), "/api/v3/groups".into())),
-        (Action::Update, Entity::Group) => {
-            let id = id_str.ok_or("update group requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/groups/{id}")))
-        }
-
-        // Document
-        (Action::Create, Entity::Document) => Ok(("POST".into(), "/api/v3/documents".into())),
-        (Action::Update, Entity::Document) => {
-            let id = id_str.ok_or("update document requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/documents/{id}")))
-        }
-        (Action::Delete, Entity::Document) => {
-            let id = id_str.ok_or("delete document requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/documents/{id}")))
-        }
-
-        // Project
-        (Action::Create, Entity::Project) => Ok(("POST".into(), "/api/v3/projects".into())),
-        (Action::Update, Entity::Project) => {
-            let id = id_str.ok_or("update project requires id")?;
-            Ok(("PUT".into(), format!("/api/v3/projects/{id}")))
-        }
-        (Action::Delete, Entity::Project) => {
-            let id = id_str.ok_or("delete project requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/projects/{id}")))
-        }
-
-        // Task — requires story_id from body
-        (Action::Create, Entity::Task) => {
-            let story_id = body
-                .get("story_id")
-                .map(json_value_display)
-                .ok_or("create task requires 'story_id' in fields")?;
-            Ok(("POST".into(), format!("/api/v3/stories/{story_id}/tasks")))
-        }
-
-        // Comment on story or epic
-        (Action::Comment, Entity::Story) => {
-            let id = id_str.ok_or("comment on story requires id")?;
-            Ok(("POST".into(), format!("/api/v3/stories/{id}/comments")))
-        }
-        (Action::Comment, Entity::Epic) => {
-            let id = id_str.ok_or("comment on epic requires id")?;
-            Ok(("POST".into(), format!("/api/v3/epics/{id}/comments")))
-        }
-
-        // Story Link
-        (Action::Link, Entity::StoryLink) => Ok(("POST".into(), "/api/v3/story-links".into())),
-        (Action::Unlink, Entity::StoryLink) => {
-            let id = id_str.ok_or("unlink story-link requires id")?;
-            Ok(("DELETE".into(), format!("/api/v3/story-links/{id}")))
-        }
-
-        // Check/Uncheck task — requires story_id and task_id
-        (Action::Check, Entity::Task) => {
-            let task_id = id_str.ok_or("check task requires id")?;
-            let story_id = body
-                .get("story_id")
-                .map(json_value_display)
-                .ok_or("check task requires 'story_id' in fields")?;
-            Ok((
-                "PUT".into(),
-                format!("/api/v3/stories/{story_id}/tasks/{task_id}"),
-            ))
-        }
-        (Action::Uncheck, Entity::Task) => {
-            let task_id = id_str.ok_or("uncheck task requires id")?;
-            let story_id = body
-                .get("story_id")
-                .map(json_value_display)
-                .ok_or("uncheck task requires 'story_id' in fields")?;
-            Ok((
-                "PUT".into(),
-                format!("/api/v3/stories/{story_id}/tasks/{task_id}"),
-            ))
-        }
-
-        _ => Err(format!(
-            "unsupported action/entity combination: {} {}",
-            action, entity
-        )
-        .into()),
-    }
 }
 
 /// Resolve entity-specific fields (members, states, etc.) in the JSON body.
@@ -895,69 +738,457 @@ async fn resolve_entity_fields(
 }
 
 /// Normalize story link verb aliases.
+///
+/// The Shortcut API only accepts three verbs: "blocks", "duplicates", "relates to".
+/// "blocked-by" variants map to "blocks" — users should use subject/object ordering
+/// to express directionality.
 fn normalize_link_verb(verb: &str) -> String {
     match verb.to_lowercase().as_str() {
-        "blocks" => "blocks".to_string(),
-        "blocked-by" | "blocked_by" | "is blocked by" => "is blocked by".to_string(),
+        "blocks" | "blocked-by" | "blocked_by" | "is blocked by" => "blocks".to_string(),
         "duplicates" => "duplicates".to_string(),
         "relates-to" | "relates_to" | "relates to" => "relates to".to_string(),
         other => other.to_string(),
     }
 }
 
-/// Execute an HTTP request and parse the JSON response.
-async fn execute_request(
-    http: &reqwest::Client,
-    base_url: &str,
-    method: &str,
-    path: &str,
-    body: &serde_json::Value,
+/// Dispatch an API call through the generated Progenitor client.
+async fn dispatch_api_call(
+    client: &api::Client,
+    action: &Action,
+    entity: &Entity,
+    id: Option<&serde_json::Value>,
+    story_id: Option<i64>,
+    body: serde_json::Value,
 ) -> Result<serde_json::Value, Box<dyn Error>> {
-    let url = format!("{base_url}{path}");
-
-    let request = match method {
-        "POST" => http.post(&url).json(body),
-        "PUT" => http.put(&url).json(body),
-        "DELETE" => http.delete(&url),
-        _ => return Err(format!("unsupported HTTP method: {method}").into()),
-    };
-
-    let response = request.send().await?;
-    let status = response.status();
-
-    if status.is_success() {
-        // DELETE may return empty body
-        let text = response.text().await?;
-        if text.is_empty() {
-            Ok(serde_json::json!({}))
-        } else {
-            serde_json::from_str(&text)
-                .map_err(|e| format!("Failed to parse API response: {e}").into())
+    match (action, entity) {
+        // ── Story ──
+        (Action::Create, Entity::Story) => {
+            let p: api::types::CreateStoryParams = serde_json::from_value(body)?;
+            let r = client
+                .create_story()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
         }
-    } else {
-        let error_text = response.text().await.unwrap_or_default();
-        Err(format!("{status}: {error_text}").into())
+        (Action::Update, Entity::Story) => {
+            let id = extract_i64_id(id, "update story requires id")?;
+            let p: api::types::UpdateStory = serde_json::from_value(body)?;
+            let r = client
+                .update_story()
+                .story_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Delete, Entity::Story) => {
+            let id = extract_i64_id(id, "delete story requires id")?;
+            client
+                .delete_story()
+                .story_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        // ── Epic ──
+        (Action::Create, Entity::Epic) => {
+            let p: api::types::CreateEpic = serde_json::from_value(body)?;
+            let r = client
+                .create_epic()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Update, Entity::Epic) => {
+            let id = extract_i64_id(id, "update epic requires id")?;
+            let p: api::types::UpdateEpic = serde_json::from_value(body)?;
+            let r = client
+                .update_epic()
+                .epic_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Delete, Entity::Epic) => {
+            let id = extract_i64_id(id, "delete epic requires id")?;
+            client
+                .delete_epic()
+                .epic_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        // ── Iteration ──
+        (Action::Create, Entity::Iteration) => {
+            let p: api::types::CreateIteration = serde_json::from_value(body)?;
+            let r = client
+                .create_iteration()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Update, Entity::Iteration) => {
+            let id = extract_i64_id(id, "update iteration requires id")?;
+            let p: api::types::UpdateIteration = serde_json::from_value(body)?;
+            let r = client
+                .update_iteration()
+                .iteration_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Delete, Entity::Iteration) => {
+            let id = extract_i64_id(id, "delete iteration requires id")?;
+            client
+                .delete_iteration()
+                .iteration_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        // ── Label ──
+        (Action::Create, Entity::Label) => {
+            let p: api::types::CreateLabelParams = serde_json::from_value(body)?;
+            let r = client
+                .create_label()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Update, Entity::Label) => {
+            let id = extract_i64_id(id, "update label requires id")?;
+            let p: api::types::UpdateLabel = serde_json::from_value(body)?;
+            let r = client
+                .update_label()
+                .label_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Delete, Entity::Label) => {
+            let id = extract_i64_id(id, "delete label requires id")?;
+            client
+                .delete_label()
+                .label_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        // ── Objective ──
+        (Action::Create, Entity::Objective) => {
+            let p: api::types::CreateObjective = serde_json::from_value(body)?;
+            let r = client
+                .create_objective()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Update, Entity::Objective) => {
+            let id = extract_i64_id(id, "update objective requires id")?;
+            let p: api::types::UpdateObjective = serde_json::from_value(body)?;
+            let r = client
+                .update_objective()
+                .objective_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Delete, Entity::Objective) => {
+            let id = extract_i64_id(id, "delete objective requires id")?;
+            client
+                .delete_objective()
+                .objective_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        // ── Milestone ──
+        (Action::Create, Entity::Milestone) => {
+            let p: api::types::CreateMilestone = serde_json::from_value(body)?;
+            let r = client
+                .create_milestone()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Update, Entity::Milestone) => {
+            let id = extract_i64_id(id, "update milestone requires id")?;
+            let p: api::types::UpdateMilestone = serde_json::from_value(body)?;
+            let r = client
+                .update_milestone()
+                .milestone_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Delete, Entity::Milestone) => {
+            let id = extract_i64_id(id, "delete milestone requires id")?;
+            client
+                .delete_milestone()
+                .milestone_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        // ── Category ──
+        (Action::Create, Entity::Category) => {
+            let p: api::types::CreateCategory = serde_json::from_value(body)?;
+            let r = client
+                .create_category()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Update, Entity::Category) => {
+            let id = extract_i64_id(id, "update category requires id")?;
+            let p: api::types::UpdateCategory = serde_json::from_value(body)?;
+            let r = client
+                .update_category()
+                .category_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Delete, Entity::Category) => {
+            let id = extract_i64_id(id, "delete category requires id")?;
+            client
+                .delete_category()
+                .category_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        // ── Group (UUID id) ──
+        (Action::Create, Entity::Group) => {
+            let p: api::types::CreateGroup = serde_json::from_value(body)?;
+            let r = client
+                .create_group()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Update, Entity::Group) => {
+            let id = extract_uuid_id(id, "update group requires id")?;
+            let p: api::types::UpdateGroup = serde_json::from_value(body)?;
+            let r = client
+                .update_group()
+                .group_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+
+        // ── Document (UUID id) ──
+        (Action::Create, Entity::Document) => {
+            let p: api::types::CreateDoc = serde_json::from_value(body)?;
+            let r = client
+                .create_doc()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Update, Entity::Document) => {
+            let id = extract_uuid_id(id, "update document requires id")?;
+            let p: api::types::UpdateDoc = serde_json::from_value(body)?;
+            let r = client
+                .update_doc()
+                .doc_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Delete, Entity::Document) => {
+            let id = extract_uuid_id(id, "delete document requires id")?;
+            client
+                .delete_doc()
+                .doc_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        // ── Project ──
+        (Action::Create, Entity::Project) => {
+            let p: api::types::CreateProject = serde_json::from_value(body)?;
+            let r = client
+                .create_project()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Update, Entity::Project) => {
+            let id = extract_i64_id(id, "update project requires id")?;
+            let p: api::types::UpdateProject = serde_json::from_value(body)?;
+            let r = client
+                .update_project()
+                .project_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Delete, Entity::Project) => {
+            let id = extract_i64_id(id, "delete project requires id")?;
+            client
+                .delete_project()
+                .project_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        // ── Task (needs story_public_id path param) ──
+        (Action::Create, Entity::Task) => {
+            let sid = story_id.ok_or("create task requires story_id")?;
+            let p: api::types::CreateTask = serde_json::from_value(body)?;
+            let r = client
+                .create_task()
+                .story_public_id(sid)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Check | Action::Uncheck, Entity::Task) => {
+            let sid = story_id.ok_or("check/uncheck task requires story_id")?;
+            let tid = extract_i64_id(id, "check/uncheck task requires id")?;
+            let p: api::types::UpdateTask = serde_json::from_value(body)?;
+            let r = client
+                .update_task()
+                .story_public_id(sid)
+                .task_public_id(tid)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+
+        // ── Comment ──
+        (Action::Comment, Entity::Story) => {
+            let id = extract_i64_id(id, "comment on story requires id")?;
+            let p: api::types::CreateStoryComment = serde_json::from_value(body)?;
+            let r = client
+                .create_story_comment()
+                .story_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Comment, Entity::Epic) => {
+            let id = extract_i64_id(id, "comment on epic requires id")?;
+            let p: api::types::CreateEpicComment = serde_json::from_value(body)?;
+            let r = client
+                .create_epic_comment()
+                .epic_public_id(id)
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+
+        // ── Story Link ──
+        (Action::Link, Entity::StoryLink) => {
+            let p: api::types::CreateStoryLink = serde_json::from_value(body)?;
+            let r = client
+                .create_story_link()
+                .body(p)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            serde_json::to_value(&*r).map_err(Into::into)
+        }
+        (Action::Unlink, Entity::StoryLink) => {
+            let id = extract_i64_id(id, "unlink story-link requires id")?;
+            client
+                .delete_story_link()
+                .story_link_public_id(id)
+                .send()
+                .await
+                .map_err(|e| format!("{e}"))?;
+            Ok(serde_json::json!({}))
+        }
+
+        _ => Err(format!(
+            "unsupported action/entity combination: {} {}",
+            action, entity
+        )
+        .into()),
     }
 }
 
-/// Build an HTTP client from the API client's inner reqwest client.
-fn build_http_client(client: &api::Client) -> Result<reqwest::Client, Box<dyn Error>> {
-    // We need a reqwest client with the Shortcut-Token header.
-    // The api::Client wraps one, but we can't easily extract it.
-    // Instead, we'll read the token from the client's base URL pattern
-    // and build a new client. For now, we pass the client through the
-    // CLI handler which has access to the token.
-    //
-    // This function exists as a placeholder — the actual HTTP client
-    // is built in the CLI handler (run_stl.rs) and passed directly.
-    //
-    // We use the inner client from the Progenitor client.
-    Ok(client.client().clone())
+/// Extract an i64 ID from a JSON value.
+fn extract_i64_id(val: Option<&serde_json::Value>, context: &str) -> Result<i64, Box<dyn Error>> {
+    val.and_then(|v| v.as_i64()).ok_or_else(|| context.into())
 }
 
-/// Extract the base URL from the API client.
-fn extract_base_url(client: &api::Client) -> String {
-    client.baseurl().to_owned()
+/// Extract a UUID ID from a JSON value.
+fn extract_uuid_id(
+    val: Option<&serde_json::Value>,
+    context: &str,
+) -> Result<uuid::Uuid, Box<dyn Error>> {
+    let s = val
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| -> Box<dyn Error> { context.into() })?;
+    uuid::Uuid::parse_str(s).map_err(|e| -> Box<dyn Error> { format!("{context}: {e}").into() })
 }
 
 /// Display a JSON value as a string (for IDs).
