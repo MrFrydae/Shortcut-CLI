@@ -1,4 +1,4 @@
-# `sc` — Shortcut CLI
+# `shortcut` — Shortcut CLI
 
 [![CI](https://github.com/MrFrydae/Shortcut-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/MrFrydae/Shortcut-CLI/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -29,58 +29,58 @@ cargo install --path .
 ## Quick Start
 
 ```sh
-sc init              # Set up config directory for the current project
-sc login             # Authenticate with your Shortcut API token
-sc epic list         # List all epics in your workspace
+shortcut init              # Set up config directory for the current project
+shortcut login             # Authenticate with your Shortcut API token
+shortcut epic list         # List all epics in your workspace
 ```
 
 ## Usage
 
-### `sc init`
+### `shortcut init`
 
-Initialize the `~/.sc/` directory structure for the current project.
+Initialize the `~/.shortcut/` directory structure for the current project.
 
 ```sh
-sc init
-# Initialized sc for /path/to/your/project
+shortcut init
+# Initialized shortcut for /path/to/your/project
 ```
 
-### `sc login`
+### `shortcut login`
 
 Authenticate with your Shortcut API token. Prompts interactively if `--token` is omitted.
 
 ```sh
-sc login
+shortcut login
 # Shortcut API token: ****
 
-sc login --token <TOKEN>
+shortcut login --token <TOKEN>
 # Logged in as Jane Doe (@jane)
 ```
 
-### `sc epic list`
+### `shortcut epic list`
 
 List all epics in your workspace.
 
 ```sh
-sc epic list
+shortcut epic list
 # 42 - My Epic
 # 43 - Another Epic
 
-sc epic list --desc
+shortcut epic list --desc
 # 42 - My Epic
 #   Build the thing
 # 43 - Another Epic
 #   Ship the feature
 ```
 
-### `sc epic update`
+### `shortcut epic update`
 
 Update an epic by ID. All options except `--id` are optional.
 
 ```sh
-sc epic update --id 42 --name "Renamed Epic"
-sc epic update --id 42 --epic-state-id in_progress
-sc epic update --id 42 --deadline 2026-06-01T00:00:00Z --labels "backend,priority"
+shortcut epic update --id 42 --name "Renamed Epic"
+shortcut epic update --id 42 --epic-state-id in_progress
+shortcut epic update --id 42 --deadline 2026-06-01T00:00:00Z --labels "backend,priority"
 # Updated epic 42 - Renamed Epic
 ```
 
@@ -98,29 +98,29 @@ sc epic update --id 42 --deadline 2026-06-01T00:00:00Z --labels "backend,priorit
 | `--follower-ids <UUID,...>` | Follower member UUIDs (comma-separated) |
 | `--requested-by-id <UUID>` | Requester member UUID |
 
-### `sc member`
+### `shortcut member`
 
 List or look up workspace members.
 
 ```sh
-sc member --list
+shortcut member --list
 # 12345678-abcd-... - @jane - Jane Doe (admin)
 # 87654321-dcba-... - @bob  - Bob Smith (member)
 
-sc member --id @jane
-sc member --id 12345678-abcd-1234-abcd-1234567890ab
+shortcut member --id @jane
+shortcut member --id 12345678-abcd-1234-abcd-1234567890ab
 ```
 
-### `sc workflow`
+### `shortcut workflow`
 
 List workflows or view a specific workflow's states.
 
 ```sh
-sc workflow --list
+shortcut workflow --list
 # 500000001 - Development
 # 500000002 - Bug Tracking
 
-sc workflow --id 500000001
+shortcut workflow --id 500000001
 # Development (500000001)
 # ID          Type        Name
 # 500000010   unstarted   Backlog
@@ -130,10 +130,10 @@ sc workflow --id 500000001
 
 ## Configuration
 
-All config lives under `~/.sc/`, with per-project directories keyed by path hash:
+All config lives under `~/.shortcut/`, with per-project directories keyed by path hash:
 
 ```
-~/.sc/
+~/.shortcut/
 └── projects/
     └── <hash>/
         ├── token                       # API token (chmod 0600)
@@ -142,7 +142,7 @@ All config lives under `~/.sc/`, with per-project directories keyed by path hash
             └── member_cache.json       # @mention → UUID mapping
 ```
 
-- **Project discovery** walks up from the current directory to find a registered project, so `sc` works from any subdirectory.
+- **Project discovery** walks up from the current directory to find a registered project, so `shortcut` works from any subdirectory.
 - **Caches** are populated automatically on first use and refreshed on cache miss.
 
 ## Development

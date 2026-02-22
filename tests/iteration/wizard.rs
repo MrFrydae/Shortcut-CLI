@@ -1,5 +1,5 @@
-use sc::commands::iteration::wizard::run_wizard;
-use sc::interactive::{MemberChoice, MockAnswer, MockPrompter};
+use shortcut_cli::commands::iteration::wizard::run_wizard;
+use shortcut_cli::interactive::{MemberChoice, MockAnswer, MockPrompter};
 
 use crate::make_create_args;
 
@@ -17,8 +17,8 @@ fn test_members() -> Vec<MemberChoice> {
 }
 
 /// Helper to build a default CreateArgs with interactive=true and no required fields.
-fn empty_interactive_args() -> sc::commands::iteration::CreateArgs {
-    sc::commands::iteration::CreateArgs {
+fn empty_interactive_args() -> shortcut_cli::commands::iteration::CreateArgs {
+    shortcut_cli::commands::iteration::CreateArgs {
         interactive: true,
         name: None,
         start_date: None,

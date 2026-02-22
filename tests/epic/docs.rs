@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::doc_slim_json;
-use sc::{api, commands::epic};
+use shortcut_cli::{api, commands::epic};
 
 #[tokio::test]
 async fn list_epic_documents() {

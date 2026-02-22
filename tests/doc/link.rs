@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::DOC_UUID;
-use sc::{api, commands::doc};
+use shortcut_cli::{api, commands::doc};
 
 #[tokio::test]
 async fn link_doc_to_epic() {

@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::objective_json;
-use sc::{api, commands::objective};
+use shortcut_cli::{api, commands::objective};
 
 #[tokio::test]
 async fn delete_objective_with_confirm() {

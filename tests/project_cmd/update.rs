@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::project_json;
-use sc::{api, commands::project};
+use shortcut_cli::{api, commands::project};
 
 #[tokio::test]
 async fn update_project() {

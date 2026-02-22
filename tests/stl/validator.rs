@@ -1,5 +1,5 @@
-use sc::stl::parser;
-use sc::stl::validator::{ValidationError, validate};
+use shortcut_cli::stl::parser;
+use shortcut_cli::stl::validator::{ValidationError, validate};
 
 fn parse_and_validate(yaml: &str) -> Vec<ValidationError> {
     let template = parser::parse(yaml).unwrap();

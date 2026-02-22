@@ -4,7 +4,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use crate::support::{
     full_story_json, full_story_json_with_links, story_link_json, typed_story_link_json,
 };
-use sc::{api, commands::story, commands::story::link as story_link};
+use shortcut_cli::{api, commands::story, commands::story::link as story_link};
 
 #[tokio::test]
 async fn link_create_blocks() {

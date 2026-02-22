@@ -6,7 +6,7 @@ use crate::support::{
     workflow_state_json,
 };
 use crate::{UUID_ALICE, make_update_args};
-use sc::{api, commands::story};
+use shortcut_cli::{api, commands::story};
 
 #[tokio::test]
 async fn update_story_name_and_description() {

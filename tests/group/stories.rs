@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::UUID_GROUP1;
 use crate::support::{group_json, story_json};
-use sc::{api, commands::group};
+use shortcut_cli::{api, commands::group};
 
 #[tokio::test]
 async fn list_group_stories() {

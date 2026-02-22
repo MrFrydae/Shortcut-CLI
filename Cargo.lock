@@ -1376,33 +1376,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
-name = "sc"
-version = "0.0.11"
-dependencies = [
- "atty",
- "chrono",
- "clap",
- "clap_complete",
- "colored",
- "dialoguer",
- "openapiv3",
- "prettyplease",
- "progenitor",
- "progenitor-client",
- "regress",
- "reqwest",
- "rpassword",
- "serde",
- "serde_json",
- "serde_yaml",
- "syn",
- "tempfile",
- "tokio",
- "uuid",
- "wiremock",
-]
-
-[[package]]
 name = "schannel"
 version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1578,6 +1551,33 @@ name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
+
+[[package]]
+name = "shortcut-cli"
+version = "0.0.11"
+dependencies = [
+ "atty",
+ "chrono",
+ "clap",
+ "clap_complete",
+ "colored",
+ "dialoguer",
+ "openapiv3",
+ "prettyplease",
+ "progenitor",
+ "progenitor-client",
+ "regress",
+ "reqwest",
+ "rpassword",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "syn",
+ "tempfile",
+ "tokio",
+ "uuid",
+ "wiremock",
+]
 
 [[package]]
 name = "signal-hook-registry"

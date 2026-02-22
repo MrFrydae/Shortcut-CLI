@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::DOC_UUID;
 use crate::support::doc_slim_json;
-use sc::{api, commands::doc};
+use shortcut_cli::{api, commands::doc};
 
 #[tokio::test]
 async fn create_doc_minimal() {

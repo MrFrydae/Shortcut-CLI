@@ -34,8 +34,8 @@ pub const UUID_FIELD_1: &str = "11111111-1111-1111-1111-111111111111";
 pub const UUID_VAL_A: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaab";
 pub const UUID_VAL_B: &str = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2";
 
-pub fn make_create_args(name: &str) -> sc::commands::story::CreateArgs {
-    sc::commands::story::CreateArgs {
+pub fn make_create_args(name: &str) -> shortcut_cli::commands::story::CreateArgs {
+    shortcut_cli::commands::story::CreateArgs {
         interactive: false,
         name: Some(name.to_string()),
         description: None,
@@ -51,8 +51,8 @@ pub fn make_create_args(name: &str) -> sc::commands::story::CreateArgs {
     }
 }
 
-pub fn make_update_args(id: i64) -> sc::commands::story::UpdateArgs {
-    sc::commands::story::UpdateArgs {
+pub fn make_update_args(id: i64) -> shortcut_cli::commands::story::UpdateArgs {
+    shortcut_cli::commands::story::UpdateArgs {
         id,
         name: None,
         description: None,
@@ -67,8 +67,8 @@ pub fn make_update_args(id: i64) -> sc::commands::story::UpdateArgs {
     }
 }
 
-pub fn make_list_args() -> sc::commands::story::ListArgs {
-    sc::commands::story::ListArgs {
+pub fn make_list_args() -> shortcut_cli::commands::story::ListArgs {
+    shortcut_cli::commands::story::ListArgs {
         owner: None,
         state: None,
         epic_id: None,

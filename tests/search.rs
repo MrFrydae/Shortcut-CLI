@@ -15,8 +15,8 @@ mod objectives;
 #[path = "search/stories.rs"]
 mod stories;
 
-pub fn make_query(query: &str) -> sc::commands::search::SearchQueryArgs {
-    sc::commands::search::SearchQueryArgs {
+pub fn make_query(query: &str) -> shortcut_cli::commands::search::SearchQueryArgs {
+    shortcut_cli::commands::search::SearchQueryArgs {
         query: query.to_string(),
         page_size: 25,
         next: None,

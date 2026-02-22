@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{full_story_json, make_dry_run_output};
-use sc::{api, commands::story};
+use shortcut_cli::{api, commands::story};
 
 #[tokio::test]
 async fn delete_story_with_confirm() {

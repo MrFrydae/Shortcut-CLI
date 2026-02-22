@@ -5,7 +5,7 @@ use crate::support::{
     default_icon, epic_state_json, epic_workflow_json, full_epic_json, member_json,
 };
 use crate::{UUID_ALICE, make_create_args};
-use sc::{api, commands::epic};
+use shortcut_cli::{api, commands::epic};
 
 #[tokio::test]
 async fn create_epic_minimal() {

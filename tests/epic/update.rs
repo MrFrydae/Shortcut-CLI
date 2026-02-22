@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::make_update_args;
 use crate::support::{epic_state_json, epic_workflow_json, full_epic_json};
-use sc::{api, commands::epic};
+use shortcut_cli::{api, commands::epic};
 
 #[tokio::test]
 async fn update_epic_sets_description() {

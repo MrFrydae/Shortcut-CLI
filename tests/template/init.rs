@@ -1,9 +1,9 @@
 use crate::support::make_output;
-use sc::commands::template;
+use shortcut_cli::commands::template;
 
 #[tokio::test]
 async fn init_stdout_prints_content() {
-    use sc::output::{ColorMode, OutputConfig, OutputMode};
+    use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
 
     let (out, buf) = OutputConfig::with_buffer(OutputMode::Human, ColorMode::Never);
     let args = template::init::InitArgs {
@@ -63,7 +63,7 @@ async fn init_appends_to_existing_claude_md() {
 
 #[tokio::test]
 async fn init_idempotent_no_duplicate() {
-    use sc::output::{ColorMode, OutputConfig, OutputMode};
+    use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
 
     let tmp = tempfile::tempdir().unwrap();
 

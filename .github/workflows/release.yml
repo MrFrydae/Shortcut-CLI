@@ -45,13 +45,13 @@ jobs:
       - name: Package binary
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../sc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz sc
+          tar czf ../../../shortcut-${{ github.ref_name }}-${{ matrix.target }}.tar.gz shortcut
           cd ../../..
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sc-${{ matrix.target }}
-          path: sc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          name: shortcut-${{ matrix.target }}
+          path: shortcut-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
 
   release:
     needs: build
@@ -62,14 +62,14 @@ jobs:
           merge-multiple: true
 
       - name: Generate checksums
-        run: shasum -a 256 sc-*.tar.gz > checksums.txt
+        run: shasum -a 256 shortcut-*.tar.gz > checksums.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
-            sc-*.tar.gz
+            shortcut-*.tar.gz
             checksums.txt
 
       - name: Update Homebrew tap
@@ -84,21 +84,21 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           TAG="${GITHUB_REF_NAME}"
 
-          SHA_AARCH64_DARWIN=$(shasum -a 256 sc-${TAG}-aarch64-apple-darwin.tar.gz | awk '{print $1}')
-          SHA_X86_64_LINUX=$(shasum -a 256 sc-${TAG}-x86_64-unknown-linux-gnu.tar.gz | awk '{print $1}')
-          SHA_AARCH64_LINUX=$(shasum -a 256 sc-${TAG}-aarch64-unknown-linux-gnu.tar.gz | awk '{print $1}')
+          SHA_AARCH64_DARWIN=$(shasum -a 256 shortcut-${TAG}-aarch64-apple-darwin.tar.gz | awk '{print $1}')
+          SHA_X86_64_LINUX=$(shasum -a 256 shortcut-${TAG}-x86_64-unknown-linux-gnu.tar.gz | awk '{print $1}')
+          SHA_AARCH64_LINUX=$(shasum -a 256 shortcut-${TAG}-aarch64-unknown-linux-gnu.tar.gz | awk '{print $1}')
 
           REPO_URL="https://github.com/MrFrydae/Shortcut-CLI/releases/download/${TAG}"
 
-          cat > sc.rb << FORMULA
-          class Sc < Formula
+          cat > shortcut.rb << FORMULA
+          class Shortcut < Formula
             desc "CLI for the Shortcut project management platform"
             homepage "https://github.com/MrFrydae/Shortcut-CLI"
             license "AGPL-3.0"
 
             on_macos do
               on_arm do
-                url "${REPO_URL}/sc-${TAG}-aarch64-apple-darwin.tar.gz"
+                url "${REPO_URL}/shortcut-${TAG}-aarch64-apple-darwin.tar.gz"
                 sha256 "${SHA_AARCH64_DARWIN}"
               end
               on_intel do
@@ -108,34 +108,34 @@ jobs:
 
             on_linux do
               on_arm do
-                url "${REPO_URL}/sc-${TAG}-aarch64-unknown-linux-gnu.tar.gz"
+                url "${REPO_URL}/shortcut-${TAG}-aarch64-unknown-linux-gnu.tar.gz"
                 sha256 "${SHA_AARCH64_LINUX}"
               end
               on_intel do
-                url "${REPO_URL}/sc-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+                url "${REPO_URL}/shortcut-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
                 sha256 "${SHA_X86_64_LINUX}"
               end
             end
 
             def install
-              bin.install "sc"
+              bin.install "shortcut"
 
-              generate_completions_from_executable(bin/"sc", "completions")
+              generate_completions_from_executable(bin/"shortcut", "completions")
             end
 
             test do
-              assert_match version.to_s, shell_output("#{bin}/sc --version")
+              assert_match version.to_s, shell_output("#{bin}/shortcut --version")
             end
           end
           FORMULA
 
           git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/MrFrydae/homebrew-tap.git" tap
           mkdir -p tap/Formula
-          cp sc.rb tap/Formula/sc.rb
+          cp shortcut.rb tap/Formula/shortcut.rb
 
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/sc.rb
-          git commit -m "Update sc to ${VERSION}"
+          git add Formula/shortcut.rb
+          git commit -m "Update shortcut to ${VERSION}"
           git push

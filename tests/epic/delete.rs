@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::full_epic_json;
-use sc::{api, commands::epic};
+use shortcut_cli::{api, commands::epic};
 
 #[tokio::test]
 async fn delete_epic_with_confirm() {

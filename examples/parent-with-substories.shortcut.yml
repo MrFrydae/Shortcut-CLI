@@ -6,9 +6,9 @@
 # Demonstrates inline tasks arrays on story creation.
 #
 # Usage:
-#   sc template validate examples/parent-with-substories.sc.yml
-#   sc template run examples/parent-with-substories.sc.yml --dry-run
-#   sc template run examples/parent-with-substories.sc.yml \
+#   shortcut template validate examples/parent-with-substories.shortcut.yml
+#   shortcut template run examples/parent-with-substories.shortcut.yml --dry-run
+#   shortcut template run examples/parent-with-substories.shortcut.yml \
 #     --var parent_name="Epic Feature" \
 #     --var child_a_name="Frontend Work" \
 #     --var child_b_name="Backend Work"

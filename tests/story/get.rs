@@ -4,8 +4,8 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use crate::support::{
     branch_json, full_story_json, full_story_json_with_branches_and_prs, pull_request_json,
 };
-use sc::output::{ColorMode, OutputConfig, OutputMode};
-use sc::{api, commands::story};
+use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
+use shortcut_cli::{api, commands::story};
 
 #[tokio::test]
 async fn get_story_prints_details() {

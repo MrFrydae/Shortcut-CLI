@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::error::Error;
 
-use sc::commands::story::{commit, git};
-use sc::output::{ColorMode, OutputConfig, OutputMode};
+use shortcut_cli::commands::story::{commit, git};
+use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
 
 struct TestGitRunner {
     branch: String,

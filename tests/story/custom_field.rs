@@ -6,7 +6,7 @@ use crate::support::{
     full_story_json_with_custom_fields, story_custom_field_json,
 };
 use crate::{UUID_FIELD_1, UUID_VAL_A, UUID_VAL_B, make_create_args, make_update_args};
-use sc::{api, commands::story};
+use shortcut_cli::{api, commands::story};
 
 #[tokio::test]
 async fn get_story_with_custom_fields() {

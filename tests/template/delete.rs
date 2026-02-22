@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::TEMPLATE_UUID;
 use crate::support::entity_template_json;
-use sc::{api, commands::template};
+use shortcut_cli::{api, commands::template};
 
 #[tokio::test]
 async fn delete_template_with_confirm() {

@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{default_icon, member_json, story_json, workflow_json, workflow_state_json};
 use crate::{UUID_ALICE, make_list_args};
-use sc::{api, commands::story};
+use shortcut_cli::{api, commands::story};
 
 #[tokio::test]
 async fn list_stories_minimal() {

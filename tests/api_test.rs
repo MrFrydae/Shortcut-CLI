@@ -1,4 +1,4 @@
-use sc::api;
+use shortcut_cli::api;
 
 #[test]
 fn client_with_token_builds_successfully() {

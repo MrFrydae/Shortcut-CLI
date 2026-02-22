@@ -5,8 +5,8 @@ use crate::support::{
     full_epic_json, full_story_json, iteration_json, label_json, make_dry_run_output, make_output,
     story_comment_json, story_link_json,
 };
-use sc::output::{ColorMode, OutputConfig, OutputMode};
-use sc::{api, commands::template};
+use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
+use shortcut_cli::{api, commands::template};
 
 fn run_args(file: &str) -> template::TemplateArgs {
     template::TemplateArgs {
@@ -30,7 +30,7 @@ fn run_args_with_vars(file: &str, vars: Vec<(String, String)>) -> template::Temp
 
 /// Helper to write a YAML template to a temp file and return its path.
 fn write_template(dir: &tempfile::TempDir, yaml: &str) -> String {
-    let path = dir.path().join("test.sc.yml");
+    let path = dir.path().join("test.shortcut.yml");
     std::fs::write(&path, yaml).unwrap();
     path.to_str().unwrap().to_string()
 }

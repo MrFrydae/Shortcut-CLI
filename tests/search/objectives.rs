@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::make_query;
 use crate::support::search_objective_result_json;
-use sc::{api, commands::search};
+use shortcut_cli::{api, commands::search};
 
 #[tokio::test]
 async fn search_objectives_with_results() {

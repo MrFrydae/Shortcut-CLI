@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{default_icon, group_json, member_json};
 use crate::{UUID_ALICE, UUID_GROUP1, UUID_GROUP2};
-use sc::{api, commands::group};
+use shortcut_cli::{api, commands::group};
 
 #[tokio::test]
 async fn get_group() {

@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::TEMPLATE_UUID;
 use crate::support::{entity_template_json_minimal, full_story_json};
-use sc::{api, commands::template};
+use shortcut_cli::{api, commands::template};
 
 #[tokio::test]
 async fn use_template_minimal() {

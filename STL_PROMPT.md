@@ -1,16 +1,16 @@
 # STL Quick Reference (Prompt-Ready)
 
-File: `.sc.yml` | YAML 1.0 | `version: 1` required
-Validate: `sc template validate <file>` | Run: `sc template run <file> --confirm`
+File: `.shortcut.yml` | YAML 1.0 | `version: 1` required
+Validate: `shortcut template validate <file>` | Run: `shortcut template run <file> --confirm`
 Full spec: https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
 
 ---
 
-HEADER — prepend to every generated `.sc.yml`:
+HEADER — prepend to every generated `.shortcut.yml`:
 ```yaml
 # Shortcut Template Language (STL) v1
-# Validate: sc template validate <this-file>
-# Run:      sc template run <this-file> --confirm
+# Validate: shortcut template validate <this-file>
+# Run:      shortcut template run <this-file> --confirm
 # Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
 ```
 
@@ -65,8 +65,8 @@ ERROR — `on_error: continue` at document or operation level. Operation overrid
 EXAMPLE:
 ```yaml
 # Shortcut Template Language (STL) v1
-# Validate: sc template validate <this-file>
-# Run:      sc template run <this-file> --confirm
+# Validate: shortcut template validate <this-file>
+# Run:      shortcut template run <this-file> --confirm
 # Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
 
 version: 1

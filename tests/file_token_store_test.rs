@@ -1,4 +1,4 @@
-use sc::auth::{FileTokenStore, TokenStore};
+use shortcut_cli::auth::{FileTokenStore, TokenStore};
 
 #[test]
 fn roundtrip_store_and_get() {

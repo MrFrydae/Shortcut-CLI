@@ -1,5 +1,5 @@
 use crate::support::make_output;
-use sc::commands::template;
+use shortcut_cli::commands::template;
 
 fn validate_args(file: &str) -> template::TemplateArgs {
     template::TemplateArgs {
@@ -10,7 +10,7 @@ fn validate_args(file: &str) -> template::TemplateArgs {
 }
 
 fn write_template(dir: &tempfile::TempDir, yaml: &str) -> String {
-    let path = dir.path().join("test.sc.yml");
+    let path = dir.path().join("test.shortcut.yml");
     std::fs::write(&path, yaml).unwrap();
     path.to_str().unwrap().to_string()
 }
@@ -135,7 +135,7 @@ async fn validate_file_not_found() {
     let out = make_output();
     let result = template::validate_stl::run(
         &template::validate_stl::ValidateArgs {
-            file: "/nonexistent/path.sc.yml".to_string(),
+            file: "/nonexistent/path.shortcut.yml".to_string(),
         },
         &out,
     )

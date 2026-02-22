@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::make_list_args;
 use crate::support::epic_json;
-use sc::{api, commands::epic};
+use shortcut_cli::{api, commands::epic};
 
 #[tokio::test]
 async fn list_epics_prints_names() {

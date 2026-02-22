@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::make_query;
 use crate::support::doc_slim_json;
-use sc::{api, commands::search};
+use shortcut_cli::{api, commands::search};
 
 #[tokio::test]
 async fn search_documents_with_results() {

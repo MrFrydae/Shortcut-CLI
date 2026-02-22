@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{full_story_json_with_tasks, task_json};
-use sc::{api, commands::story, commands::story::task};
+use shortcut_cli::{api, commands::story, commands::story::task};
 
 // --- Add tests ---
 

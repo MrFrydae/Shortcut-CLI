@@ -1,5 +1,5 @@
-use sc::commands::story::wizard::{WizardChoices, run_wizard};
-use sc::interactive::{IdChoice, MemberChoice, MockAnswer, MockPrompter, UuidChoice};
+use shortcut_cli::commands::story::wizard::{WizardChoices, run_wizard};
+use shortcut_cli::interactive::{IdChoice, MemberChoice, MockAnswer, MockPrompter, UuidChoice};
 
 use crate::make_create_args;
 
@@ -64,8 +64,8 @@ fn test_iteration_choices() -> Vec<IdChoice> {
 }
 
 /// Helper to build a default CreateArgs with interactive=true and no name.
-fn empty_interactive_args() -> sc::commands::story::CreateArgs {
-    sc::commands::story::CreateArgs {
+fn empty_interactive_args() -> shortcut_cli::commands::story::CreateArgs {
+    shortcut_cli::commands::story::CreateArgs {
         interactive: true,
         name: None,
         description: None,

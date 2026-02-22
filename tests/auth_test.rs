@@ -1,6 +1,6 @@
 mod support;
 
-use sc::auth::TokenStore;
+use shortcut_cli::auth::TokenStore;
 use support::MockTokenStore;
 
 #[test]

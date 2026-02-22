@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{epic_json, objective_json};
-use sc::{api, commands::objective};
+use shortcut_cli::{api, commands::objective};
 
 #[tokio::test]
 async fn get_objective() {

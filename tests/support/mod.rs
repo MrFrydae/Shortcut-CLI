@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
-use sc::auth::{AuthError, TokenStore};
-use sc::output::{ColorMode, OutputConfig, OutputMode, SharedBuffer};
+use shortcut_cli::auth::{AuthError, TokenStore};
+use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode, SharedBuffer};
 
 /// Create an `OutputConfig` for tests that writes to an in-memory buffer.
 pub fn make_output() -> OutputConfig {

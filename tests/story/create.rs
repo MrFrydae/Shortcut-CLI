@@ -6,7 +6,7 @@ use crate::support::{
     workflow_state_json,
 };
 use crate::{UUID_ALICE, UUID_BOB, make_create_args};
-use sc::{api, commands::story};
+use shortcut_cli::{api, commands::story};
 
 #[tokio::test]
 async fn create_story_minimal() {

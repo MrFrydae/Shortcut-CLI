@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{story_comment_json, story_comment_json_with_reactions, story_reaction_json};
-use sc::{api, commands::story::comment as story_comment};
+use shortcut_cli::{api, commands::story::comment as story_comment};
 
 const UUID_AUTHOR: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 

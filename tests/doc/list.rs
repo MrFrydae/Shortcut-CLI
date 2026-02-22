@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::doc_slim_json;
 use crate::{DOC_UUID, DOC_UUID2};
-use sc::{api, commands::doc};
+use shortcut_cli::{api, commands::doc};
 
 #[tokio::test]
 async fn list_docs() {

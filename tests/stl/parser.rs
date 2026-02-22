@@ -1,5 +1,5 @@
-use sc::stl::parser::parse;
-use sc::stl::types::{Action, Entity, ErrorHandling};
+use shortcut_cli::stl::parser::parse;
+use shortcut_cli::stl::types::{Action, Entity, ErrorHandling};
 
 #[test]
 fn parse_minimal_template() {

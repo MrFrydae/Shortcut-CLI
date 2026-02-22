@@ -4,7 +4,7 @@ use crate::commands;
 
 /// CLI for interacting with Shortcut
 #[derive(Parser)]
-#[command(name = "sc", version)]
+#[command(name = "shortcut", version)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
@@ -36,7 +36,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Initialize ~/.sc/ directory for token and cache storage
+    /// Initialize ~/.shortcut/ directory for token and cache storage
     Init,
     /// Authenticate with your Shortcut API token
     Login(commands::login::LoginArgs),

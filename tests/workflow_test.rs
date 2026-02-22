@@ -1,6 +1,6 @@
 mod support;
 
-use sc::{api, commands::workflow};
+use shortcut_cli::{api, commands::workflow};
 use support::{workflow_json, workflow_state_json};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};

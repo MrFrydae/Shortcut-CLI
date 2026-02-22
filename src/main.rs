@@ -1,7 +1,7 @@
 use clap::Parser;
-use sc::cli::{Cli, Command};
-use sc::output::{ColorMode, OutputConfig, OutputMode};
-use sc::{api, auth, commands, project};
+use shortcut_cli::cli::{Cli, Command};
+use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
+use shortcut_cli::{api, auth, commands, project};
 
 #[tokio::main]
 async fn main() {

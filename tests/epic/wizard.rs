@@ -1,5 +1,5 @@
-use sc::commands::epic::wizard::run_wizard;
-use sc::interactive::{IdChoice, MemberChoice, MockAnswer, MockPrompter, UuidChoice};
+use shortcut_cli::commands::epic::wizard::run_wizard;
+use shortcut_cli::interactive::{IdChoice, MemberChoice, MockAnswer, MockPrompter, UuidChoice};
 
 use crate::make_create_args;
 
@@ -47,8 +47,8 @@ fn test_epic_states() -> Vec<String> {
 }
 
 /// Helper to build a default CreateArgs with interactive=true and no name.
-fn empty_interactive_args() -> sc::commands::epic::CreateArgs {
-    sc::commands::epic::CreateArgs {
+fn empty_interactive_args() -> shortcut_cli::commands::epic::CreateArgs {
+    shortcut_cli::commands::epic::CreateArgs {
         interactive: true,
         name: None,
         description: None,

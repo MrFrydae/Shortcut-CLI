@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::DOC_UUID;
 use crate::support::doc_json;
-use sc::{api, commands::doc};
+use shortcut_cli::{api, commands::doc};
 
 #[tokio::test]
 async fn delete_doc_with_confirm() {

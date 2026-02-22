@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use sc::stl::resolver::{resolve_refs, substitute_vars, yaml_to_json};
+use shortcut_cli::stl::resolver::{resolve_refs, substitute_vars, yaml_to_json};
 
 // --- Variable substitution tests ---
 

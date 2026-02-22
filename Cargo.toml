@@ -1,11 +1,15 @@
 [package]
-name = "sc"
+name = "shortcut-cli"
 version = "0.0.11"
 edition = "2024"
 
 [lib]
-name = "sc"
+name = "shortcut_cli"
 path = "src/lib.rs"
+
+[[bin]]
+name = "shortcut"
+path = "src/main.rs"
 
 [dependencies]
 atty = "0.2"

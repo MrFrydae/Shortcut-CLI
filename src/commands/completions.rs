@@ -10,7 +10,7 @@ use crate::cli::Cli;
 /// like `completions` itself don't appear in the generated completion scripts.
 fn build_visible_cmd() -> ClapCommand {
     let base = Cli::command();
-    let mut cmd = ClapCommand::new("sc");
+    let mut cmd = ClapCommand::new("shortcut");
 
     for arg in base.get_arguments() {
         cmd = cmd.arg(arg.clone());
@@ -27,6 +27,6 @@ fn build_visible_cmd() -> ClapCommand {
 
 pub fn run(shell: Shell, writer: &mut dyn Write) -> Result<(), Box<dyn Error>> {
     let mut cmd = build_visible_cmd();
-    generate(shell, &mut cmd, "sc", writer);
+    generate(shell, &mut cmd, "shortcut", writer);
     Ok(())
 }

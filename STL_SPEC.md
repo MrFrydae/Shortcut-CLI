@@ -1,19 +1,19 @@
 # STL (Shortcut Template Language) — AI Agent Specification
 
-> Machine-readable spec for AI coding agents generating `.sc.yml` files.
+> Machine-readable spec for AI coding agents generating `.shortcut.yml` files.
 > Source of truth: `src/stl/validator.rs`
 
 ---
 
 ## File Format
 
-- YAML 1.0, file extension: `.sc.yml`
+- YAML 1.0, file extension: `.shortcut.yml`
 - Every generated file MUST begin with this header comment:
 
 ```yaml
 # Shortcut Template Language (STL) v1
-# Validate: sc template validate <this-file>
-# Run:      sc template run <this-file> --confirm
+# Validate: shortcut template validate <this-file>
+# Run:      shortcut template run <this-file> --confirm
 # Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
 ```
 
@@ -235,8 +235,8 @@ Operation-level overrides document-level. When no `on_error` is specified at eit
 
 ```yaml
 # Shortcut Template Language (STL) v1
-# Validate: sc template validate <this-file>
-# Run:      sc template run <this-file> --confirm
+# Validate: shortcut template validate <this-file>
+# Run:      shortcut template run <this-file> --confirm
 # Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
 
 version: 1
@@ -253,8 +253,8 @@ operations:
 
 ```yaml
 # Shortcut Template Language (STL) v1
-# Validate: sc template validate <this-file>
-# Run:      sc template run <this-file> --confirm
+# Validate: shortcut template validate <this-file>
+# Run:      shortcut template run <this-file> --confirm
 # Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
 
 version: 1
@@ -294,8 +294,8 @@ operations:
 
 ```yaml
 # Shortcut Template Language (STL) v1
-# Validate: sc template validate <this-file>
-# Run:      sc template run <this-file> --confirm
+# Validate: shortcut template validate <this-file>
+# Run:      shortcut template run <this-file> --confirm
 # Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
 
 version: 1

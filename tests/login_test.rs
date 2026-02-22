@@ -1,6 +1,6 @@
 mod support;
 
-use sc::{auth::TokenStore, commands::login};
+use shortcut_cli::{auth::TokenStore, commands::login};
 use support::{MockTokenStore, member_info_json};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};

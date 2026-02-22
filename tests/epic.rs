@@ -19,14 +19,14 @@ mod wizard;
 
 pub const UUID_ALICE: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
-pub fn make_list_args(desc: bool) -> sc::commands::epic::EpicArgs {
-    sc::commands::epic::EpicArgs {
-        action: sc::commands::epic::EpicAction::List { desc },
+pub fn make_list_args(desc: bool) -> shortcut_cli::commands::epic::EpicArgs {
+    shortcut_cli::commands::epic::EpicArgs {
+        action: shortcut_cli::commands::epic::EpicAction::List { desc },
     }
 }
 
-pub fn make_update_args(id: i64) -> sc::commands::epic::UpdateArgs {
-    sc::commands::epic::UpdateArgs {
+pub fn make_update_args(id: i64) -> shortcut_cli::commands::epic::UpdateArgs {
+    shortcut_cli::commands::epic::UpdateArgs {
         id,
         name: None,
         description: None,
@@ -41,8 +41,8 @@ pub fn make_update_args(id: i64) -> sc::commands::epic::UpdateArgs {
     }
 }
 
-pub fn make_create_args(name: &str) -> sc::commands::epic::CreateArgs {
-    sc::commands::epic::CreateArgs {
+pub fn make_create_args(name: &str) -> shortcut_cli::commands::epic::CreateArgs {
+    shortcut_cli::commands::epic::CreateArgs {
         interactive: false,
         name: Some(name.to_string()),
         description: None,

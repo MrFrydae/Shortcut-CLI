@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::objective_json;
-use sc::{api, commands::category};
+use shortcut_cli::{api, commands::category};
 
 #[tokio::test]
 async fn list_category_objectives() {

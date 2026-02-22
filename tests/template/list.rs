@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::entity_template_json;
 use crate::{TEMPLATE_UUID, TEMPLATE_UUID2};
-use sc::{api, commands::template};
+use shortcut_cli::{api, commands::template};
 
 #[tokio::test]
 async fn list_templates() {

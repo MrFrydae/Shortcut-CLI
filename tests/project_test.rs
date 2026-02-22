@@ -1,4 +1,4 @@
-use sc::project;
+use shortcut_cli::project;
 
 #[test]
 fn init_creates_structure() {

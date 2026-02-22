@@ -1,5 +1,5 @@
 use clap_complete::Shell;
-use sc::commands::completions;
+use shortcut_cli::commands::completions;
 
 fn generate(shell: Shell) -> String {
     let mut buf = Vec::new();
@@ -11,8 +11,8 @@ fn generate(shell: Shell) -> String {
 fn generates_bash_completions() {
     let output = generate(Shell::Bash);
     assert!(
-        output.contains("_sc"),
-        "bash completions should contain _sc function"
+        output.contains("_shortcut"),
+        "bash completions should contain _shortcut function"
     );
 }
 
@@ -20,8 +20,8 @@ fn generates_bash_completions() {
 fn generates_zsh_completions() {
     let output = generate(Shell::Zsh);
     assert!(
-        output.contains("#compdef sc"),
-        "zsh completions should contain #compdef sc"
+        output.contains("#compdef shortcut"),
+        "zsh completions should contain #compdef shortcut"
     );
 }
 
@@ -29,8 +29,8 @@ fn generates_zsh_completions() {
 fn generates_fish_completions() {
     let output = generate(Shell::Fish);
     assert!(
-        output.contains("complete -c sc"),
-        "fish completions should contain 'complete -c sc'"
+        output.contains("complete -c shortcut"),
+        "fish completions should contain 'complete -c shortcut'"
     );
 }
 
@@ -42,8 +42,8 @@ fn generates_powershell_completions() {
         "powershell completions should not be empty"
     );
     assert!(
-        output.contains("sc"),
-        "powershell completions should reference 'sc'"
+        output.contains("shortcut"),
+        "powershell completions should reference 'shortcut'"
     );
 }
 

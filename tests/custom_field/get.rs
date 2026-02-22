@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{custom_field_enum_value_json, custom_field_json};
 use crate::{UUID_FIELD_1, UUID_VAL_A, UUID_VAL_B};
-use sc::{api, commands::custom_field};
+use shortcut_cli::{api, commands::custom_field};
 
 #[tokio::test]
 async fn get_custom_field() {

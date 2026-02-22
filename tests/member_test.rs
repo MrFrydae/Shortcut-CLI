@@ -1,6 +1,6 @@
 mod support;
 
-use sc::{api, commands::member};
+use shortcut_cli::{api, commands::member};
 use support::{default_icon, member_json};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};

@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::threaded_comment_json;
-use sc::{api, commands::epic::comment as epic_comment};
+use shortcut_cli::{api, commands::epic::comment as epic_comment};
 
 const UUID_AUTHOR: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 

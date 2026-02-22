@@ -8,7 +8,7 @@ use crate::support::{
     history_reference_label_json, history_reference_workflow_state_json, member_json,
 };
 use crate::{UUID_ALICE, UUID_BOB};
-use sc::{api, commands::story};
+use shortcut_cli::{api, commands::story};
 
 fn make_history_args(id: i64, limit: Option<usize>) -> story::HistoryArgs {
     story::HistoryArgs { id, limit }

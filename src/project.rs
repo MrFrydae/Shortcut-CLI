@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::{env, fmt, fs, io};
 
-const DIR_NAME: &str = ".sc";
+const DIR_NAME: &str = ".shortcut";
 
 #[derive(Debug)]
 pub enum ProjectError {
@@ -15,7 +15,7 @@ impl fmt::Display for ProjectError {
         match self {
             ProjectError::NotFound => write!(
                 f,
-                "No project registered for this directory. Run `sc init` first."
+                "No project registered for this directory. Run `shortcut init` first."
             ),
             ProjectError::AlreadyExists(p) => {
                 write!(f, "Project already initialized at {}", p.display())
@@ -35,16 +35,16 @@ impl From<io::Error> for ProjectError {
 
 #[derive(Debug, Clone)]
 pub struct ProjectRoot {
-    sc_dir: PathBuf,
+    shortcut_dir: PathBuf,
 }
 
 impl ProjectRoot {
     pub fn token_path(&self) -> PathBuf {
-        self.sc_dir.join("token")
+        self.shortcut_dir.join("token")
     }
 
     pub fn cache_dir(&self) -> PathBuf {
-        self.sc_dir.join("cache")
+        self.shortcut_dir.join("cache")
     }
 }
 
@@ -73,12 +73,12 @@ fn cwd() -> Result<PathBuf, ProjectError> {
     env::current_dir().map_err(ProjectError::Io)
 }
 
-/// Locate the project directory under `~/.sc/projects/<hash>/` for the current working directory.
+/// Locate the project directory under `~/.shortcut/projects/<hash>/` for the current working directory.
 pub fn discover() -> Result<ProjectRoot, ProjectError> {
     discover_in(&home_dir()?, &cwd()?)
 }
 
-/// Create `~/.sc/projects/<hash>/` directory structure for the current working directory.
+/// Create `~/.shortcut/projects/<hash>/` directory structure for the current working directory.
 pub fn init() -> Result<(ProjectRoot, PathBuf), ProjectError> {
     init_in(&home_dir()?, &cwd()?)
 }
@@ -92,9 +92,9 @@ pub fn discover_in(home: &Path, project_path: &Path) -> Result<ProjectRoot, Proj
     let mut current = Some(canonical.as_path());
     while let Some(dir) = current {
         let hash = fnv1a_hex(dir.as_os_str().as_encoded_bytes());
-        let sc_dir = projects_base.join(hash);
-        if sc_dir.is_dir() {
-            return Ok(ProjectRoot { sc_dir });
+        let shortcut_dir = projects_base.join(hash);
+        if shortcut_dir.is_dir() {
+            return Ok(ProjectRoot { shortcut_dir });
         }
         current = dir.parent();
     }
@@ -121,14 +121,14 @@ pub fn discover_or_init_in(home: &Path, project_path: &Path) -> Result<ProjectRo
 
 /// Create project directory structure inside the given `home` for `project_path`. Useful for testing.
 pub fn init_in(home: &Path, project_path: &Path) -> Result<(ProjectRoot, PathBuf), ProjectError> {
-    let sc_dir = project_dir(home, project_path)?;
-    if sc_dir.exists() {
-        return Err(ProjectError::AlreadyExists(sc_dir));
+    let shortcut_dir = project_dir(home, project_path)?;
+    if shortcut_dir.exists() {
+        return Err(ProjectError::AlreadyExists(shortcut_dir));
     }
 
-    let cache_dir = sc_dir.join("cache");
+    let cache_dir = shortcut_dir.join("cache");
     fs::create_dir_all(&cache_dir)?;
 
     let canonical = project_path.canonicalize()?;
-    Ok((ProjectRoot { sc_dir }, canonical))
+    Ok((ProjectRoot { shortcut_dir }, canonical))
 }

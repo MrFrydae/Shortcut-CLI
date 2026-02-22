@@ -51,7 +51,7 @@ pub enum TemplateAction {
         #[arg(long)]
         confirm: bool,
     },
-    /// Execute a template file (.sc.yml)
+    /// Execute a template file (.shortcut.yml)
     Run(Box<run_stl::RunArgs>),
     /// Validate a template file without executing
     Validate(validate_stl::ValidateArgs),

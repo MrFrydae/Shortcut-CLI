@@ -4,9 +4,9 @@ use std::error::Error;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use sc::commands::story::{self, branch, git};
-use sc::output::{ColorMode, OutputConfig, OutputMode};
-use sc::{api, commands::story::git::GitRunner};
+use shortcut_cli::commands::story::{self, branch, git};
+use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
+use shortcut_cli::{api, commands::story::git::GitRunner};
 
 use crate::support::full_story_json;
 

@@ -8,7 +8,7 @@ use crate::stl::{parser, validator};
 
 #[derive(Args)]
 pub struct ValidateArgs {
-    /// Path to the .sc.yml template file
+    /// Path to the .shortcut.yml template file
     pub file: String,
 }
 
