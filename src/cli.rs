@@ -4,7 +4,7 @@ use crate::commands;
 
 /// CLI for interacting with Shortcut
 #[derive(Parser)]
-#[command(name = "sc")]
+#[command(name = "sc", version)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
