@@ -31,6 +31,11 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
+      - name: Sync Cargo.toml version with tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i'' -e "s/^version = \".*\"/version = \"${VERSION}\"/" Cargo.toml
+
       - name: Install OpenSSL (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config

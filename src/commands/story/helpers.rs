@@ -149,6 +149,32 @@ pub async fn resolve_workflow_state_id(
     .into())
 }
 
+// --- Reverse lookup: state ID → state name ---
+
+pub async fn build_workflow_state_id_map(
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<HashMap<i64, String>, Box<dyn Error>> {
+    let workflows = client
+        .list_workflows()
+        .send()
+        .await
+        .map_err(|e| format!("Failed to list workflows: {e}"))?;
+
+    let mut map = HashMap::new();
+    let mut name_cache: HashMap<String, i64> = HashMap::new();
+    for wf in workflows.iter() {
+        for state in &wf.states {
+            map.insert(state.id, state.name.clone());
+            name_cache
+                .entry(normalize_name(&state.name))
+                .or_insert(state.id);
+        }
+    }
+    write_cache(&name_cache, cache_dir);
+    Ok(map)
+}
+
 // --- Fetch workflow state names for wizard ---
 
 pub async fn fetch_workflow_state_names(

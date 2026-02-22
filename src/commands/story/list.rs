@@ -7,7 +7,7 @@ use crate::api;
 use crate::output::{OutputConfig, Table, format_template};
 
 use super::super::member;
-use super::helpers::resolve_workflow_state_id;
+use super::helpers::{build_workflow_state_id_map, resolve_workflow_state_id};
 use crate::out_println;
 
 #[derive(Args)]
@@ -153,12 +153,17 @@ pub async fn run(
         return Ok(());
     }
 
+    let state_map = build_workflow_state_id_map(client, cache_dir).await?;
+
     let mut table = Table::new(vec!["ID", "Type", "State", "Name"]);
     for story in &items {
         table.add_row(vec![
             story.id.to_string(),
             story.story_type.to_string(),
-            story.workflow_state_id.to_string(),
+            state_map
+                .get(&story.workflow_state_id)
+                .cloned()
+                .unwrap_or_else(|| story.workflow_state_id.to_string()),
             story.name.clone(),
         ]);
     }

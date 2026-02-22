@@ -23,6 +23,23 @@ async fn list_stories_minimal() {
         .mount(&server)
         .await;
 
+    let workflows_body = serde_json::json!([workflow_json(
+        500000006,
+        "Default",
+        vec![
+            workflow_state_json(500000007, "Unstarted", "unstarted", 0),
+            workflow_state_json(500000008, "In Progress", "started", 1),
+            workflow_state_json(500000009, "Done", "done", 2),
+        ]
+    )]);
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/workflows"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&workflows_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let list_args = make_list_args();
     let args = story::StoryArgs {
@@ -85,6 +102,23 @@ async fn list_stories_with_owner_filter() {
         .mount(&server)
         .await;
 
+    let workflows_body = serde_json::json!([workflow_json(
+        500000006,
+        "Default",
+        vec![
+            workflow_state_json(500000007, "Unstarted", "unstarted", 0),
+            workflow_state_json(500000008, "In Progress", "started", 1),
+            workflow_state_json(500000009, "Done", "done", 2),
+        ]
+    )]);
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/workflows"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&workflows_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let mut list_args = make_list_args();
     list_args.owner = Some("@alice".to_string());
@@ -114,7 +148,7 @@ async fn list_stories_with_state_filter() {
     Mock::given(method("GET"))
         .and(path("/api/v3/workflows"))
         .respond_with(ResponseTemplate::new(200).set_body_json(&workflows_body))
-        .expect(1)
+        .expect(2)
         .mount(&server)
         .await;
 
@@ -148,6 +182,23 @@ async fn list_stories_with_descriptions() {
     Mock::given(method("POST"))
         .and(path("/api/v3/stories/search"))
         .respond_with(ResponseTemplate::new(201).set_body_json(&body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let workflows_body = serde_json::json!([workflow_json(
+        500000006,
+        "Default",
+        vec![
+            workflow_state_json(500000007, "Unstarted", "unstarted", 0),
+            workflow_state_json(500000008, "In Progress", "started", 1),
+            workflow_state_json(500000009, "Done", "done", 2),
+        ]
+    )]);
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/workflows"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&workflows_body))
         .expect(1)
         .mount(&server)
         .await;
