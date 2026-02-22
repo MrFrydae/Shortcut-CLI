@@ -89,19 +89,23 @@ jobs:
           class Sc < Formula
             desc "CLI for the Shortcut project management platform"
             homepage "https://github.com/MrFrydae/Shortcut-CLI"
+            version "${VERSION}"
             license "AGPL-3.0"
 
             on_macos do
               depends_on arch: :arm64
-              url "${REPO_URL}/sc-${TAG}-aarch64-apple-darwin.tar.gz"
-              sha256 "${SHA_AARCH64_DARWIN}"
+              on_arm do
+                url "${REPO_URL}/sc-${TAG}-aarch64-apple-darwin.tar.gz"
+                sha256 "${SHA_AARCH64_DARWIN}"
+              end
             end
 
             on_linux do
-              if Hardware::CPU.arm?
+              on_arm do
                 url "${REPO_URL}/sc-${TAG}-aarch64-unknown-linux-gnu.tar.gz"
                 sha256 "${SHA_AARCH64_LINUX}"
-              else
+              end
+              on_intel do
                 url "${REPO_URL}/sc-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
                 sha256 "${SHA_X86_64_LINUX}"
               end
