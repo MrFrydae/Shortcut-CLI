@@ -113,6 +113,8 @@ jobs:
 
             def install
               bin.install "sc"
+
+              generate_completions_from_executable(bin/"sc", "completions")
             end
 
             test do

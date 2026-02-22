@@ -1,4 +1,5 @@
 pub mod category;
+pub mod completions;
 pub mod custom_field;
 pub mod doc;
 pub mod epic;

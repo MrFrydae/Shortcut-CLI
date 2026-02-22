@@ -1,74 +1,7 @@
-use clap::{Parser, Subcommand};
+use clap::Parser;
+use sc::cli::{Cli, Command};
 use sc::output::{ColorMode, OutputConfig, OutputMode};
 use sc::{api, auth, commands, project};
-
-/// CLI for interacting with Shortcut
-#[derive(Parser)]
-#[command(name = "sc")]
-struct Cli {
-    #[command(subcommand)]
-    command: Command,
-
-    /// Output raw JSON instead of human-readable text
-    #[arg(long, global = true)]
-    json: bool,
-
-    /// Suppress output; print only IDs
-    #[arg(long, short = 'q', global = true)]
-    quiet: bool,
-
-    /// Format output using a template string (e.g. "{id} {name}")
-    #[arg(long, global = true)]
-    format: Option<String>,
-
-    /// Force colored output
-    #[arg(long, global = true)]
-    color: bool,
-
-    /// Disable colored output
-    #[arg(long, global = true)]
-    no_color: bool,
-
-    /// Preview the API request without sending it
-    #[arg(long, global = true)]
-    dry_run: bool,
-}
-
-#[derive(Subcommand)]
-enum Command {
-    /// Initialize ~/.sc/ directory for token and cache storage
-    Init,
-    /// Authenticate with your Shortcut API token
-    Login(commands::login::LoginArgs),
-    /// Work with categories
-    Category(commands::category::CategoryArgs),
-    /// Work with custom fields
-    CustomField(commands::custom_field::CustomFieldArgs),
-    /// Work with documents
-    Doc(commands::doc::DocArgs),
-    /// Work with epics
-    Epic(commands::epic::EpicArgs),
-    /// Work with groups
-    Group(commands::group::GroupArgs),
-    /// Work with iterations
-    Iteration(commands::iteration::IterationArgs),
-    /// Work with labels
-    Label(commands::label::LabelArgs),
-    /// Work with workspace members
-    Member(commands::member::MemberArgs),
-    /// Work with objectives
-    Objective(commands::objective::ObjectiveArgs),
-    /// Work with projects
-    Project(commands::project::ProjectArgs),
-    /// Search across Shortcut entities
-    Search(commands::search::SearchArgs),
-    /// Work with stories
-    Story(commands::story::StoryArgs),
-    /// Work with entity templates
-    Template(commands::template::TemplateArgs),
-    /// Work with workflows
-    Workflow(commands::workflow::WorkflowArgs),
-}
 
 #[tokio::main]
 async fn main() {
@@ -109,6 +42,7 @@ async fn main() {
 
     let result = match cli.command {
         Command::Init => commands::init::run(),
+        Command::Completions { shell } => commands::completions::run(shell, &mut std::io::stdout()),
         Command::Login(args) => match project::discover_or_init() {
             Ok(root) => {
                 let store = auth::FileTokenStore {
@@ -127,7 +61,9 @@ async fn main() {
                     path: root.token_path(),
                 };
                 match command {
-                    Command::Init | Command::Login(_) => unreachable!(),
+                    Command::Init | Command::Login(_) | Command::Completions { .. } => {
+                        unreachable!()
+                    }
                     Command::Category(args) => match api::authenticated_client(&store) {
                         Ok(client) => commands::category::run(&args, &client, &output).await,
                         Err(e) => Err(e.into()),
