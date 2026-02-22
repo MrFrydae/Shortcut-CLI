@@ -4,6 +4,27 @@ use std::path::Path;
 use crate::api;
 use crate::commands::member;
 
+/// Fetch current and future iterations as `IdChoice` items for the story wizard.
+pub async fn fetch_iteration_choices(
+    client: &api::Client,
+) -> Result<Vec<crate::interactive::IdChoice>, Box<dyn Error>> {
+    let iterations = client
+        .list_iterations()
+        .send()
+        .await
+        .map_err(|e| format!("Failed to list iterations: {e}"))?;
+    let mut choices: Vec<crate::interactive::IdChoice> = iterations
+        .iter()
+        .filter(|i| i.status == "unstarted" || i.status == "started")
+        .map(|i| crate::interactive::IdChoice {
+            display: format!("{} [{}] (#{})", i.name, i.status, i.id),
+            id: i.id,
+        })
+        .collect();
+    choices.sort_by(|a, b| a.display.to_lowercase().cmp(&b.display.to_lowercase()));
+    Ok(choices)
+}
+
 pub async fn resolve_followers(
     followers: &[String],
     client: &api::Client,

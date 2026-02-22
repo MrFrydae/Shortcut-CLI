@@ -42,6 +42,26 @@ pub async fn resolve_group_id(
     }
 }
 
+pub async fn fetch_group_choices(
+    client: &api::Client,
+) -> Result<Vec<crate::interactive::UuidChoice>, Box<dyn Error>> {
+    let groups = client
+        .list_groups()
+        .send()
+        .await
+        .map_err(|e| format!("Failed to list groups: {e}"))?;
+    let mut choices: Vec<crate::interactive::UuidChoice> = groups
+        .iter()
+        .filter(|g| !g.archived)
+        .map(|g| crate::interactive::UuidChoice {
+            display: format!("{} (@{})", g.name, g.mention_name.as_str()),
+            id: g.id,
+        })
+        .collect();
+    choices.sort_by(|a, b| a.display.to_lowercase().cmp(&b.display.to_lowercase()));
+    Ok(choices)
+}
+
 pub async fn resolve_members(
     members: &[String],
     client: &api::Client,

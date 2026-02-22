@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 
 use crate::api;
 
+pub const STORY_TYPES: &[&str] = &["feature", "bug", "chore"];
+
 use super::super::custom_field;
 use super::super::member;
 
@@ -145,6 +147,33 @@ pub async fn resolve_workflow_state_id(
         all_names.join(", ")
     )
     .into())
+}
+
+// --- Fetch workflow state names for wizard ---
+
+pub async fn fetch_workflow_state_names(
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<Vec<String>, Box<dyn Error>> {
+    let workflows = client
+        .list_workflows()
+        .send()
+        .await
+        .map_err(|e| format!("Failed to list workflows: {e}"))?;
+
+    let mut cache_map: HashMap<String, i64> = HashMap::new();
+    let mut names: Vec<String> = Vec::new();
+    for wf in workflows.iter() {
+        for state in &wf.states {
+            let norm = normalize_name(&state.name);
+            cache_map.entry(norm).or_insert(state.id);
+            if !names.contains(&state.name) {
+                names.push(state.name.clone());
+            }
+        }
+    }
+    write_cache(&cache_map, cache_dir);
+    Ok(names)
 }
 
 // --- Cache helpers ---

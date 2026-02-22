@@ -2,9 +2,10 @@ mod create;
 mod delete;
 mod docs;
 mod get;
-mod helpers;
+pub(crate) mod helpers;
 mod list;
 mod update;
+pub mod wizard;
 
 pub mod comment;
 
@@ -70,7 +71,30 @@ pub async fn run(
 ) -> Result<(), Box<dyn Error>> {
     match &args.action {
         EpicAction::List { desc } => list::run(*desc, client, out).await,
-        EpicAction::Create(create_args) => create::run(create_args, client, &cache_dir, out).await,
+        EpicAction::Create(create_args) => {
+            if create_args.interactive {
+                if !atty::is(atty::Stream::Stdin) {
+                    return Err("Interactive mode requires a terminal".into());
+                }
+                let members =
+                    crate::commands::member::fetch_member_choices(client, &cache_dir).await?;
+                let epic_states = helpers::fetch_epic_state_names(client, &cache_dir).await?;
+                let group_choices =
+                    crate::commands::group::helpers::fetch_group_choices(client).await?;
+                let objective_choices =
+                    crate::commands::objective::helpers::fetch_objective_choices(client).await?;
+                let filled = wizard::run_wizard(
+                    create_args,
+                    &crate::interactive::TerminalPrompter,
+                    &members,
+                    &epic_states,
+                    &group_choices,
+                    &objective_choices,
+                )?;
+                return create::run(&filled, client, &cache_dir, out).await;
+            }
+            create::run(create_args, client, &cache_dir, out).await
+        }
         EpicAction::Get { id } => get::run(*id, client, &cache_dir, out).await,
         EpicAction::Update(update_args) => update::run(update_args, client, &cache_dir, out).await,
         EpicAction::Comment(args) => comment::run(args, client, &cache_dir, out).await,

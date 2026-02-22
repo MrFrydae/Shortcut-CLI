@@ -11,11 +11,14 @@ use super::helpers::{resolve_epic_state_id, resolve_owners};
 use crate::out_println;
 
 #[derive(Args)]
-#[command(arg_required_else_help = true)]
 pub struct CreateArgs {
+    /// Launch interactive wizard to fill in fields
+    #[arg(long, short = 'i')]
+    pub interactive: bool,
+
     /// The epic's name
-    #[arg(long)]
-    pub name: String,
+    #[arg(long, required_unless_present = "interactive")]
+    pub name: Option<String>,
 
     /// The epic's description
     #[arg(long)]
@@ -32,6 +35,10 @@ pub struct CreateArgs {
     /// Owner(s) by @mention_name or UUID (comma-separated)
     #[arg(long, value_delimiter = ',')]
     pub owners: Vec<String>,
+
+    /// Team(s) (group) by @mention_name or UUID (comma-separated)
+    #[arg(long = "group-id", value_delimiter = ',')]
+    pub group_ids: Vec<String>,
 
     /// Label names (comma-separated)
     #[arg(long, value_delimiter = ',')]
@@ -56,8 +63,8 @@ pub async fn run(
     cache_dir: &Path,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let name = args
-        .name
+    let name_str = args.name.as_ref().ok_or("Name is required")?;
+    let name = name_str
         .parse::<api::types::CreateEpicName>()
         .map_err(|e| format!("Invalid name: {e}"))?;
 
@@ -88,6 +95,16 @@ pub async fn run(
         None => None,
     };
 
+    let resolved_group_ids = {
+        let mut ids = Vec::with_capacity(args.group_ids.len());
+        for g in &args.group_ids {
+            ids.push(
+                crate::commands::group::helpers::resolve_group_id(g, client, cache_dir).await?,
+            );
+        }
+        ids
+    };
+
     let labels: Vec<api::types::CreateLabelParams> = args
         .labels
         .iter()
@@ -102,7 +119,7 @@ pub async fn run(
         .collect::<Result<_, _>>()?;
 
     if out.is_dry_run() {
-        let mut body = serde_json::json!({ "name": args.name });
+        let mut body = serde_json::json!({ "name": name_str });
         if let Some(desc) = &args.description {
             body["description"] = serde_json::json!(desc);
         }
@@ -120,6 +137,9 @@ pub async fn run(
         }
         if let Some(req_id) = &requested_by_id {
             body["requested_by_id"] = serde_json::json!(req_id);
+        }
+        if !resolved_group_ids.is_empty() {
+            body["group_ids"] = serde_json::json!(resolved_group_ids);
         }
         if !args.labels.is_empty() {
             body["labels"] = serde_json::json!(
@@ -159,6 +179,9 @@ pub async fn run(
             }
             if !labels.is_empty() {
                 b = b.labels(labels);
+            }
+            if !resolved_group_ids.is_empty() {
+                b = b.group_ids(resolved_group_ids);
             }
             if !args.objective_ids.is_empty() {
                 b = b.objective_ids(args.objective_ids.clone());

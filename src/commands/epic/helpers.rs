@@ -76,6 +76,32 @@ pub async fn resolve_epic_state_id(
     .into())
 }
 
+// --- Fetch epic state names for wizard ---
+
+pub async fn fetch_epic_state_names(
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<Vec<String>, Box<dyn Error>> {
+    let workflow = client
+        .get_epic_workflow()
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch epic workflow: {e}"))?;
+
+    let map: HashMap<String, i64> = workflow
+        .epic_states
+        .iter()
+        .map(|s| (normalize_name(&s.name), s.id))
+        .collect();
+    write_cache(&map, cache_dir);
+
+    Ok(workflow
+        .epic_states
+        .iter()
+        .map(|s| s.name.clone())
+        .collect())
+}
+
 /// Reverse-lookup: given a state ID, return its human-readable name.
 pub async fn resolve_epic_state_name(
     state_id: i64,
@@ -124,6 +150,27 @@ pub fn resolve_member_name(uuid: &uuid::Uuid, cache_dir: &Path) -> String {
         }
     }
     uuid.to_string()
+}
+
+/// Fetch non-archived epics as `IdChoice` items for the story wizard.
+pub async fn fetch_epic_choices(
+    client: &api::Client,
+) -> Result<Vec<crate::interactive::IdChoice>, Box<dyn Error>> {
+    let epics = client
+        .list_epics()
+        .send()
+        .await
+        .map_err(|e| format!("Failed to list epics: {e}"))?;
+    let mut choices: Vec<crate::interactive::IdChoice> = epics
+        .iter()
+        .filter(|e| !e.archived)
+        .map(|e| crate::interactive::IdChoice {
+            display: format!("{} (#{})", e.name, e.id),
+            id: e.id,
+        })
+        .collect();
+    choices.sort_by(|a, b| a.display.to_lowercase().cmp(&b.display.to_lowercase()));
+    Ok(choices)
 }
 
 fn cache_path(cache_dir: &Path) -> PathBuf {

@@ -7,14 +7,17 @@ use std::error::Error;
 use std::path::Path;
 
 #[derive(Args)]
-#[command(arg_required_else_help = true)]
 pub struct CreateArgs {
-    #[arg(long)]
-    pub name: String,
-    #[arg(long)]
-    pub start_date: String,
-    #[arg(long)]
-    pub end_date: String,
+    /// Launch interactive wizard to fill in fields
+    #[arg(long, short = 'i')]
+    pub interactive: bool,
+
+    #[arg(long, required_unless_present = "interactive")]
+    pub name: Option<String>,
+    #[arg(long, required_unless_present = "interactive")]
+    pub start_date: Option<String>,
+    #[arg(long, required_unless_present = "interactive")]
+    pub end_date: Option<String>,
     #[arg(long)]
     pub description: Option<String>,
     #[arg(long, value_delimiter = ',')]
@@ -31,16 +34,16 @@ pub async fn run(
     cache_dir: &Path,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let name = args
-        .name
+    let name_str = args.name.as_ref().ok_or("Name is required")?;
+    let start_date_str = args.start_date.as_ref().ok_or("Start date is required")?;
+    let end_date_str = args.end_date.as_ref().ok_or("End date is required")?;
+    let name = name_str
         .parse::<api::types::CreateIterationName>()
         .map_err(|e| format!("Invalid name: {e}"))?;
-    let start = args
-        .start_date
+    let start = start_date_str
         .parse::<api::types::CreateIterationStartDate>()
         .map_err(|e| format!("Invalid start_date: {e}"))?;
-    let end = args
-        .end_date
+    let end = end_date_str
         .parse::<api::types::CreateIterationEndDate>()
         .map_err(|e| format!("Invalid end_date: {e}"))?;
     let description = args
@@ -65,9 +68,9 @@ pub async fn run(
 
     if out.is_dry_run() {
         let mut body = serde_json::json!({
-            "name": args.name,
-            "start_date": args.start_date,
-            "end_date": args.end_date,
+            "name": name_str,
+            "start_date": start_date_str,
+            "end_date": end_date_str,
         });
         if let Some(desc) = &args.description {
             body["description"] = serde_json::json!(desc);

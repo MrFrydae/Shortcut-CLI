@@ -81,7 +81,7 @@
 | 14.4  | `--quiet` mode |   ✅    |
 | 14.5  | Table formatting |   ✅    |
 | 15.1  | Shell completions |        |
-| 15.2  | Interactive / wizard mode for create commands |        |
+| 15.2  | Interactive / wizard mode for create commands |   ✅    |
 | 15.3  | Progress spinners for network calls |        |
 | 15.4  | `--dry-run` flag |   ✅   |
 | 15.5  | Cache management |        |

@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use clap::Args;
 
 use crate::api;
+use crate::interactive::MemberChoice;
 use crate::out_println;
 use crate::output::{OutputConfig, Table};
 
@@ -242,4 +243,35 @@ fn write_cache(
         use std::os::unix::fs::PermissionsExt;
         let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
     }
+}
+
+/// Build `MemberChoice` items from a slice of API members, filtering out disabled ones.
+pub fn member_choices_from(members: &[api::types::Member]) -> Vec<MemberChoice> {
+    let mut choices: Vec<MemberChoice> = members
+        .iter()
+        .filter(|m| !m.disabled)
+        .map(|m| {
+            let name = m.profile.name.as_deref().unwrap_or(&m.profile.mention_name);
+            MemberChoice {
+                display: format!("{name} (@{})", m.profile.mention_name),
+                value: format!("@{}", m.profile.mention_name),
+            }
+        })
+        .collect();
+    choices.sort_by(|a, b| a.display.to_lowercase().cmp(&b.display.to_lowercase()));
+    choices
+}
+
+/// Fetch workspace members from the API and return them as picker choices.
+pub async fn fetch_member_choices(
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<Vec<MemberChoice>, Box<dyn Error>> {
+    let members = client
+        .list_members()
+        .send()
+        .await
+        .map_err(|e| format!("Failed to list members: {e}"))?;
+    write_cache(&members, cache_dir);
+    Ok(member_choices_from(&members))
 }

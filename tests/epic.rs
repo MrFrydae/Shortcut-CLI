@@ -14,6 +14,8 @@ mod get;
 mod list;
 #[path = "epic/update.rs"]
 mod update;
+#[path = "epic/wizard.rs"]
+mod wizard;
 
 pub const UUID_ALICE: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
@@ -41,11 +43,13 @@ pub fn make_update_args(id: i64) -> sc::commands::epic::UpdateArgs {
 
 pub fn make_create_args(name: &str) -> sc::commands::epic::CreateArgs {
     sc::commands::epic::CreateArgs {
-        name: name.to_string(),
+        interactive: false,
+        name: Some(name.to_string()),
         description: None,
         state: None,
         deadline: None,
         owners: vec![],
+        group_ids: vec![],
         labels: vec![],
         objective_ids: vec![],
         followers: vec![],

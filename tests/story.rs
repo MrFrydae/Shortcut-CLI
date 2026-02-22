@@ -24,6 +24,8 @@ mod list;
 mod task;
 #[path = "story/update.rs"]
 mod update;
+#[path = "story/wizard.rs"]
+mod wizard;
 
 pub const UUID_ALICE: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 pub const UUID_BOB: &str = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
@@ -34,12 +36,14 @@ pub const UUID_VAL_B: &str = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2";
 
 pub fn make_create_args(name: &str) -> sc::commands::story::CreateArgs {
     sc::commands::story::CreateArgs {
-        name: name.to_string(),
+        interactive: false,
+        name: Some(name.to_string()),
         description: None,
         story_type: None,
         owner: vec![],
         state: None,
         epic_id: None,
+        group_id: None,
         estimate: None,
         labels: vec![],
         iteration_id: None,

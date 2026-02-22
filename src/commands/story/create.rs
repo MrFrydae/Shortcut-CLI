@@ -10,11 +10,14 @@ use super::helpers::{resolve_custom_field_args, resolve_owners, resolve_workflow
 use crate::out_println;
 
 #[derive(Args)]
-#[command(arg_required_else_help = true)]
 pub struct CreateArgs {
+    /// Launch interactive wizard to fill in fields
+    #[arg(long, short = 'i')]
+    pub interactive: bool,
+
     /// The name of the story
-    #[arg(long)]
-    pub name: String,
+    #[arg(long, required_unless_present = "interactive")]
+    pub name: Option<String>,
 
     /// The description of the story
     #[arg(long)]
@@ -44,6 +47,10 @@ pub struct CreateArgs {
     #[arg(long, value_delimiter = ',')]
     pub labels: Vec<String>,
 
+    /// The team (group) by @mention_name or UUID
+    #[arg(long)]
+    pub group_id: Option<String>,
+
     /// The iteration ID to assign this story to
     #[arg(long)]
     pub iteration_id: Option<i64>,
@@ -59,8 +66,8 @@ pub async fn run(
     cache_dir: &Path,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let name = args
-        .name
+    let name_str = args.name.as_ref().ok_or("Name is required")?;
+    let name = name_str
         .parse::<api::types::CreateStoryParamsName>()
         .map_err(|e| format!("Invalid name: {e}"))?;
 
@@ -85,6 +92,13 @@ pub async fn run(
         None => None,
     };
 
+    let resolved_group_id = match &args.group_id {
+        Some(val) => {
+            Some(crate::commands::group::helpers::resolve_group_id(val, client, cache_dir).await?)
+        }
+        None => None,
+    };
+
     let labels: Vec<api::types::CreateLabelParams> = args
         .labels
         .iter()
@@ -102,7 +116,7 @@ pub async fn run(
         resolve_custom_field_args(&args.custom_fields, client, cache_dir).await?;
 
     if out.is_dry_run() {
-        let mut body = serde_json::json!({ "name": args.name });
+        let mut body = serde_json::json!({ "name": name_str });
         if let Some(desc) = &args.description {
             body["description"] = serde_json::json!(desc);
         }
@@ -117,6 +131,9 @@ pub async fn run(
         }
         if let Some(epic_id) = args.epic_id {
             body["epic_id"] = serde_json::json!(epic_id);
+        }
+        if let Some(gid) = &resolved_group_id {
+            body["group_id"] = serde_json::json!(gid);
         }
         if let Some(estimate) = args.estimate {
             body["estimate"] = serde_json::json!(estimate);
@@ -156,6 +173,9 @@ pub async fn run(
             }
             if let Some(epic_id) = args.epic_id {
                 b = b.epic_id(Some(epic_id));
+            }
+            if let Some(gid) = resolved_group_id {
+                b = b.group_id(Some(gid));
             }
             if let Some(estimate) = args.estimate {
                 b = b.estimate(Some(estimate));

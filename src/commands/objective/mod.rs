@@ -2,7 +2,7 @@ mod create;
 mod delete;
 mod epics;
 mod get;
-mod helpers;
+pub(crate) mod helpers;
 mod list;
 mod update;
 

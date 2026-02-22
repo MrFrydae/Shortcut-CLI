@@ -8,6 +8,7 @@ pub mod helpers;
 mod history;
 mod list;
 mod update;
+pub mod wizard;
 
 pub mod comment;
 pub mod link;
@@ -78,7 +79,38 @@ pub async fn run(
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     match &args.action {
-        StoryAction::Create(create_args) => create::run(create_args, client, &cache_dir, out).await,
+        StoryAction::Create(create_args) => {
+            if create_args.interactive {
+                if !atty::is(atty::Stream::Stdin) {
+                    return Err("Interactive mode requires a terminal".into());
+                }
+                let members =
+                    crate::commands::member::fetch_member_choices(client, &cache_dir).await?;
+                let workflow_states =
+                    helpers::fetch_workflow_state_names(client, &cache_dir).await?;
+                let epic_choices =
+                    crate::commands::epic::helpers::fetch_epic_choices(client).await?;
+                let iteration_choices =
+                    crate::commands::iteration::helpers::fetch_iteration_choices(client).await?;
+                let group_choices =
+                    crate::commands::group::helpers::fetch_group_choices(client).await?;
+                let choices = wizard::WizardChoices {
+                    members: &members,
+                    workflow_states: &workflow_states,
+                    story_types: helpers::STORY_TYPES,
+                    epic_choices: &epic_choices,
+                    iteration_choices: &iteration_choices,
+                    group_choices: &group_choices,
+                };
+                let filled = wizard::run_wizard(
+                    create_args,
+                    &crate::interactive::TerminalPrompter,
+                    &choices,
+                )?;
+                return create::run(&filled, client, &cache_dir, out).await;
+            }
+            create::run(create_args, client, &cache_dir, out).await
+        }
         StoryAction::Update(update_args) => update::run(update_args, client, &cache_dir, out).await,
         StoryAction::Get { id } => get::run(*id, client, &cache_dir, out).await,
         StoryAction::List(list_args) => list::run(list_args, client, &cache_dir, out).await,

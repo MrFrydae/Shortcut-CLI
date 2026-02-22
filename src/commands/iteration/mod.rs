@@ -1,10 +1,13 @@
 mod create;
 mod delete;
 mod get;
-mod helpers;
+pub(crate) mod helpers;
 mod list;
 mod stories;
 mod update;
+pub mod wizard;
+
+pub use create::CreateArgs;
 
 use std::error::Error;
 use std::path::PathBuf;
@@ -67,6 +70,19 @@ pub async fn run(
     match &args.action {
         IterationAction::List { state } => list::run(state.as_deref(), client, out).await,
         IterationAction::Create(create_args) => {
+            if create_args.interactive {
+                if !atty::is(atty::Stream::Stdin) {
+                    return Err("Interactive mode requires a terminal".into());
+                }
+                let members =
+                    crate::commands::member::fetch_member_choices(client, &cache_dir).await?;
+                let filled = wizard::run_wizard(
+                    create_args,
+                    &crate::interactive::TerminalPrompter,
+                    &members,
+                )?;
+                return create::run(&filled, client, &cache_dir, out).await;
+            }
             create::run(create_args, client, &cache_dir, out).await
         }
         IterationAction::Get { id } => get::run(*id, client, out).await,
