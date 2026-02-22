@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: macos-latest
+            target: aarch64-apple-darwin
+          - runner: macos-13
+            target: x86_64-apple-darwin
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install OpenSSL (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+
+      - run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package binary
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf ../../../sc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz sc
+          cd ../../..
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sc-${{ matrix.target }}
+          path: sc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: shasum -a 256 sc-*.tar.gz > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            sc-*.tar.gz
+            checksums.txt
+
+      - name: Update Homebrew tap
+        env:
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$TAP_GITHUB_TOKEN" ]; then
+            echo "TAP_GITHUB_TOKEN not set, skipping Homebrew tap update"
+            exit 0
+          fi
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${GITHUB_REF_NAME}"
+
+          SHA_AARCH64_DARWIN=$(shasum -a 256 sc-${TAG}-aarch64-apple-darwin.tar.gz | awk '{print $1}')
+          SHA_X86_64_DARWIN=$(shasum -a 256 sc-${TAG}-x86_64-apple-darwin.tar.gz | awk '{print $1}')
+          SHA_X86_64_LINUX=$(shasum -a 256 sc-${TAG}-x86_64-unknown-linux-gnu.tar.gz | awk '{print $1}')
+
+          REPO_URL="https://github.com/MrFrydae/Shortcut-CLI/releases/download/${TAG}"
+
+          cat > sc.rb << FORMULA
+          class Sc < Formula
+            desc "CLI for the Shortcut project management platform"
+            homepage "https://github.com/MrFrydae/Shortcut-CLI"
+            version "${VERSION}"
+            license "AGPL-3.0"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "${REPO_URL}/sc-${TAG}-aarch64-apple-darwin.tar.gz"
+                sha256 "${SHA_AARCH64_DARWIN}"
+              else
+                url "${REPO_URL}/sc-${TAG}-x86_64-apple-darwin.tar.gz"
+                sha256 "${SHA_X86_64_DARWIN}"
+              end
+            end
+
+            on_linux do
+              url "${REPO_URL}/sc-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+              sha256 "${SHA_X86_64_LINUX}"
+            end
+
+            def install
+              bin.install "sc"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/sc --version")
+            end
+          end
+          FORMULA
+
+          git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/MrFrydae/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          cp sc.rb tap/Formula/sc.rb
+
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/sc.rb
+          git commit -m "Update sc to ${VERSION}"
+          git push
