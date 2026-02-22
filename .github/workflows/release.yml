@@ -96,6 +96,9 @@ jobs:
                 url "${REPO_URL}/sc-${TAG}-aarch64-apple-darwin.tar.gz"
                 sha256 "${SHA_AARCH64_DARWIN}"
               end
+              on_intel do
+                disable! date: "2026-02-22", because: "this formula is only available for Apple Silicon"
+              end
             end
 
             on_linux do
