@@ -18,6 +18,8 @@ jobs:
         include:
           - runner: macos-latest
             target: aarch64-apple-darwin
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
           - runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
           - runner: ubuntu-24.04-arm
@@ -85,6 +87,7 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
 
           SHA_AARCH64_DARWIN=$(shasum -a 256 shortcut-${TAG}-aarch64-apple-darwin.tar.gz | awk '{print $1}')
+          SHA_X86_64_DARWIN=$(shasum -a 256 shortcut-${TAG}-x86_64-apple-darwin.tar.gz | awk '{print $1}')
           SHA_X86_64_LINUX=$(shasum -a 256 shortcut-${TAG}-x86_64-unknown-linux-gnu.tar.gz | awk '{print $1}')
           SHA_AARCH64_LINUX=$(shasum -a 256 shortcut-${TAG}-aarch64-unknown-linux-gnu.tar.gz | awk '{print $1}')
 
@@ -102,7 +105,8 @@ jobs:
                 sha256 "${SHA_AARCH64_DARWIN}"
               end
               on_intel do
-                disable! date: "2026-02-22", because: "this formula is only available for Apple Silicon"
+                url "${REPO_URL}/shortcut-${TAG}-x86_64-apple-darwin.tar.gz"
+                sha256 "${SHA_X86_64_DARWIN}"
               end
             end
 
