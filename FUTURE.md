@@ -2342,7 +2342,7 @@ sc template delete --id 903 --confirm
 
 ---
 
-## 19. Shortcut Template Language (STL)
+## 19. Shortcut Template Language (STL) ✅
 
 **Motivation.** As AI assistants become central to developer workflows, there is an opportunity for `sc` to act as an execution engine for AI-generated plans. A user describes what they want ("set up Sprint 24 with auth hardening stories"), an AI like Claude writes a structured `.sc.yml` template, and `sc template run` executes it against the Shortcut API. This also benefits non-AI use cases: teams can check reusable templates into version control for repeatable sprint setups, onboarding checklists, and release processes.
 
@@ -2354,7 +2354,7 @@ STL is a YAML-based DSL (domain-specific language) designed with three constrain
 
 ---
 
-### 19.1 CLI Commands
+### 19.1 CLI Commands ✅
 
 ```
 sc template run <file>                       # execute a template
@@ -2375,7 +2375,7 @@ cat plan.sc.yml | sc template run -          # read template from stdin
 
 ---
 
-### 19.2 Document Structure
+### 19.2 Document Structure ✅
 
 Every `.sc.yml` file has this top-level shape:
 
@@ -2409,7 +2409,7 @@ operations:
 
 ---
 
-### 19.3 Actions
+### 19.3 Actions ✅
 
 STL uses a write-only action vocabulary. Templates are for mutations, not queries — if you need to read data, use `sc` commands directly.
 
@@ -2426,7 +2426,7 @@ STL uses a write-only action vocabulary. Templates are for mutations, not querie
 
 ---
 
-### 19.4 Entities
+### 19.4 Entities ✅
 
 Complete entity vocabulary with their writable fields:
 
@@ -2573,7 +2573,7 @@ Complete entity vocabulary with their writable fields:
 
 ---
 
-### 19.5 Cross-Reference System
+### 19.5 Cross-Reference System ✅
 
 Operations can reference results from earlier operations using **aliases** and **`$ref()`**.
 
@@ -2623,7 +2623,7 @@ Use `$ref(alias.field)` to access a specific field of the created entity:
 
 ---
 
-### 19.6 Variables
+### 19.6 Variables ✅
 
 Variables allow templates to be parameterized and reusable.
 
@@ -2677,7 +2677,7 @@ CLI `--var` values override the defaults in the `vars` block.
 
 ---
 
-### 19.7 Null / Unset Handling
+### 19.7 Null / Unset Handling ✅
 
 STL follows the Shortcut API's conventions for omitted vs. explicit-null fields:
 
@@ -2700,7 +2700,7 @@ This sends `{"epic_id": null}` to the API, which clears the epic association. Om
 
 ---
 
-### 19.8 Inline Nested Entities
+### 19.8 Inline Nested Entities ✅
 
 On `create`, stories support inline `tasks`, `comments`, and `story_links` arrays. These are created as part of the story in a single API call (the Shortcut `createStory` endpoint accepts them inline).
 
@@ -2728,7 +2728,7 @@ Inline nested entities are only available on `create` actions for the `story` en
 
 ---
 
-### 19.9 Bulk Shorthand
+### 19.9 Bulk Shorthand ✅
 
 The `repeat` key creates multiple similar entities from a single operation. Each entry in `repeat` is merged with the shared `fields` block (repeat values override shared fields).
 
@@ -2756,7 +2756,7 @@ Aliases on repeat operations: if the operation has an `alias`, the alias refers 
 
 ---
 
-### 19.10 Execution Semantics
+### 19.10 Execution Semantics ✅
 
 #### Operation ordering
 
@@ -2828,7 +2828,7 @@ The `--confirm` flag skips this prompt.
 
 ---
 
-### 19.11 Output
+### 19.11 Output ✅
 
 #### Normal execution
 
@@ -2889,7 +2889,7 @@ Completed: operation 1 (create iteration 102)
 
 ---
 
-### 19.12 Complete Workflow Example
+### 19.12 Complete Workflow Example ✅
 
 A full sprint setup template demonstrating variables, cross-references, inline tasks, bulk shorthand, and mixed actions:
 
@@ -2964,7 +2964,7 @@ operations:
 
 ---
 
-### 19.13 Implementation Notes
+### 19.13 Implementation Notes ✅
 
 #### Parsing & deserialization
 
@@ -3025,7 +3025,7 @@ Reuse ALL existing resolution logic from the `sc` codebase:
 
 ---
 
-### 19.14 Grammar Summary
+### 19.14 Grammar Summary ✅
 
 A compact reference for the STL syntax. This is designed for AI systems (like Claude) to use as a quick-reference when generating templates:
 
@@ -3049,7 +3049,7 @@ RESOLUTION   = @mention → member UUID | state_name → state ID |
 
 ---
 
-### 19.15 Real-World Example Templates
+### 19.15 Real-World Example Templates ✅
 
 #### 19.15.1 Sprint Planning
 

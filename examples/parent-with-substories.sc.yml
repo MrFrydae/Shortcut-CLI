@@ -1,0 +1,68 @@
+# Parent Story with Sub-Stories and Tasks
+#
+# Creates a parent story, two child stories linked to it via "blocks"
+# story links, and tasks on each story.
+#
+# Demonstrates inline tasks arrays on story creation.
+#
+# Usage:
+#   sc template validate examples/parent-with-substories.sc.yml
+#   sc template run examples/parent-with-substories.sc.yml --dry-run
+#   sc template run examples/parent-with-substories.sc.yml \
+#     --var parent_name="Epic Feature" \
+#     --var child_a_name="Frontend Work" \
+#     --var child_b_name="Backend Work"
+
+version: 1
+
+meta:
+  description: Parent story with two child stories and tasks on each
+
+vars:
+  parent_name: "Parent Story"
+  child_a_name: "Child Story A"
+  child_b_name: "Child Story B"
+
+operations:
+  # 1. Create the parent story with inline tasks
+  - action: create
+    entity: story
+    alias: parent
+    fields:
+      name: "$var(parent_name)"
+      type: feature
+      tasks:
+        - description: "Review requirements"
+        - description: "Write acceptance criteria"
+
+  # 2. Create two child stories with inline tasks
+  - action: create
+    entity: story
+    alias: children
+    repeat:
+      - name: "$var(child_a_name)"
+        type: feature
+        tasks:
+          - description: "Implement feature"
+          - description: "Write tests"
+      - name: "$var(child_b_name)"
+        type: feature
+        tasks:
+          - description: "Implement feature"
+          - description: "Write tests"
+
+  # 3. Link child A → parent (child A blocks parent)
+  - action: link
+    entity: story_link
+    fields:
+      subject_id: "$ref(children.0)"
+      object_id: "$ref(parent)"
+      verb: blocks
+
+  # 4. Link child B → parent (child B blocks parent)
+  - action: link
+    entity: story_link
+    fields:
+      subject_id: "$ref(children.1)"
+      object_id: "$ref(parent)"
+      verb: blocks

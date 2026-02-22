@@ -6,3 +6,4 @@ pub mod commands;
 pub mod interactive;
 pub mod output;
 pub mod project;
+pub mod stl;
