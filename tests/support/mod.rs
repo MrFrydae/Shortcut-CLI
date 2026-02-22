@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::cell::RefCell;
 
 use shortcut_cli::auth::{AuthError, TokenStore};

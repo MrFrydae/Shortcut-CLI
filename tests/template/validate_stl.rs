@@ -1,14 +1,6 @@
 use crate::support::make_output;
 use shortcut_cli::commands::template;
 
-fn validate_args(file: &str) -> template::TemplateArgs {
-    template::TemplateArgs {
-        action: template::TemplateAction::Validate(template::validate_stl::ValidateArgs {
-            file: file.to_string(),
-        }),
-    }
-}
-
 fn write_template(dir: &tempfile::TempDir, yaml: &str) -> String {
     let path = dir.path().join("test.shortcut.yml");
     std::fs::write(&path, yaml).unwrap();
@@ -29,7 +21,6 @@ operations:
       name: "Valid Story"
 "#;
     let file = write_template(&tmp, yaml);
-    let args = validate_args(&file);
     // Validate doesn't need a client or cache_dir
     let result = template::validate_stl::run(
         &template::validate_stl::ValidateArgs { file: file.clone() },

@@ -1,4 +1,4 @@
-#[allow(clippy::all, unused)]
+#[allow(clippy::all, unused, rustdoc::bare_urls)]
 mod inner {
     include!(concat!(env!("OUT_DIR"), "/shortcut_api.rs"));
 }

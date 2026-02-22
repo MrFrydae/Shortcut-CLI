@@ -18,7 +18,7 @@ async fn login_with_token_arg_stores_on_success() {
     Mock::given(method("GET"))
         .and(path("/api/v3/member"))
         .respond_with(
-            ResponseTemplate::new(200).set_body_json(&member_info_json("Test User", "testuser")),
+            ResponseTemplate::new(200).set_body_json(member_info_json("Test User", "testuser")),
         )
         .expect(1)
         .mount(&server)
@@ -42,8 +42,7 @@ async fn login_without_token_calls_prompt() {
     Mock::given(method("GET"))
         .and(path("/api/v3/member"))
         .respond_with(
-            ResponseTemplate::new(200)
-                .set_body_json(&member_info_json("Prompted User", "prompted")),
+            ResponseTemplate::new(200).set_body_json(member_info_json("Prompted User", "prompted")),
         )
         .expect(1)
         .mount(&server)

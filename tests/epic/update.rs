@@ -208,7 +208,7 @@ async fn update_epic_state_name_normalization_variants() {
             .and(path("/api/v3/epic-workflow"))
             .respond_with(ResponseTemplate::new(200).set_body_json(&workflow_body))
             .expect(1)
-            .named(&format!("workflow for '{variant}'"))
+            .named(format!("workflow for '{variant}'"))
             .mount(&server)
             .await;
 
@@ -216,7 +216,7 @@ async fn update_epic_state_name_normalization_variants() {
             .and(path("/api/v3/epics/42"))
             .respond_with(ResponseTemplate::new(200).set_body_json(&update_body))
             .expect(1)
-            .named(&format!("update for '{variant}'"))
+            .named(format!("update for '{variant}'"))
             .mount(&server)
             .await;
 
