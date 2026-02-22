@@ -18,10 +18,12 @@ jobs:
         include:
           - runner: macos-latest
             target: aarch64-apple-darwin
-          - runner: macos-13
-            target: x86_64-apple-darwin
+          - runner: macos-15-latest
+            target: intel-apple-darwin
           - runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -80,8 +82,9 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
 
           SHA_AARCH64_DARWIN=$(shasum -a 256 sc-${TAG}-aarch64-apple-darwin.tar.gz | awk '{print $1}')
-          SHA_X86_64_DARWIN=$(shasum -a 256 sc-${TAG}-x86_64-apple-darwin.tar.gz | awk '{print $1}')
+          SHA_INTEL_DARWIN=$(shasum -a 256 sc-${TAG}-intel-apple-darwin.tar.gz | awk '{print $1}')
           SHA_X86_64_LINUX=$(shasum -a 256 sc-${TAG}-x86_64-unknown-linux-gnu.tar.gz | awk '{print $1}')
+          SHA_AARCH64_LINUX=$(shasum -a 256 sc-${TAG}-aarch64-unknown-linux-gnu.tar.gz | awk '{print $1}')
 
           REPO_URL="https://github.com/MrFrydae/Shortcut-CLI/releases/download/${TAG}"
 
@@ -97,14 +100,19 @@ jobs:
                 url "${REPO_URL}/sc-${TAG}-aarch64-apple-darwin.tar.gz"
                 sha256 "${SHA_AARCH64_DARWIN}"
               else
-                url "${REPO_URL}/sc-${TAG}-x86_64-apple-darwin.tar.gz"
-                sha256 "${SHA_X86_64_DARWIN}"
+                url "${REPO_URL}/sc-${TAG}-intel-apple-darwin.tar.gz"
+                sha256 "${SHA_INTEL_DARWIN}"
               end
             end
 
             on_linux do
-              url "${REPO_URL}/sc-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
-              sha256 "${SHA_X86_64_LINUX}"
+              if Hardware::CPU.arm?
+                url "${REPO_URL}/sc-${TAG}-aarch64-unknown-linux-gnu.tar.gz"
+                sha256 "${SHA_AARCH64_LINUX}"
+              else
+                url "${REPO_URL}/sc-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "${SHA_X86_64_LINUX}"
+              end
             end
 
             def install
