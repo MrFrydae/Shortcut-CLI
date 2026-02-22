@@ -1,6 +1,7 @@
 mod create;
 mod delete;
 mod get;
+pub mod init;
 mod list;
 pub mod run_stl;
 mod update;
@@ -54,6 +55,8 @@ pub enum TemplateAction {
     Run(Box<run_stl::RunArgs>),
     /// Validate a template file without executing
     Validate(validate_stl::ValidateArgs),
+    /// Initialize STL agent instructions in CLAUDE.md
+    Init(init::InitArgs),
 }
 
 pub async fn run(
@@ -75,5 +78,6 @@ pub async fn run(
         TemplateAction::Delete { id, confirm } => delete::run(id, *confirm, client, out).await,
         TemplateAction::Run(run_args) => run_stl::run(run_args, client, &cache_dir, out).await,
         TemplateAction::Validate(validate_args) => validate_stl::run(validate_args, out).await,
+        TemplateAction::Init(init_args) => init::run(init_args, out).await,
     }
 }

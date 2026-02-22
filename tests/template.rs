@@ -6,6 +6,8 @@ mod create;
 mod delete;
 #[path = "template/get.rs"]
 mod get;
+#[path = "template/init.rs"]
+mod init;
 #[path = "template/list.rs"]
 mod list;
 #[path = "template/run_stl.rs"]
