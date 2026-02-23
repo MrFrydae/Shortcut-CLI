@@ -60,7 +60,7 @@ jobs:
           tar czf ../../../shortcut-${{ github.ref_name }}-${{ matrix.target }}.tar.gz shortcut
           cd ../../..
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: shortcut-${{ matrix.target }}
           path: shortcut-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
@@ -74,7 +74,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           merge-multiple: true
 
