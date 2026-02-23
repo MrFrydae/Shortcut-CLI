@@ -177,6 +177,16 @@ pub async fn resolve_member_id(
     cache_dir: &Path,
 ) -> Result<uuid::Uuid, Box<dyn Error>> {
     if let Some(mention) = id_or_mention.strip_prefix('@') {
+        if mention.eq_ignore_ascii_case("me") {
+            let info = client.get_current_member_info().send().await.map_err(|e| {
+                format!(
+                    "Failed to get current member: {}",
+                    crate::api::format_api_error(&e)
+                )
+            })?;
+            return Ok(info.id);
+        }
+
         if let Some(cache) = read_cache(cache_dir)
             && let Some(uuid_str) = cache.get(mention)
             && let Ok(uuid) = uuid_str.parse::<uuid::Uuid>()

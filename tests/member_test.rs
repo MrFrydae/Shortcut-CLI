@@ -1,7 +1,7 @@
 mod support;
 
 use shortcut_cli::{api, commands::member};
-use support::{default_icon, member_json};
+use support::{default_icon, member_info_json, member_json};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -326,4 +326,42 @@ async fn list_members_invalid_role_errors() {
     let err = result.unwrap_err().to_string();
     assert!(err.contains("Invalid role"));
     assert!(err.contains("superadmin"));
+}
+
+#[tokio::test]
+async fn resolve_me_to_current_user() {
+    let out = crate::support::make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    let me_body = member_info_json("Alice Smith", "alice");
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/member"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&me_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    // The resolved UUID from member_info_json is "00000000-0000-0000-0000-000000000001"
+    let detail_body = member_json(
+        "00000000-0000-0000-0000-000000000001",
+        "alice",
+        "Alice Smith",
+        "member",
+        false,
+        Some(default_icon()),
+    );
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/members/00000000-0000-0000-0000-000000000001"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&detail_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = make_args(false, Some("@me"));
+    let result = member::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
 }
