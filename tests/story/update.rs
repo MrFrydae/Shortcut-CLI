@@ -507,3 +507,77 @@ async fn unless_state_json_output() {
     assert_eq!(json["current_state"], "Done");
     assert!(json["reason"].as_str().unwrap().contains("--unless-state"));
 }
+
+// --- --add-owner tests ---
+
+#[tokio::test]
+async fn add_owner_appends_to_existing() {
+    let out = crate::support::make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    // Story currently has alice as owner
+    let mut get_body = full_story_json(42, "My Story", "desc");
+    get_body["owner_ids"] = serde_json::json!([UUID_ALICE]);
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&get_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    // Members API for resolving @bob
+    let members_body = serde_json::json!([
+        member_json(
+            UUID_ALICE,
+            "alice",
+            "Alice Smith",
+            "admin",
+            false,
+            Some(default_icon())
+        ),
+        member_json(
+            crate::UUID_BOB,
+            "bob",
+            "Bob Jones",
+            "member",
+            false,
+            Some(default_icon())
+        ),
+    ]);
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/members"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&members_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let put_body = full_story_json(42, "My Story", "desc");
+
+    let put_mock = Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&put_body))
+        .expect(1)
+        .mount_as_scoped(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.add_owner = vec!["@bob".to_string()];
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
+
+    // Verify the PUT request contained both alice and bob
+    let requests = put_mock.received_requests().await;
+    assert_eq!(requests.len(), 1);
+    let body: serde_json::Value = serde_json::from_slice(&requests[0].body).unwrap();
+    let sent_ids = body["owner_ids"].as_array().unwrap();
+    assert_eq!(sent_ids.len(), 2);
+    assert!(sent_ids.contains(&serde_json::json!(UUID_ALICE)));
+    assert!(sent_ids.contains(&serde_json::json!(crate::UUID_BOB)));
+}

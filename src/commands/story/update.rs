@@ -31,9 +31,13 @@ pub struct UpdateArgs {
     #[arg(long, name = "type")]
     pub story_type: Option<String>,
 
-    /// Owner(s) by @mention_name or UUID (comma-separated)
+    /// Owner(s) by @mention_name or UUID (comma-separated, replaces all)
     #[arg(long, value_delimiter = ',')]
     pub owner: Vec<String>,
+
+    /// Add owner(s) to the existing list (comma-separated @mention_name or UUID)
+    #[arg(long, value_delimiter = ',', conflicts_with = "owner")]
+    pub add_owner: Vec<String>,
 
     /// The workflow state name or ID
     #[arg(long)]
@@ -95,7 +99,8 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid story type: {e}"))?;
 
-    let owner_ids = resolve_owners(&args.owner, client, cache_dir).await?;
+    let mut owner_ids = resolve_owners(&args.owner, client, cache_dir).await?;
+    let add_owner_ids = resolve_owners(&args.add_owner, client, cache_dir).await?;
 
     let resolved_state_id = match &args.state {
         Some(val) => Some(resolve_workflow_state_id(val, client, cache_dir).await?),
@@ -118,19 +123,42 @@ pub async fn run(
     let custom_field_params =
         resolve_custom_field_args(&args.custom_fields, client, cache_dir).await?;
 
+    // Fetch story if needed for --add-owner merge or --unless-state check
+    let need_fetch = !add_owner_ids.is_empty() || !args.unless_state.is_empty();
+    let fetched_story = if need_fetch {
+        Some(
+            client
+                .get_story()
+                .story_public_id(args.id)
+                .send()
+                .await
+                .map_err(|e| {
+                    format!(
+                        "Failed to fetch story: {}",
+                        crate::api::format_api_error(&e)
+                    )
+                })?,
+        )
+    } else {
+        None
+    };
+
+    // Merge --add-owner into existing owners
+    if !add_owner_ids.is_empty()
+        && let Some(story) = &fetched_story
+    {
+        let mut merged: Vec<uuid::Uuid> = story.owner_ids.clone();
+        for id in &add_owner_ids {
+            if !merged.contains(id) {
+                merged.push(*id);
+            }
+        }
+        owner_ids = merged;
+    }
+
     // --- unless-state guard ---
     if !args.unless_state.is_empty() {
-        let story = client
-            .get_story()
-            .story_public_id(args.id)
-            .send()
-            .await
-            .map_err(|e| {
-                format!(
-                    "Failed to fetch story for --unless-state check: {}",
-                    crate::api::format_api_error(&e)
-                )
-            })?;
+        let story = fetched_story.as_ref().unwrap();
 
         let current_name = resolve_workflow_state_name(story.workflow_state_id, client, cache_dir)
             .await?

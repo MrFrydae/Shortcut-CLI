@@ -59,6 +59,7 @@ pub fn make_update_args(id: i64) -> shortcut_cli::commands::story::UpdateArgs {
         description: None,
         story_type: None,
         owner: vec![],
+        add_owner: vec![],
         state: None,
         epic_id: None,
         estimate: None,

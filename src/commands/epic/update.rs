@@ -4,9 +4,12 @@ use std::path::Path;
 use clap::Args;
 
 use crate::api;
+use crate::commands::member;
 use crate::output::OutputConfig;
 
-use super::helpers::{normalize_name, resolve_epic_state_id, resolve_epic_state_name};
+use super::helpers::{
+    normalize_name, resolve_epic_state_id, resolve_epic_state_name, resolve_owners,
+};
 use crate::out_println;
 
 #[derive(Args)]
@@ -44,17 +47,21 @@ pub struct UpdateArgs {
     #[arg(long, value_delimiter = ',')]
     pub objective_ids: Vec<i64>,
 
-    /// Owner member UUIDs (comma-separated)
+    /// Owner(s) by @mention_name or UUID (comma-separated, replaces all)
     #[arg(long, value_delimiter = ',')]
-    pub owner_ids: Vec<uuid::Uuid>,
+    pub owner: Vec<String>,
 
-    /// Follower member UUIDs (comma-separated)
+    /// Add owner(s) to the existing list (comma-separated @mention_name or UUID)
+    #[arg(long, value_delimiter = ',', conflicts_with = "owner")]
+    pub add_owner: Vec<String>,
+
+    /// Follower(s) by @mention_name or UUID (comma-separated)
     #[arg(long, value_delimiter = ',')]
-    pub follower_ids: Vec<uuid::Uuid>,
+    pub follower: Vec<String>,
 
-    /// The UUID of the member that requested the epic
+    /// Requested-by member (@mention_name or UUID)
     #[arg(long)]
-    pub requested_by_id: Option<uuid::Uuid>,
+    pub requested_by: Option<String>,
 
     /// Skip update if the epic is currently in any of these states (comma-separated)
     #[arg(long, value_delimiter = ',')]
@@ -101,19 +108,47 @@ pub async fn run(
         })
         .collect::<Result<_, _>>()?;
 
+    let mut owner_ids = resolve_owners(&args.owner, client, cache_dir).await?;
+    let add_owner_ids = resolve_owners(&args.add_owner, client, cache_dir).await?;
+    let follower_ids = resolve_owners(&args.follower, client, cache_dir).await?;
+    let requested_by_id = match &args.requested_by {
+        Some(val) => Some(member::resolve_member_id(val, client, cache_dir).await?),
+        None => None,
+    };
+
+    // Fetch epic if needed for --add-owner merge or --unless-state check
+    let need_fetch = !add_owner_ids.is_empty() || !args.unless_state.is_empty();
+    let fetched_epic = if need_fetch {
+        Some(
+            client
+                .get_epic()
+                .epic_public_id(args.id)
+                .send()
+                .await
+                .map_err(|e| {
+                    format!("Failed to fetch epic: {}", crate::api::format_api_error(&e))
+                })?,
+        )
+    } else {
+        None
+    };
+
+    // Merge --add-owner into existing owners
+    if !add_owner_ids.is_empty()
+        && let Some(epic) = &fetched_epic
+    {
+        let mut merged: Vec<uuid::Uuid> = epic.owner_ids.clone();
+        for id in &add_owner_ids {
+            if !merged.contains(id) {
+                merged.push(*id);
+            }
+        }
+        owner_ids = merged;
+    }
+
     // --- unless-state guard (before state resolution to avoid cache artifacts) ---
     if !args.unless_state.is_empty() {
-        let epic = client
-            .get_epic()
-            .epic_public_id(args.id)
-            .send()
-            .await
-            .map_err(|e| {
-                format!(
-                    "Failed to fetch epic for --unless-state check: {}",
-                    crate::api::format_api_error(&e)
-                )
-            })?;
+        let epic = fetched_epic.as_ref().unwrap();
 
         let current_name = resolve_epic_state_name(epic.epic_state_id, client, cache_dir).await;
 
@@ -164,13 +199,13 @@ pub async fn run(
                 serde_json::json!(args.objective_ids),
             );
         }
-        if !args.owner_ids.is_empty() {
-            body.insert("owner_ids".into(), serde_json::json!(args.owner_ids));
+        if !owner_ids.is_empty() {
+            body.insert("owner_ids".into(), serde_json::json!(owner_ids));
         }
-        if !args.follower_ids.is_empty() {
-            body.insert("follower_ids".into(), serde_json::json!(args.follower_ids));
+        if !follower_ids.is_empty() {
+            body.insert("follower_ids".into(), serde_json::json!(follower_ids));
         }
-        if let Some(req_id) = args.requested_by_id {
+        if let Some(req_id) = &requested_by_id {
             body.insert("requested_by_id".into(), serde_json::json!(req_id));
         }
         let body = serde_json::Value::Object(body);
@@ -202,13 +237,13 @@ pub async fn run(
             if !args.objective_ids.is_empty() {
                 b = b.objective_ids(args.objective_ids.clone());
             }
-            if !args.owner_ids.is_empty() {
-                b = b.owner_ids(args.owner_ids.clone());
+            if !owner_ids.is_empty() {
+                b = b.owner_ids(owner_ids.clone());
             }
-            if !args.follower_ids.is_empty() {
-                b = b.follower_ids(args.follower_ids.clone());
+            if !follower_ids.is_empty() {
+                b = b.follower_ids(follower_ids.clone());
             }
-            if let Some(req_id) = args.requested_by_id {
+            if let Some(req_id) = requested_by_id {
                 b = b.requested_by_id(Some(req_id));
             }
             b

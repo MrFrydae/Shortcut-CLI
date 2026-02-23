@@ -18,6 +18,7 @@ mod update;
 mod wizard;
 
 pub const UUID_ALICE: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+pub const UUID_BOB: &str = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 
 pub fn make_list_args(desc: bool) -> shortcut_cli::commands::epic::EpicArgs {
     shortcut_cli::commands::epic::EpicArgs {
@@ -35,9 +36,10 @@ pub fn make_update_args(id: i64) -> shortcut_cli::commands::epic::UpdateArgs {
         epic_state_id: None,
         labels: vec![],
         objective_ids: vec![],
-        owner_ids: vec![],
-        follower_ids: vec![],
-        requested_by_id: None,
+        owner: vec![],
+        add_owner: vec![],
+        follower: vec![],
+        requested_by: None,
         unless_state: vec![],
     }
 }
