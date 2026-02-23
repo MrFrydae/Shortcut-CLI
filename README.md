@@ -224,6 +224,23 @@ The API client is auto-generated at compile time from `spec/shortcut.openapi.jso
 
 </details>
 
+## Releasing
+
+Use the release helper script to cut a new semver release with one command:
+
+```sh
+scripts/release.sh 0.0.12
+```
+
+What it does:
+
+- Updates the package `version` in `Cargo.toml`
+- Regenerates `Cargo.lock` and verifies it includes the new `shortcut-cli` version
+- Runs `cargo build --locked --release` locally
+- Commits `Cargo.toml` + `Cargo.lock`, creates annotated tag `v<version>`, and pushes both to `origin`
+- Triggers `.github/workflows/release.yml` (runs on pushed `v*` tags)
+- Publishes detailed release notes listing all non-merge commits since the previous release tag
+
 ## License
 
 [AGPL-3.0](LICENSE)

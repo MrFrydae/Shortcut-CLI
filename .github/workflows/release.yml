@@ -33,16 +33,26 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Sync Cargo.toml version with tag
+      - name: Verify version metadata matches tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          sed -i'' -e "s/^version = \".*\"/version = \"${VERSION}\"/" Cargo.toml
+          CARGO_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+
+          if [ "${CARGO_VERSION}" != "${VERSION}" ]; then
+            echo "Cargo.toml version (${CARGO_VERSION}) does not match tag (${VERSION})"
+            exit 1
+          fi
+
+          if ! perl -0777 -ne 'exit((/name = "shortcut-cli"\nversion = "'"${VERSION}"'"/s)?0:1)' Cargo.lock; then
+            echo "Cargo.lock does not contain shortcut-cli version ${VERSION}"
+            exit 1
+          fi
 
       - name: Install OpenSSL (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
 
-      - run: cargo build --release --target ${{ matrix.target }}
+      - run: cargo build --locked --release --target ${{ matrix.target }}
 
       - name: Package binary
         run: |
@@ -59,6 +69,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
@@ -66,10 +81,29 @@ jobs:
       - name: Generate checksums
         run: shasum -a 256 shortcut-*.tar.gz > checksums.txt
 
+      - name: Generate release notes
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PREV_TAG="$(git tag --sort=-v:refname | grep -v "^${TAG}$" | head -n 1 || true)"
+
+          {
+            echo "# Release ${TAG}"
+            echo
+            if [ -n "${PREV_TAG}" ]; then
+              echo "Changes since ${PREV_TAG}:"
+              echo
+              git log --no-merges --pretty='- %h %s (%an)' "${PREV_TAG}..${TAG}"
+            else
+              echo "Initial release."
+              echo
+              git log --no-merges --pretty='- %h %s (%an)' "${TAG}"
+            fi
+          } > release-notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: release-notes.md
           files: |
             shortcut-*.tar.gz
             checksums.txt
