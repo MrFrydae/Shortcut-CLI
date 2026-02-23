@@ -319,7 +319,7 @@ async fn unless_state_skips_when_matched() {
 
     Mock::given(method("GET"))
         .and(path("/api/v3/workflows"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .respond_with(ResponseTemplate::new(200).set_body_json(standard_workflows_body()))
         .mount(&server)
         .await;
 
@@ -359,7 +359,7 @@ async fn unless_state_proceeds_when_not_matched() {
 
     Mock::given(method("GET"))
         .and(path("/api/v3/workflows"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .respond_with(ResponseTemplate::new(200).set_body_json(standard_workflows_body()))
         .mount(&server)
         .await;
 
@@ -399,7 +399,7 @@ async fn unless_state_multiple_values() {
 
     Mock::given(method("GET"))
         .and(path("/api/v3/workflows"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .respond_with(ResponseTemplate::new(200).set_body_json(standard_workflows_body()))
         .mount(&server)
         .await;
 
@@ -439,7 +439,7 @@ async fn unless_state_normalizes_names() {
 
     Mock::given(method("GET"))
         .and(path("/api/v3/workflows"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .respond_with(ResponseTemplate::new(200).set_body_json(standard_workflows_body()))
         .mount(&server)
         .await;
 
@@ -479,7 +479,7 @@ async fn unless_state_json_output() {
 
     Mock::given(method("GET"))
         .and(path("/api/v3/workflows"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .respond_with(ResponseTemplate::new(200).set_body_json(standard_workflows_body()))
         .mount(&server)
         .await;
 
