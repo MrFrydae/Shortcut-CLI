@@ -770,6 +770,15 @@ async fn dispatch_api_call(
     story_id: Option<i64>,
     body: serde_json::Value,
 ) -> Result<serde_json::Value, Box<dyn Error>> {
+    if std::env::var("SHORTCUT_DEBUG").is_ok() {
+        eprintln!(
+            "[DEBUG] {} {} body: {}",
+            action,
+            entity,
+            serde_json::to_string_pretty(&body).unwrap_or_default()
+        );
+    }
+
     match (action, entity) {
         // ── Story ──
         (Action::Create, Entity::Story) => {

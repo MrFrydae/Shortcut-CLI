@@ -87,6 +87,7 @@ async fn run_create_epic_then_story_with_ref() {
 
     Mock::given(method("POST"))
         .and(path("/api/v3/stories"))
+        .and(body_partial_json(serde_json::json!({"epic_id": 55})))
         .respond_with(ResponseTemplate::new(201).set_body_json(&story_response))
         .expect(1)
         .mount(&server)
@@ -807,6 +808,152 @@ async fn run_create_story_with_block_description() {
         .await;
 
     let yaml = "version: 1\noperations:\n  - action: create\n    entity: story\n    fields:\n      name: \"Block Desc Story\"\n      description: |\n        First line.\n        Second line.\n\n        Another paragraph.\n";
+    let file = write_template(&tmp, yaml);
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = run_args(&file);
+    let result = template::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "Expected ok, got: {result:?}");
+}
+
+#[tokio::test]
+async fn run_repeat_with_parent_story_id_from_shared_fields() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
+
+    // Parent story
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .and(body_partial_json(
+            serde_json::json!({"name": "Parent Story"}),
+        ))
+        .respond_with(ResponseTemplate::new(201).set_body_json(full_story_json(
+            1000,
+            "Parent Story",
+            "",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    // Child stories must include parent_story_id in the request body
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .and(body_partial_json(
+            serde_json::json!({"parent_story_id": 1000}),
+        ))
+        .respond_with(ResponseTemplate::new(201).set_body_json(full_story_json(1001, "Child", "")))
+        .expect(2)
+        .mount(&server)
+        .await;
+
+    let yaml = r#"
+version: 1
+operations:
+  - action: create
+    entity: story
+    alias: parent
+    fields:
+      name: "Parent Story"
+  - action: create
+    entity: story
+    repeat:
+      - { name: "Child A" }
+      - { name: "Child B" }
+    fields:
+      parent_story_id: $ref(parent)
+"#;
+    let file = write_template(&tmp, yaml);
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = run_args(&file);
+    let result = template::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "Expected ok, got: {result:?}");
+}
+
+#[tokio::test]
+async fn run_repeat_with_epic_id_from_shared_fields() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
+
+    // Epic
+    Mock::given(method("POST"))
+        .and(path("/api/v3/epics"))
+        .respond_with(ResponseTemplate::new(201).set_body_json(full_epic_json(55, "My Epic", "")))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    // Stories must include epic_id in the request body
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .and(body_partial_json(serde_json::json!({"epic_id": 55})))
+        .respond_with(ResponseTemplate::new(201).set_body_json(full_story_json(200, "Story", "")))
+        .expect(2)
+        .mount(&server)
+        .await;
+
+    let yaml = r#"
+version: 1
+operations:
+  - action: create
+    entity: epic
+    alias: my-epic
+    fields:
+      name: "My Epic"
+  - action: create
+    entity: story
+    repeat:
+      - { name: "Story A" }
+      - { name: "Story B" }
+    fields:
+      epic_id: $ref(my-epic)
+"#;
+    let file = write_template(&tmp, yaml);
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = run_args(&file);
+    let result = template::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "Expected ok, got: {result:?}");
+}
+
+#[tokio::test]
+async fn run_repeat_with_static_parent_story_id() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
+
+    // Stories must include parent_story_id: 999 in the request body
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .and(body_partial_json(
+            serde_json::json!({"parent_story_id": 999}),
+        ))
+        .respond_with(ResponseTemplate::new(201).set_body_json(full_story_json(
+            300,
+            "Sub-story",
+            "",
+        )))
+        .expect(2)
+        .mount(&server)
+        .await;
+
+    let yaml = r#"
+version: 1
+operations:
+  - action: create
+    entity: story
+    repeat:
+      - { name: "Sub A" }
+      - { name: "Sub B" }
+    fields:
+      parent_story_id: 999
+"#;
     let file = write_template(&tmp, yaml);
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let args = run_args(&file);
