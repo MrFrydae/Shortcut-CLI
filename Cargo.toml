@@ -12,29 +12,29 @@ name = "shortcut"
 path = "src/main.rs"
 
 [dependencies]
-atty = "0.2"
-chrono = { version = "0.4", features = ["serde"] }
-clap = { version = "4", features = ["derive"] }
-clap_complete = "4"
-colored = "3"
+atty = "0.2.14"
+chrono = { version = "0.4.43", features = ["serde"] }
+clap = { version = "4.5.60", features = ["derive"] }
+clap_complete = "4.5.66"
+colored = "3.1.1"
 dialoguer = "0.11"
-progenitor-client = "0.11"
-regress = "0.10"
-reqwest = { version = "0.12", features = ["json", "stream"] }
-rpassword = "7"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-serde_yaml = "0.9"
-tokio = { version = "1", features = ["full"] }
-uuid = { version = "1", features = ["serde", "v4"] }
+progenitor-client = "0.11.2"
+regress = "0.10.5"
+reqwest = { version = "0.12.28", features = ["json", "stream"] }
+rpassword = "7.4.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+serde_yaml = "0.9.34"
+tokio = { version = "1.0.3", features = ["full"] }
+uuid = { version = "1.21.0", features = ["serde", "v4"] }
 
 [dev-dependencies]
-tempfile = "3"
-wiremock = "0.6"
+tempfile = "3.0.8"
+wiremock = "0.6.5"
 
 [build-dependencies]
-openapiv3 = "2"
-prettyplease = "0.2"
-progenitor = { version = "0.11", default-features = false }
-serde_json = "1.0"
-syn = "2.0"
+openapiv3 = "2.2.0"
+prettyplease = "0.2.37"
+progenitor = { version = "0.11.2", default-features = false }
+serde_json = "1.0.149"
+syn = "2.0.117"
