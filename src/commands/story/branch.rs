@@ -41,7 +41,7 @@ pub async fn run_with_git(
         .story_public_id(args.id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get story: {e}"))?;
+        .map_err(|e| format!("Failed to get story: {}", crate::api::format_api_error(&e)))?;
 
     let branch = git::branch_name(
         &story.story_type,

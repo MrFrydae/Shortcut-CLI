@@ -40,7 +40,12 @@ pub async fn run(
         .body_map(|b| b.text(text_value))
         .send()
         .await
-        .map_err(|e| format!("Failed to create comment: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to create comment: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     out_println!(out, "Created comment #{} on story {story_id}", comment.id);
     Ok(())

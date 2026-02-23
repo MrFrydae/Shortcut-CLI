@@ -21,7 +21,7 @@ pub async fn run(
         .group_public_id(group_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get group: {e}"))?;
+        .map_err(|e| format!("Failed to get group: {}", crate::api::format_api_error(&e)))?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*group)?;
@@ -51,11 +51,12 @@ pub async fn run(
     out_println!(out, "  Members:     {}", group.member_ids.len());
 
     if !group.member_ids.is_empty() {
-        let members = client
-            .list_members()
-            .send()
-            .await
-            .map_err(|e| format!("Failed to list members: {e}"))?;
+        let members = client.list_members().send().await.map_err(|e| {
+            format!(
+                "Failed to list members: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
         let member_map: HashMap<uuid::Uuid, _> = members.iter().map(|m| (m.id, m)).collect();
 

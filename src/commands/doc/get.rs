@@ -14,7 +14,12 @@ pub async fn run(id: &str, client: &api::Client, out: &OutputConfig) -> Result<(
         .doc_public_id(doc_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get document: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get document: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*doc)?;

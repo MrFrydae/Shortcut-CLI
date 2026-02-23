@@ -46,11 +46,12 @@ pub async fn resolve_epic_state_id(
     }
 
     // Cache miss — fetch from API and update cache
-    let workflow = client
-        .get_epic_workflow()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to fetch epic workflow: {e}"))?;
+    let workflow = client.get_epic_workflow().send().await.map_err(|e| {
+        format!(
+            "Failed to fetch epic workflow: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     let map: HashMap<String, i64> = workflow
         .epic_states
@@ -82,11 +83,12 @@ pub async fn fetch_epic_state_names(
     client: &api::Client,
     cache_dir: &Path,
 ) -> Result<Vec<String>, Box<dyn Error>> {
-    let workflow = client
-        .get_epic_workflow()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to fetch epic workflow: {e}"))?;
+    let workflow = client.get_epic_workflow().send().await.map_err(|e| {
+        format!(
+            "Failed to fetch epic workflow: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     let map: HashMap<String, i64> = workflow
         .epic_states
@@ -160,7 +162,7 @@ pub async fn fetch_epic_choices(
         .list_epics()
         .send()
         .await
-        .map_err(|e| format!("Failed to list epics: {e}"))?;
+        .map_err(|e| format!("Failed to list epics: {}", crate::api::format_api_error(&e)))?;
     let mut choices: Vec<crate::interactive::IdChoice> = epics
         .iter()
         .filter(|e| !e.archived)

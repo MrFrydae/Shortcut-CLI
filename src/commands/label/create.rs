@@ -59,7 +59,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to create label: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to create label: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     // Update cache with new label
     let mut cache = super::helpers::read_cache(cache_dir).unwrap_or_default();

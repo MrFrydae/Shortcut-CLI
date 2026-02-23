@@ -31,7 +31,12 @@ pub async fn run(
         .story_public_id(args.id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get story history: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get story history: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let mut entries: Vec<&api::types::History> = entries.iter().collect();
     entries.sort_by(|a, b| a.changed_at.cmp(&b.changed_at));
@@ -106,11 +111,12 @@ async fn build_member_lookup(
     }
 
     // Cache miss — fetch members
-    let members = client
-        .list_members()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list members: {e}"))?;
+    let members = client.list_members().send().await.map_err(|e| {
+        format!(
+            "Failed to list members: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     let map: HashMap<String, String> = members
         .iter()

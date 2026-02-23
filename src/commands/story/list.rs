@@ -107,7 +107,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to search stories: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to search stories: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let limit = args.limit as usize;
     let items: Vec<_> = stories.iter().take(limit).collect();

@@ -32,10 +32,12 @@ pub async fn run(
         req = req.next(next.clone());
     }
 
-    let results = req
-        .send()
-        .await
-        .map_err(|e| format!("Failed to search iterations: {e}"))?;
+    let results = req.send().await.map_err(|e| {
+        format!(
+            "Failed to search iterations: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*results)?;

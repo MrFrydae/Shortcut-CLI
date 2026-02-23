@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{
     full_epic_json, full_story_json, iteration_json, label_json, make_dry_run_output, make_output,
-    story_comment_json, story_link_json,
+    mount_default_workflow, story_comment_json, story_link_json,
 };
 use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
 use shortcut_cli::{api, commands::template};
@@ -41,6 +41,8 @@ async fn run_create_story() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
+    mount_default_workflow(&server).await;
+
     let response = full_story_json(200, "My Story", "");
 
     Mock::given(method("POST"))
@@ -70,6 +72,8 @@ async fn run_create_epic_then_story_with_ref() {
     let out = make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     let epic_response = full_epic_json(55, "Auth Hardening", "");
     let story_response = full_story_json(200, "JWT Story", "");
@@ -236,6 +240,8 @@ async fn run_repeat_creates_multiple() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
+    mount_default_workflow(&server).await;
+
     // Expect 3 story creations
     Mock::given(method("POST"))
         .and(path("/api/v3/stories"))
@@ -309,6 +315,8 @@ async fn run_fail_fast_stops_on_error() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
+    mount_default_workflow(&server).await;
+
     // First operation succeeds
     Mock::given(method("POST"))
         .and(path("/api/v3/epics"))
@@ -362,6 +370,8 @@ async fn run_on_error_continue() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
+    mount_default_workflow(&server).await;
+
     // First operation fails
     Mock::given(method("POST"))
         .and(path("/api/v3/stories"))
@@ -405,7 +415,9 @@ async fn run_dry_run_no_api_calls() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
-    // No mocks mounted — dry-run should never call the API
+    // Workflow mock needed for default state resolution (even in dry-run)
+    mount_default_workflow(&server).await;
+
     let yaml = r#"
 version: 1
 operations:
@@ -525,6 +537,8 @@ async fn run_parent_with_children_and_tasks() {
     let out = make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     // Parent story (matched by name)
     Mock::given(method("POST"))
@@ -669,6 +683,45 @@ operations:
       - { description: "Child B task 2" }
     fields:
       story_id: $ref(children.1)
+"#;
+    let file = write_template(&tmp, yaml);
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = run_args(&file);
+    let result = template::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "Expected ok, got: {result:?}");
+}
+
+#[tokio::test]
+async fn run_create_story_injects_default_workflow_state() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
+
+    // The body matcher verifies that workflow_state_id is sent
+    // (default_state_id from workflow_json is 100)
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .and(body_partial_json(
+            serde_json::json!({"workflow_state_id": 100}),
+        ))
+        .respond_with(ResponseTemplate::new(201).set_body_json(full_story_json(
+            400,
+            "Auto-state",
+            "",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let yaml = r#"
+version: 1
+operations:
+  - action: create
+    entity: story
+    fields:
+      name: "Auto-state"
 "#;
     let file = write_template(&tmp, yaml);
     let client = api::client_with_token("test-token", &server.uri()).unwrap();

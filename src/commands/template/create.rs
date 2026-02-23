@@ -201,7 +201,12 @@ pub async fn run(
         .body_map(|b| b.name(template_name).story_contents(contents))
         .send()
         .await
-        .map_err(|e| format!("Failed to create entity template: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to create entity template: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         out_println!(

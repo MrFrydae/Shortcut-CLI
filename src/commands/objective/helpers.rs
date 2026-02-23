@@ -6,11 +6,12 @@ use crate::api;
 pub async fn fetch_objective_choices(
     client: &api::Client,
 ) -> Result<Vec<crate::interactive::IdChoice>, Box<dyn Error>> {
-    let objectives = client
-        .list_objectives()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list objectives: {e}"))?;
+    let objectives = client.list_objectives().send().await.map_err(|e| {
+        format!(
+            "Failed to list objectives: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
     let mut choices: Vec<crate::interactive::IdChoice> = objectives
         .iter()
         .filter(|o| !o.archived)

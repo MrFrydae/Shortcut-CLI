@@ -9,11 +9,12 @@ pub async fn run(
     client: &api::Client,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let projects = client
-        .list_projects()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list projects: {e}"))?;
+    let projects = client.list_projects().send().await.map_err(|e| {
+        format!(
+            "Failed to list projects: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*projects)?;

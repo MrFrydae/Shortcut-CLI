@@ -18,7 +18,12 @@ pub async fn run(
         .story_public_id(story_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to list comments: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to list comments: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if comments.is_empty() {
         out_println!(out, "No comments on story {story_id}");

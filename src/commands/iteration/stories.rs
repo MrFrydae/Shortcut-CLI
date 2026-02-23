@@ -14,7 +14,12 @@ pub async fn run(
         .iteration_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to list stories: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to list stories: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
     if stories.is_empty() {
         out_println!(out, "No stories in this iteration");
         return Ok(());

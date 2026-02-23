@@ -11,11 +11,12 @@ pub async fn run(
     cache_dir: &Path,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let labels = client
-        .list_labels()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list labels: {e}"))?;
+    let labels = client.list_labels().send().await.map_err(|e| {
+        format!(
+            "Failed to list labels: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     if out.is_quiet() {
         for label in labels.iter() {

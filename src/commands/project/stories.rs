@@ -14,10 +14,12 @@ pub async fn run(
     if desc {
         req = req.includes_description(true);
     }
-    let stories = req
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list project stories: {e}"))?;
+    let stories = req.send().await.map_err(|e| {
+        format!(
+            "Failed to list project stories: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*stories)?;

@@ -139,7 +139,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to update iteration: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to update iteration: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         out_println!(out, "{}", iteration.id);

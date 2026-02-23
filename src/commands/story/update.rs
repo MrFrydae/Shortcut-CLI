@@ -192,7 +192,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to update story: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to update story: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         out_println!(

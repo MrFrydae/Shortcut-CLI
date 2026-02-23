@@ -27,7 +27,12 @@ pub async fn run(
         .objective_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get objective: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get objective: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let name = objective.name.clone();
 
@@ -36,7 +41,12 @@ pub async fn run(
         .objective_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete objective: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete objective: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         return Ok(());

@@ -25,14 +25,19 @@ pub async fn run(
         .label_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get label: {e}"))?;
+        .map_err(|e| format!("Failed to get label: {}", crate::api::format_api_error(&e)))?;
     let name = label.name.clone();
     client
         .delete_label()
         .label_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete label: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete label: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
     out_println!(out, "Deleted label {id} - {name}");
     Ok(())
 }

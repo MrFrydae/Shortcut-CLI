@@ -187,7 +187,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to update epic: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to update epic: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         out_println!(out, "{}", epic.id);

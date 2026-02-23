@@ -107,11 +107,12 @@ pub async fn resolve_custom_field_value(
     }
 
     // Cache miss — fetch from API
-    let fields = client
-        .list_custom_fields()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list custom fields: {e}"))?;
+    let fields = client.list_custom_fields().send().await.map_err(|e| {
+        format!(
+            "Failed to list custom fields: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     let cache = build_cache(&fields);
     write_cache(&cache, cache_dir);
@@ -171,11 +172,12 @@ pub async fn resolve_custom_field_names(
     }
 
     // Cache miss — fetch from API
-    let fields = client
-        .list_custom_fields()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list custom fields: {e}"))?;
+    let fields = client.list_custom_fields().send().await.map_err(|e| {
+        format!(
+            "Failed to list custom fields: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     let cache = build_cache(&fields);
     write_cache(&cache, cache_dir);

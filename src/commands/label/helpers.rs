@@ -72,12 +72,12 @@ pub async fn resolve_label_id(
     }
 
     // Cache miss — fetch from API and update cache
-    let labels = client
-        .list_labels()
-        .slim(true)
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list labels: {e}"))?;
+    let labels = client.list_labels().slim(true).send().await.map_err(|e| {
+        format!(
+            "Failed to list labels: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     let map: HashMap<String, i64> = labels
         .iter()

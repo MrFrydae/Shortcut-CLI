@@ -10,7 +10,12 @@ pub async fn run(id: i64, client: &api::Client, out: &OutputConfig) -> Result<()
         .project_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get project: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get project: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*project)?;

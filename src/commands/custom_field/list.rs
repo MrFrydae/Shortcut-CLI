@@ -12,11 +12,12 @@ pub async fn run(
     cache_dir: &Path,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let fields = client
-        .list_custom_fields()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list custom fields: {e}"))?;
+    let fields = client.list_custom_fields().send().await.map_err(|e| {
+        format!(
+            "Failed to list custom fields: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     // Update cache while we have the data
     let cache = build_cache(&fields);

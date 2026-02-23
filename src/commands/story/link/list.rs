@@ -17,7 +17,7 @@ pub async fn run(
         .story_public_id(story_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get story: {e}"))?;
+        .map_err(|e| format!("Failed to get story: {}", crate::api::format_api_error(&e)))?;
 
     if story.story_links.is_empty() {
         out_println!(out, "No links on story {story_id}");

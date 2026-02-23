@@ -9,7 +9,12 @@ pub async fn run(id: i64, client: &api::Client, out: &OutputConfig) -> Result<()
         .iteration_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get iteration: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get iteration: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         out_println!(out, "{}", iteration.id);

@@ -9,7 +9,7 @@ pub async fn run(id: i64, client: &api::Client, out: &OutputConfig) -> Result<()
         .label_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get label: {e}"))?;
+        .map_err(|e| format!("Failed to get label: {}", crate::api::format_api_error(&e)))?;
     if out.is_quiet() {
         out_println!(out, "{}", label.id);
         return Ok(());

@@ -27,7 +27,7 @@ pub async fn run(
         .epic_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get epic: {e}"))?;
+        .map_err(|e| format!("Failed to get epic: {}", crate::api::format_api_error(&e)))?;
 
     let name = epic.name.clone();
 
@@ -36,7 +36,12 @@ pub async fn run(
         .epic_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete epic: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete epic: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     out_println!(out, "Deleted epic {id} - {name}");
     Ok(())

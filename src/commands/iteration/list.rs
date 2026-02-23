@@ -8,11 +8,12 @@ pub async fn run(
     client: &api::Client,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let iterations = client
-        .list_iterations()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list iterations: {e}"))?;
+    let iterations = client.list_iterations().send().await.map_err(|e| {
+        format!(
+            "Failed to list iterations: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     if out.is_quiet() {
         for iter in iterations.iter() {

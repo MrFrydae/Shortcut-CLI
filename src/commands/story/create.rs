@@ -6,7 +6,10 @@ use clap::Args;
 use crate::api;
 use crate::output::OutputConfig;
 
-use super::helpers::{resolve_custom_field_args, resolve_owners, resolve_workflow_state_id};
+use super::helpers::{
+    get_default_workflow_state_id, resolve_custom_field_args, resolve_owners,
+    resolve_workflow_state_id,
+};
 use crate::out_println;
 
 #[derive(Args)]
@@ -89,7 +92,7 @@ pub async fn run(
 
     let resolved_state_id = match &args.state {
         Some(val) => Some(resolve_workflow_state_id(val, client, cache_dir).await?),
-        None => None,
+        None => Some(get_default_workflow_state_id(client, cache_dir).await?),
     };
 
     let resolved_group_id = match &args.group_id {
@@ -193,7 +196,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to create story: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to create story: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         out_println!(

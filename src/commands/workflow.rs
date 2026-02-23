@@ -23,11 +23,12 @@ pub async fn run(
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
     if args.list {
-        let workflows = client
-            .list_workflows()
-            .send()
-            .await
-            .map_err(|e| format!("Failed to list workflows: {e}"))?;
+        let workflows = client.list_workflows().send().await.map_err(|e| {
+            format!(
+                "Failed to list workflows: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
         for wf in workflows.iter() {
             out_println!(out, "{} - {}", wf.id, wf.name);
         }
@@ -37,7 +38,12 @@ pub async fn run(
             .workflow_public_id(id)
             .send()
             .await
-            .map_err(|e| format!("Failed to get workflow: {e}"))?;
+            .map_err(|e| {
+                format!(
+                    "Failed to get workflow: {}",
+                    crate::api::format_api_error(&e)
+                )
+            })?;
         out_println!(out, "{} (id: {})\n", wf.name, wf.id);
         let mut states: Vec<_> = wf.states.iter().collect();
         states.sort_by_key(|s| s.position);

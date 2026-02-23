@@ -29,7 +29,12 @@ pub async fn run(
         .comment_public_id(comment_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete comment: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete comment: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     out_println!(out, "Deleted comment #{comment_id} from epic {epic_id}");
     Ok(())

@@ -28,7 +28,12 @@ pub async fn run(
         .epic_public_id(epic_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to link document to epic: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to link document to epic: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         return Ok(());

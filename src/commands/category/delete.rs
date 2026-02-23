@@ -27,7 +27,12 @@ pub async fn run(
         .category_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get category: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get category: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let name = category.name.clone();
 
@@ -36,7 +41,12 @@ pub async fn run(
         .category_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete category: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete category: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         return Ok(());

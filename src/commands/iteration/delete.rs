@@ -25,14 +25,24 @@ pub async fn run(
         .iteration_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get iteration: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get iteration: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
     let name = iteration.name.clone();
     client
         .delete_iteration()
         .iteration_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete iteration: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete iteration: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
     out_println!(out, "Deleted iteration {id} - {name}");
     Ok(())
 }

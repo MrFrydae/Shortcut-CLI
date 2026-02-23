@@ -2,7 +2,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::TEMPLATE_UUID;
-use crate::support::{entity_template_json_minimal, full_story_json};
+use crate::support::{entity_template_json_minimal, full_story_json, mount_default_workflow};
 use shortcut_cli::{api, commands::template};
 
 #[tokio::test]
@@ -10,6 +10,8 @@ async fn use_template_minimal() {
     let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     let template_body = entity_template_json_minimal(TEMPLATE_UUID, "Bug Report Template");
 
@@ -55,6 +57,8 @@ async fn use_template_with_overrides() {
     let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     let template_body = entity_template_json_minimal(TEMPLATE_UUID, "Bug Report Template");
 

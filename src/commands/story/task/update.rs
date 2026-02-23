@@ -66,7 +66,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to update task: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to update task: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     out_println!(out, "Updated task {} - {}", task.id, task.description);
     Ok(())

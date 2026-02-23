@@ -3,7 +3,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{
     custom_field_enum_value_json, custom_field_json, full_story_json,
-    full_story_json_with_custom_fields, story_custom_field_json,
+    full_story_json_with_custom_fields, mount_default_workflow, story_custom_field_json,
 };
 use crate::{UUID_FIELD_1, UUID_VAL_A, UUID_VAL_B, make_create_args, make_update_args};
 use shortcut_cli::{api, commands::story};
@@ -59,6 +59,8 @@ async fn create_story_with_custom_field() {
     let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     // Mock custom fields list for resolution
     let cf_body = serde_json::json!([custom_field_json(
@@ -144,6 +146,8 @@ async fn create_story_custom_field_invalid_format() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
+    mount_default_workflow(&server).await;
+
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
     let mut create_args = make_create_args("Bad CF Story");
     create_args.custom_fields = vec!["NoEquals".to_string()];
@@ -161,6 +165,8 @@ async fn create_story_custom_field_unknown_field() {
     let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     // Mock custom fields list — field we ask for doesn't exist
     let cf_body = serde_json::json!([custom_field_json(
@@ -194,6 +200,8 @@ async fn create_story_custom_field_unknown_value() {
     let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     // Mock custom fields list — value we ask for doesn't exist
     let cf_body = serde_json::json!([custom_field_json(

@@ -27,7 +27,12 @@ pub async fn run(
         .body_map(|b| b.text(text))
         .send()
         .await
-        .map_err(|e| format!("Failed to update comment: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to update comment: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     out_println!(out, "Updated comment #{comment_id} on epic {epic_id}");
     Ok(())

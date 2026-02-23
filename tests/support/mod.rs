@@ -53,6 +53,32 @@ impl TokenStore for MockTokenStore {
     }
 }
 
+/// Mount a GET /api/v3/workflows mock that returns a default workflow.
+///
+/// The workflow's `default_state_id` is `100` (from `workflow_json`).
+/// Call this in any test that creates stories without an explicit `state`
+/// or `project_id`, since the CLI now auto-fills the default workflow state.
+pub async fn mount_default_workflow(server: &wiremock::MockServer) {
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, ResponseTemplate};
+
+    let body = serde_json::json!([workflow_json(
+        500000006,
+        "Default",
+        vec![
+            workflow_state_json(500000007, "Unstarted", "unstarted", 0),
+            workflow_state_json(500000008, "In Progress", "started", 1),
+            workflow_state_json(500000009, "Done", "done", 2),
+        ]
+    )]);
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/workflows"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+        .mount(server)
+        .await;
+}
+
 /// Build a JSON value representing a valid `EpicSlim` response object.
 ///
 /// The generated struct has `deny_unknown_fields` and many required fields,

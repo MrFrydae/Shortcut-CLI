@@ -16,7 +16,7 @@ pub async fn run(
         .task_public_id(task_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get task: {e}"))?;
+        .map_err(|e| format!("Failed to get task: {}", crate::api::format_api_error(&e)))?;
 
     let check = if task.complete { "x" } else { " " };
     out_println!(out, "[{check}] {} - {}", task.id, task.description);

@@ -80,7 +80,12 @@ pub async fn run(
         .entity_template_public_id(template_uuid)
         .send()
         .await
-        .map_err(|e| format!("Failed to get entity template: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get entity template: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let template_name = template.name.clone();
     let sc = &template.story_contents;
@@ -117,11 +122,18 @@ pub async fn run(
         sc.owner_ids.clone()
     };
 
-    // Workflow state: CLI flag wins
+    // Workflow state: CLI flag wins, then template, then workspace default
     let resolved_state_id = if let Some(val) = &args.state {
         Some(resolve_workflow_state_id(val, client, cache_dir).await?)
     } else {
         sc.workflow_state_id
+    };
+    let resolved_state_id = match resolved_state_id {
+        Some(id) => Some(id),
+        None => Some(
+            crate::commands::story::helpers::get_default_workflow_state_id(client, cache_dir)
+                .await?,
+        ),
     };
 
     // Epic: CLI flag wins
@@ -253,7 +265,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to create story: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to create story: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         out_println!(

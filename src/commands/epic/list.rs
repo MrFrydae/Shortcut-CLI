@@ -16,7 +16,7 @@ pub async fn run(
     let epics = req
         .send()
         .await
-        .map_err(|e| format!("Failed to list epics: {e}"))?;
+        .map_err(|e| format!("Failed to list epics: {}", crate::api::format_api_error(&e)))?;
 
     if out.is_json() {
         let json: Vec<serde_json::Value> = epics

@@ -27,7 +27,12 @@ pub async fn run(
         .body_map(|b| b.complete(Some(complete)))
         .send()
         .await
-        .map_err(|e| format!("Failed to update task: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to update task: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let status = if task.complete {
         "complete"

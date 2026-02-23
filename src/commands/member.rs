@@ -62,11 +62,12 @@ async fn run_list(
     cache_dir: &Path,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let members = client
-        .list_members()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list members: {e}"))?;
+    let members = client.list_members().send().await.map_err(|e| {
+        format!(
+            "Failed to list members: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     if out.is_json() {
         let json: Vec<serde_json::Value> = members
@@ -140,7 +141,7 @@ async fn run_get(
         .member_public_id(uuid)
         .send()
         .await
-        .map_err(|e| format!("Failed to get member: {e}"))?;
+        .map_err(|e| format!("Failed to get member: {}", crate::api::format_api_error(&e)))?;
 
     if out.is_json() {
         let json = serde_json::json!({
@@ -183,11 +184,12 @@ pub async fn resolve_member_id(
             return Ok(uuid);
         }
 
-        let members = client
-            .list_members()
-            .send()
-            .await
-            .map_err(|e| format!("Failed to list members: {e}"))?;
+        let members = client.list_members().send().await.map_err(|e| {
+            format!(
+                "Failed to list members: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
         write_cache(&members, cache_dir);
 
@@ -267,11 +269,12 @@ pub async fn fetch_member_choices(
     client: &api::Client,
     cache_dir: &Path,
 ) -> Result<Vec<MemberChoice>, Box<dyn Error>> {
-    let members = client
-        .list_members()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list members: {e}"))?;
+    let members = client.list_members().send().await.map_err(|e| {
+        format!(
+            "Failed to list members: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
     write_cache(&members, cache_dir);
     Ok(member_choices_from(&members))
 }

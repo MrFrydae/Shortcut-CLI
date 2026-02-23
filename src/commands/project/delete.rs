@@ -27,7 +27,12 @@ pub async fn run(
         .project_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get project: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get project: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let name = project.name.clone();
 
@@ -36,7 +41,12 @@ pub async fn run(
         .project_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete project: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete project: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         return Ok(());

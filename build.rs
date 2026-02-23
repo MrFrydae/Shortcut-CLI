@@ -15,13 +15,40 @@ fn main() {
     let mut spec_value: serde_json::Value =
         serde_json::from_str(&spec).expect("failed to parse OpenAPI spec");
 
+    // Add a unified ApiError schema so Progenitor deserializes error bodies
+    // instead of discarding them. Every Shortcut API error includes a `message` field.
+    if let Some(schemas) = spec_value
+        .get_mut("components")
+        .and_then(|c| c.get_mut("schemas"))
+        .and_then(|s| s.as_object_mut())
+    {
+        schemas.insert(
+            "ApiError".to_string(),
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "message": { "type": "string" }
+                },
+                "required": ["message"]
+            }),
+        );
+    }
+
     // Patch the spec to work around Progenitor limitations.
     if let Some(paths) = spec_value.get_mut("paths").and_then(|p| p.as_object_mut()) {
         // Remove endpoints that use multipart/form-data (unsupported by Progenitor).
         paths.remove("/api/v3/files");
 
-        // Strip `content` from non-2xx responses. Progenitor asserts at most one
-        // response type per operation; typed error bodies (400, 403, 409) violate that.
+        // Replace non-2xx response content with a $ref to ApiError.
+        // Progenitor asserts at most one error type per operation; using a single
+        // shared schema satisfies that constraint while preserving error messages.
+        let api_error_content = serde_json::json!({
+            "application/json": {
+                "schema": {
+                    "$ref": "#/components/schemas/ApiError"
+                }
+            }
+        });
         for path_item in paths.values_mut() {
             if let Some(methods) = path_item.as_object_mut() {
                 for op in methods.values_mut() {
@@ -31,7 +58,7 @@ fn main() {
                             if !code.starts_with('2')
                                 && let Some(obj) = resp.as_object_mut()
                             {
-                                obj.remove("content");
+                                obj.insert("content".to_string(), api_error_content.clone());
                             }
                         }
                     }

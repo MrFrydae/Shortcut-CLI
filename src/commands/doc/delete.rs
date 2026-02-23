@@ -31,7 +31,12 @@ pub async fn run(
         .doc_public_id(doc_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get document: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get document: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let title = doc.title.as_deref().unwrap_or("(untitled)").to_string();
 
@@ -41,7 +46,12 @@ pub async fn run(
         .body_map(|b| b)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete document: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete document: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         return Ok(());

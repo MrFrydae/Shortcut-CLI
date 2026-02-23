@@ -20,7 +20,12 @@ pub async fn run(
         .comment_public_id(comment_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get comment: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get comment: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let author = match &comment.author_id {
         Some(uuid) => resolve_member_name(uuid, cache_dir),

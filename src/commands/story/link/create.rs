@@ -71,7 +71,12 @@ pub async fn run(
         .body_map(|b| b.subject_id(subject_id).object_id(object_id).verb(api_verb))
         .send()
         .await
-        .map_err(|e| format!("Failed to create story link: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to create story link: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     out_println!(
         out,

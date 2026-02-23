@@ -14,7 +14,12 @@ pub async fn run(
         .label_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to list label epics: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to list label epics: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
     if epics.is_empty() {
         out_println!(out, "No epics with this label");
         return Ok(());

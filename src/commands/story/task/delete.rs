@@ -24,7 +24,12 @@ pub async fn run(
         .task_public_id(task_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete task: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete task: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     out_println!(out, "Deleted task {task_id} from story {story_id}");
     Ok(())

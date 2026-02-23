@@ -14,7 +14,7 @@ pub async fn run(
         .story_public_id(story_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get story: {e}"))?;
+        .map_err(|e| format!("Failed to get story: {}", crate::api::format_api_error(&e)))?;
 
     if story.tasks.is_empty() {
         out_println!(out, "No tasks on story {story_id}");

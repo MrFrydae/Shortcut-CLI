@@ -25,11 +25,12 @@ pub async fn run(
 
     let sc = api::client_with_token(&token, base_url)?;
 
-    let member = sc
-        .get_current_member_info()
-        .send()
-        .await
-        .map_err(|e| format!("Authentication failed: {e}"))?;
+    let member = sc.get_current_member_info().send().await.map_err(|e| {
+        format!(
+            "Authentication failed: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     token_store.store_token(&token)?;
 

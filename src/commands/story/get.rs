@@ -19,7 +19,7 @@ pub async fn run(
         .story_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get story: {e}"))?;
+        .map_err(|e| format!("Failed to get story: {}", crate::api::format_api_error(&e)))?;
 
     if out.is_json() {
         let json = serde_json::json!({

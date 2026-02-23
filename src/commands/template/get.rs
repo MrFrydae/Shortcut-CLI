@@ -14,7 +14,12 @@ pub async fn run(id: &str, client: &api::Client, out: &OutputConfig) -> Result<(
         .entity_template_public_id(uuid)
         .send()
         .await
-        .map_err(|e| format!("Failed to get entity template: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get entity template: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*template)?;

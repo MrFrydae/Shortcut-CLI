@@ -31,7 +31,12 @@ pub async fn run(
         .entity_template_public_id(uuid)
         .send()
         .await
-        .map_err(|e| format!("Failed to get entity template: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get entity template: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     let name = template.name.clone();
 
@@ -40,7 +45,12 @@ pub async fn run(
         .entity_template_public_id(uuid)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete entity template: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete entity template: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         return Ok(());

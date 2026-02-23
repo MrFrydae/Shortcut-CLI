@@ -596,6 +596,16 @@ async fn resolve_entity_fields(
         }
     }
 
+    // Auto-fill default workflow_state_id for story creation when neither state nor project is set
+    if *entity == Entity::Story
+        && *action == Action::Create
+        && !obj.contains_key("workflow_state_id")
+        && !obj.contains_key("project_id")
+    {
+        let default_id = story::helpers::get_default_workflow_state_id(client, cache_dir).await?;
+        obj.insert("workflow_state_id".into(), serde_json::json!(default_id));
+    }
+
     // Resolve epic state → epic_state_id (mapped to "state" in the API)
     if *entity == Entity::Epic
         && let Some(state_val) = obj.remove("state")
@@ -769,7 +779,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Story) => {
@@ -781,7 +791,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Delete, Entity::Story) => {
@@ -791,7 +801,7 @@ async fn dispatch_api_call(
                 .story_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 
@@ -803,7 +813,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Epic) => {
@@ -815,7 +825,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Delete, Entity::Epic) => {
@@ -825,7 +835,7 @@ async fn dispatch_api_call(
                 .epic_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 
@@ -837,7 +847,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Iteration) => {
@@ -849,7 +859,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Delete, Entity::Iteration) => {
@@ -859,7 +869,7 @@ async fn dispatch_api_call(
                 .iteration_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 
@@ -871,7 +881,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Label) => {
@@ -883,7 +893,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Delete, Entity::Label) => {
@@ -893,7 +903,7 @@ async fn dispatch_api_call(
                 .label_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 
@@ -905,7 +915,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Objective) => {
@@ -917,7 +927,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Delete, Entity::Objective) => {
@@ -927,7 +937,7 @@ async fn dispatch_api_call(
                 .objective_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 
@@ -939,7 +949,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Milestone) => {
@@ -951,7 +961,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Delete, Entity::Milestone) => {
@@ -961,7 +971,7 @@ async fn dispatch_api_call(
                 .milestone_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 
@@ -973,7 +983,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Category) => {
@@ -985,7 +995,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Delete, Entity::Category) => {
@@ -995,7 +1005,7 @@ async fn dispatch_api_call(
                 .category_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 
@@ -1007,7 +1017,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Group) => {
@@ -1019,7 +1029,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
 
@@ -1031,7 +1041,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Document) => {
@@ -1043,7 +1053,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Delete, Entity::Document) => {
@@ -1053,7 +1063,7 @@ async fn dispatch_api_call(
                 .doc_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 
@@ -1065,7 +1075,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Update, Entity::Project) => {
@@ -1077,7 +1087,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Delete, Entity::Project) => {
@@ -1087,7 +1097,7 @@ async fn dispatch_api_call(
                 .project_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 
@@ -1101,7 +1111,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Check | Action::Uncheck, Entity::Task) => {
@@ -1115,7 +1125,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
 
@@ -1129,7 +1139,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Comment, Entity::Epic) => {
@@ -1141,7 +1151,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
 
@@ -1153,7 +1163,7 @@ async fn dispatch_api_call(
                 .body(p)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             serde_json::to_value(&*r).map_err(Into::into)
         }
         (Action::Unlink, Entity::StoryLink) => {
@@ -1163,7 +1173,7 @@ async fn dispatch_api_call(
                 .story_link_public_id(id)
                 .send()
                 .await
-                .map_err(|e| format!("{e}"))?;
+                .map_err(|e| api::format_api_error(&e))?;
             Ok(serde_json::json!({}))
         }
 

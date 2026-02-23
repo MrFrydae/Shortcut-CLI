@@ -2,8 +2,8 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{
-    default_icon, full_story_json, make_dry_run_output, member_json, workflow_json,
-    workflow_state_json,
+    default_icon, full_story_json, make_dry_run_output, member_json, mount_default_workflow,
+    workflow_json, workflow_state_json,
 };
 use crate::{UUID_ALICE, UUID_BOB, make_create_args};
 use shortcut_cli::{api, commands::story};
@@ -13,6 +13,8 @@ async fn create_story_minimal() {
     let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     let body = full_story_json(123, "Fix login bug", "");
 
@@ -37,6 +39,8 @@ async fn create_story_with_owner_mention() {
     let out = crate::support::make_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     let members_body = serde_json::json!([
         member_json(
@@ -124,6 +128,8 @@ async fn dry_run_story_create_shows_request() {
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
 
+    mount_default_workflow(&server).await;
+
     // No POST mock — if a POST is sent, wiremock returns 404 and the test fails
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
@@ -146,6 +152,8 @@ async fn dry_run_story_create_with_owner_resolves_members() {
     let (out, buf) = make_dry_run_output();
     let server = MockServer::start().await;
     let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
 
     let members_body = serde_json::json!([member_json(
         UUID_ALICE,

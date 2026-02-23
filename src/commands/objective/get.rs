@@ -10,7 +10,12 @@ pub async fn run(id: i64, client: &api::Client, out: &OutputConfig) -> Result<()
         .objective_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get objective: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get objective: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*objective)?;
@@ -59,7 +64,12 @@ pub async fn run(id: i64, client: &api::Client, out: &OutputConfig) -> Result<()
         .objective_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to list objective epics: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to list objective epics: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if !epics.is_empty() {
         out_println!(out, "  Epics:");

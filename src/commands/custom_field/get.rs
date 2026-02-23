@@ -12,7 +12,12 @@ pub async fn run(id: &str, client: &api::Client, out: &OutputConfig) -> Result<(
         .custom_field_public_id(uuid)
         .send()
         .await
-        .map_err(|e| format!("Failed to get custom field: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get custom field: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*field)?;

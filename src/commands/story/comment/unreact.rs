@@ -37,7 +37,12 @@ pub async fn run(
         .body_map(|b| b.emoji(emoji_str.clone()))
         .send()
         .await
-        .map_err(|e| format!("Failed to remove reaction: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to remove reaction: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     out_println!(
         out,

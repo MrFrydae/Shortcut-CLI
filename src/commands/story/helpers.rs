@@ -93,11 +93,12 @@ pub async fn resolve_workflow_state_id(
     }
 
     // Cache miss — fetch from API and update cache
-    let workflows = client
-        .list_workflows()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list workflows: {e}"))?;
+    let workflows = client.list_workflows().send().await.map_err(|e| {
+        format!(
+            "Failed to list workflows: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     let mut map: HashMap<String, Vec<(i64, &str)>> = HashMap::new();
     for wf in workflows.iter() {
@@ -155,11 +156,12 @@ pub async fn build_workflow_state_id_map(
     client: &api::Client,
     cache_dir: &Path,
 ) -> Result<HashMap<i64, String>, Box<dyn Error>> {
-    let workflows = client
-        .list_workflows()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list workflows: {e}"))?;
+    let workflows = client.list_workflows().send().await.map_err(|e| {
+        format!(
+            "Failed to list workflows: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     let mut map = HashMap::new();
     let mut name_cache: HashMap<String, i64> = HashMap::new();
@@ -181,11 +183,12 @@ pub async fn fetch_workflow_state_names(
     client: &api::Client,
     cache_dir: &Path,
 ) -> Result<Vec<String>, Box<dyn Error>> {
-    let workflows = client
-        .list_workflows()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list workflows: {e}"))?;
+    let workflows = client.list_workflows().send().await.map_err(|e| {
+        format!(
+            "Failed to list workflows: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     let mut cache_map: HashMap<String, i64> = HashMap::new();
     let mut names: Vec<String> = Vec::new();
@@ -200,6 +203,46 @@ pub async fn fetch_workflow_state_names(
     }
     write_cache(&cache_map, cache_dir);
     Ok(names)
+}
+
+// --- Default workflow state resolution ---
+
+pub async fn get_default_workflow_state_id(
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<i64, Box<dyn Error>> {
+    // Try dedicated cache first
+    if let Some(id) = read_default_state_cache(cache_dir) {
+        return Ok(id);
+    }
+
+    // Cache miss — fetch from API
+    let workflows = client.list_workflows().send().await.map_err(|e| {
+        format!(
+            "Failed to list workflows: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
+
+    let first = workflows.first().ok_or("No workflows found in workspace")?;
+
+    let default_id = first.default_state_id;
+
+    // Populate the name cache as a side-effect
+    let mut name_cache: HashMap<String, i64> = HashMap::new();
+    for wf in workflows.iter() {
+        for state in &wf.states {
+            name_cache
+                .entry(normalize_name(&state.name))
+                .or_insert(state.id);
+        }
+    }
+    write_cache(&name_cache, cache_dir);
+
+    // Cache the default state ID
+    write_default_state_cache(default_id, cache_dir);
+
+    Ok(default_id)
 }
 
 // --- Cache helpers ---
@@ -218,6 +261,38 @@ fn write_cache(map: &HashMap<String, i64>, cache_dir: &Path) {
     let path = cache_path(cache_dir);
 
     let Ok(json) = serde_json::to_string_pretty(map) else {
+        return;
+    };
+
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+
+    let _ = std::fs::write(&path, json);
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+    }
+}
+
+// --- Default state cache helpers ---
+
+fn default_state_cache_path(cache_dir: &Path) -> PathBuf {
+    cache_dir.join("default_workflow_state_cache.json")
+}
+
+fn read_default_state_cache(cache_dir: &Path) -> Option<i64> {
+    let path = default_state_cache_path(cache_dir);
+    let data = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&data).ok()
+}
+
+fn write_default_state_cache(id: i64, cache_dir: &Path) {
+    let path = default_state_cache_path(cache_dir);
+
+    let Ok(json) = serde_json::to_string_pretty(&id) else {
         return;
     };
 

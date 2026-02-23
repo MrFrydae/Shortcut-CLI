@@ -13,11 +13,12 @@ pub async fn run(
     cache_dir: &Path,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let groups = client
-        .list_groups()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list groups: {e}"))?;
+    let groups = client.list_groups().send().await.map_err(|e| {
+        format!(
+            "Failed to list groups: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*groups)?;

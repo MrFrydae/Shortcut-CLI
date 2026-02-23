@@ -27,14 +27,24 @@ pub async fn run(
         .story_link_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get story link: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to get story link: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     client
         .delete_story_link()
         .story_link_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete story link: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to delete story link: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     out_println!(
         out,

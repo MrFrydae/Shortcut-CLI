@@ -76,7 +76,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to update label: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to update label: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_quiet() {
         out_println!(out, "{}", label.id);

@@ -10,7 +10,12 @@ pub async fn run(id: i64, client: &api::Client, out: &OutputConfig) -> Result<()
         .epic_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to list related documents: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to list related documents: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if docs.is_empty() {
         out_println!(out, "No documents linked to this epic");

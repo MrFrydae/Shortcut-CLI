@@ -18,7 +18,7 @@ pub async fn run(
         .epic_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to get epic: {e}"))?;
+        .map_err(|e| format!("Failed to get epic: {}", crate::api::format_api_error(&e)))?;
 
     if out.is_json() {
         let json = serde_json::json!({

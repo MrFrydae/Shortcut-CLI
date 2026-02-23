@@ -102,7 +102,12 @@ pub async fn run(
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to create group: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to create group: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*group)?;

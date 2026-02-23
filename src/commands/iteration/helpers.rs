@@ -8,11 +8,12 @@ use crate::commands::member;
 pub async fn fetch_iteration_choices(
     client: &api::Client,
 ) -> Result<Vec<crate::interactive::IdChoice>, Box<dyn Error>> {
-    let iterations = client
-        .list_iterations()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list iterations: {e}"))?;
+    let iterations = client.list_iterations().send().await.map_err(|e| {
+        format!(
+            "Failed to list iterations: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
     let mut choices: Vec<crate::interactive::IdChoice> = iterations
         .iter()
         .filter(|i| i.status == "unstarted" || i.status == "started")

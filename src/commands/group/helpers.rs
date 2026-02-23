@@ -20,11 +20,12 @@ pub async fn resolve_group_id(
         }
 
         // Cache miss — fetch from API and update cache
-        let groups = client
-            .list_groups()
-            .send()
-            .await
-            .map_err(|e| format!("Failed to list groups: {e}"))?;
+        let groups = client.list_groups().send().await.map_err(|e| {
+            format!(
+                "Failed to list groups: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
 
         write_cache(&groups, cache_dir);
 
@@ -45,11 +46,12 @@ pub async fn resolve_group_id(
 pub async fn fetch_group_choices(
     client: &api::Client,
 ) -> Result<Vec<crate::interactive::UuidChoice>, Box<dyn Error>> {
-    let groups = client
-        .list_groups()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list groups: {e}"))?;
+    let groups = client.list_groups().send().await.map_err(|e| {
+        format!(
+            "Failed to list groups: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
     let mut choices: Vec<crate::interactive::UuidChoice> = groups
         .iter()
         .filter(|g| !g.archived)

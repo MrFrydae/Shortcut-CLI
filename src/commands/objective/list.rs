@@ -9,11 +9,12 @@ pub async fn run(
     client: &api::Client,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    let objectives = client
-        .list_objectives()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list objectives: {e}"))?;
+    let objectives = client.list_objectives().send().await.map_err(|e| {
+        format!(
+            "Failed to list objectives: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*objectives)?;

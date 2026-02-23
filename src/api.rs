@@ -38,3 +38,48 @@ pub fn authenticated_client(
         )))
     })
 }
+
+/// Format a Progenitor API error, extracting the server's `message` field
+/// from error responses instead of showing raw debug output.
+///
+/// Produces output like: `422 Unprocessable Entity: Name is required`
+pub fn format_api_error(err: &progenitor_client::Error<types::ApiError>) -> String {
+    match err {
+        progenitor_client::Error::ErrorResponse(rv) => {
+            format!("{}: {}", rv.status(), rv.message)
+        }
+        other => other.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_api_error_extracts_message() {
+        let rv = progenitor_client::ResponseValue::new(
+            types::ApiError {
+                message: "Name is required".to_string(),
+            },
+            reqwest::StatusCode::UNPROCESSABLE_ENTITY,
+            reqwest::header::HeaderMap::new(),
+        );
+        let err = progenitor_client::Error::ErrorResponse(rv);
+        assert_eq!(
+            format_api_error(&err),
+            "422 Unprocessable Entity: Name is required"
+        );
+    }
+
+    #[test]
+    fn format_api_error_falls_through_for_other_variants() {
+        let err: progenitor_client::Error<types::ApiError> =
+            progenitor_client::Error::InvalidRequest("bad request".to_string());
+        let formatted = format_api_error(&err);
+        assert!(
+            formatted.contains("bad request"),
+            "expected 'bad request' in: {formatted}"
+        );
+    }
+}

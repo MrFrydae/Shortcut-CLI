@@ -5,11 +5,12 @@ use crate::out_println;
 use crate::output::{OutputConfig, Table};
 
 pub async fn run(client: &api::Client, out: &OutputConfig) -> Result<(), Box<dyn Error>> {
-    let templates = client
-        .list_entity_templates()
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list entity templates: {e}"))?;
+    let templates = client.list_entity_templates().send().await.map_err(|e| {
+        format!(
+            "Failed to list entity templates: {}",
+            crate::api::format_api_error(&e)
+        )
+    })?;
 
     if out.is_json() {
         let json = serde_json::to_string_pretty(&*templates)?;

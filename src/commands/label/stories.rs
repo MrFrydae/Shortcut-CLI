@@ -14,7 +14,12 @@ pub async fn run(
         .label_public_id(id)
         .send()
         .await
-        .map_err(|e| format!("Failed to list label stories: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Failed to list label stories: {}",
+                crate::api::format_api_error(&e)
+            )
+        })?;
     if stories.is_empty() {
         out_println!(out, "No stories with this label");
         return Ok(());
