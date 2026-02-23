@@ -237,8 +237,9 @@ What it does:
 - Updates the package `version` in `Cargo.toml`
 - Regenerates `Cargo.lock` and verifies it includes the new `shortcut-cli` version
 - Runs `cargo build --locked --release` locally
-- Commits `Cargo.toml` + `Cargo.lock`, creates annotated tag `v<version>`, and pushes both to `origin`
-- Triggers `.github/workflows/release.yml` (runs on pushed `v*` tags)
+- Commits `Cargo.toml` + `Cargo.lock` and pushes `main`
+- Triggers CI on `main`; release runs only after CI succeeds
+- Release workflow extracts `v<version>` from `Cargo.toml`, creates the tag, and publishes artifacts from the CI run
 - Publishes detailed release notes listing all non-merge commits since the previous release tag
 
 ## License

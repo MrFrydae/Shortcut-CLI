@@ -1,89 +1,101 @@
 name: Release
 
 on:
-  push:
-    tags: ['v*']
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 env:
   CARGO_TERM_COLOR: always
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
-  build:
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      matrix:
-        include:
-          - runner: macos-latest
-            target: aarch64-apple-darwin
-          - runner: macos-15-intel
-            target: x86_64-apple-darwin
-          - runner: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - runner: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
+  release:
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.target }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          fetch-tags: true
 
-      - name: Verify version metadata matches tag
+      - name: Prepare release metadata
+        id: meta
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          CARGO_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
-
-          if [ "${CARGO_VERSION}" != "${VERSION}" ]; then
-            echo "Cargo.toml version (${CARGO_VERSION}) does not match tag (${VERSION})"
+          VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+          if [ -z "${VERSION}" ]; then
+            echo "Failed to extract version from Cargo.toml"
             exit 1
           fi
+
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
           if ! perl -0777 -ne 'exit((/name = "shortcut-cli"\nversion = "'"${VERSION}"'"/s)?0:1)' Cargo.lock; then
             echo "Cargo.lock does not contain shortcut-cli version ${VERSION}"
             exit 1
           fi
 
-      - name: Install OpenSSL (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} already exists; skipping release publication."
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - run: cargo build --locked --release --target ${{ matrix.target }}
+          echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Package binary
-        run: |
-          cd target/${{ matrix.target }}/release
-          tar czf ../../../shortcut-${{ github.ref_name }}-${{ matrix.target }}.tar.gz shortcut
-          cd ../../..
-
-      - uses: actions/upload-artifact@v6
+      - name: Download CI build artifacts
+        if: steps.meta.outputs.tag_exists == 'false'
+        uses: actions/download-artifact@v7
         with:
-          name: shortcut-${{ matrix.target }}
-          path: shortcut-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - uses: actions/download-artifact@v7
-        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          pattern: shortcut-*
           merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare release bundles
+        if: steps.meta.outputs.tag_exists == 'false'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          TARGETS=(
+            "aarch64-apple-darwin"
+            "x86_64-apple-darwin"
+            "x86_64-unknown-linux-gnu"
+            "aarch64-unknown-linux-gnu"
+          )
+
+          for target in "${TARGETS[@]}"; do
+            src="shortcut-${target}.tar.gz"
+            dst="shortcut-${TAG}-${target}.tar.gz"
+            if [ ! -f "${src}" ]; then
+              echo "Missing expected artifact: ${src}"
+              exit 1
+            fi
+            mv "${src}" "${dst}"
+          done
 
       - name: Generate checksums
+        if: steps.meta.outputs.tag_exists == 'false'
         run: shasum -a 256 shortcut-*.tar.gz > checksums.txt
 
       - name: Generate release notes
+        if: steps.meta.outputs.tag_exists == 'false'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          HEAD_SHA: ${{ steps.meta.outputs.head_sha }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
           PREV_TAG="$(git tag --sort=-v:refname | grep -v "^${TAG}$" | head -n 1 || true)"
 
           {
@@ -92,33 +104,47 @@ jobs:
             if [ -n "${PREV_TAG}" ]; then
               echo "Changes since ${PREV_TAG}:"
               echo
-              git log --no-merges --pretty='- %h %s (%an)' "${PREV_TAG}..${TAG}"
+              git log --no-merges --pretty='- %h %s (%an)' "${PREV_TAG}..${HEAD_SHA}"
             else
               echo "Initial release."
               echo
-              git log --no-merges --pretty='- %h %s (%an)' "${TAG}"
+              git log --no-merges --pretty='- %h %s (%an)' "${HEAD_SHA}"
             fi
           } > release-notes.md
 
+      - name: Create tag
+        if: steps.meta.outputs.tag_exists == 'false'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          HEAD_SHA: ${{ steps.meta.outputs.head_sha }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" "${HEAD_SHA}" -m "Release ${TAG}"
+          git push origin "${TAG}"
+
       - name: Create GitHub Release
+        if: steps.meta.outputs.tag_exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          target_commitish: ${{ steps.meta.outputs.head_sha }}
           body_path: release-notes.md
           files: |
             shortcut-*.tar.gz
             checksums.txt
 
       - name: Update Homebrew tap
+        if: steps.meta.outputs.tag_exists == 'false'
         env:
           TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
           if [ -z "$TAP_GITHUB_TOKEN" ]; then
             echo "TAP_GITHUB_TOKEN not set, skipping Homebrew tap update"
             exit 0
           fi
-
-          VERSION="${GITHUB_REF_NAME#v}"
-          TAG="${GITHUB_REF_NAME}"
 
           SHA_AARCH64_DARWIN=$(shasum -a 256 shortcut-${TAG}-aarch64-apple-darwin.tar.gz | awk '{print $1}')
           SHA_X86_64_DARWIN=$(shasum -a 256 shortcut-${TAG}-x86_64-apple-darwin.tar.gz | awk '{print $1}')

@@ -22,7 +22,6 @@ if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-
   exit 1
 fi
 
-TAG="v${VERSION}"
 ROOT="$(git rev-parse --show-toplevel)"
 cd "${ROOT}"
 
@@ -34,16 +33,6 @@ fi
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 if [[ "${BRANCH}" != "main" ]]; then
   echo "Releases must be created from main (current: ${BRANCH})." >&2
-  exit 1
-fi
-
-if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
-  echo "Tag already exists locally: ${TAG}" >&2
-  exit 1
-fi
-
-if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
-  echo "Tag already exists on origin: ${TAG}" >&2
   exit 1
 fi
 
@@ -63,14 +52,11 @@ cargo build --locked --release
 
 echo "Committing release metadata"
 git add Cargo.toml Cargo.lock
-git commit -m "release: ${TAG}"
+git commit -m "release: v${VERSION}"
 
-echo "Tagging ${TAG}"
-git tag -a "${TAG}" -m "Release ${TAG}"
-
-echo "Pushing commit and tag"
+echo "Pushing commit to main"
 git push origin main
-git push origin "${TAG}"
 
-echo "Release triggered: ${TAG}"
+echo "Release will trigger after CI succeeds on main."
+echo "Tag will be created automatically from Cargo.toml version."
 echo "Workflow: https://github.com/MrFrydae/Shortcut-CLI/actions/workflows/release.yml"
