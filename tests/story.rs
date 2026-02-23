@@ -48,6 +48,7 @@ pub fn make_create_args(name: &str) -> shortcut_cli::commands::story::CreateArgs
         labels: vec![],
         iteration_id: None,
         custom_fields: vec![],
+        parent_story_id: None,
     }
 }
 
@@ -64,6 +65,7 @@ pub fn make_update_args(id: i64) -> shortcut_cli::commands::story::UpdateArgs {
         labels: vec![],
         iteration_id: None,
         custom_fields: vec![],
+        parent_story_id: None,
     }
 }
 

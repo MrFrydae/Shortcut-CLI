@@ -2,8 +2,8 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{
-    default_icon, full_story_json, make_dry_run_output, member_json, mount_default_workflow,
-    workflow_json, workflow_state_json,
+    default_icon, full_story_json, make_dry_run_output, make_output, member_json,
+    mount_default_workflow, workflow_json, workflow_state_json,
 };
 use crate::{UUID_ALICE, UUID_BOB, make_create_args};
 use shortcut_cli::{api, commands::story};
@@ -186,4 +186,53 @@ async fn dry_run_story_create_with_owner_resolves_members() {
     assert!(output.contains("[dry-run] POST /api/v3/stories"));
     // The resolved UUID should appear in the output
     assert!(output.contains(UUID_ALICE));
+}
+
+#[tokio::test]
+async fn create_story_with_parent_story_id() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
+
+    let body = full_story_json(130, "Child Story", "");
+
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .respond_with(ResponseTemplate::new(201).set_body_json(&body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut create_args = make_create_args("Child Story");
+    create_args.parent_story_id = Some(42);
+    let args = story::StoryArgs {
+        action: story::StoryAction::Create(Box::new(create_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn dry_run_story_create_with_parent_story_id() {
+    let (out, buf) = make_dry_run_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut create_args = make_create_args("Child Story");
+    create_args.parent_story_id = Some(123);
+    let args = story::StoryArgs {
+        action: story::StoryAction::Create(Box::new(create_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
+
+    let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+    assert!(output.contains("[dry-run] POST /api/v3/stories"));
+    assert!(output.contains("\"parent_story_id\": 123"));
 }

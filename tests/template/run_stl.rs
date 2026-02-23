@@ -729,3 +729,87 @@ operations:
     let result = template::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok(), "Expected ok, got: {result:?}");
 }
+
+#[tokio::test]
+async fn run_parent_story_id_with_ref() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
+
+    // Parent story
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .and(body_partial_json(
+            serde_json::json!({"name": "Parent Story"}),
+        ))
+        .respond_with(ResponseTemplate::new(201).set_body_json(full_story_json(
+            500,
+            "Parent Story",
+            "",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    // Child story with parent_story_id
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .and(body_partial_json(
+            serde_json::json!({"name": "Child Story", "parent_story_id": 500}),
+        ))
+        .respond_with(ResponseTemplate::new(201).set_body_json(full_story_json(
+            501,
+            "Child Story",
+            "",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let yaml = r#"
+version: 1
+operations:
+  - action: create
+    entity: story
+    alias: parent
+    fields:
+      name: "Parent Story"
+  - action: create
+    entity: story
+    fields:
+      name: "Child Story"
+      parent_story_id: $ref(parent)
+"#;
+    let file = write_template(&tmp, yaml);
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = run_args(&file);
+    let result = template::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "Expected ok, got: {result:?}");
+}
+
+#[tokio::test]
+async fn run_create_story_with_block_description() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
+
+    let response = full_story_json(600, "Block Desc Story", "");
+
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .respond_with(ResponseTemplate::new(201).set_body_json(&response))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let yaml = "version: 1\noperations:\n  - action: create\n    entity: story\n    fields:\n      name: \"Block Desc Story\"\n      description: |\n        First line.\n        Second line.\n\n        Another paragraph.\n";
+    let file = write_template(&tmp, yaml);
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = run_args(&file);
+    let result = template::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "Expected ok, got: {result:?}");
+}

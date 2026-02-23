@@ -106,5 +106,6 @@ pub fn run_wizard(
         labels,
         iteration_id,
         custom_fields,
+        parent_story_id: None,
     })
 }

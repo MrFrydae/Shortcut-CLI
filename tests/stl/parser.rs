@@ -368,3 +368,22 @@ operations:
     let id = t.operations[1].id.as_ref().unwrap();
     assert_eq!(id.as_str(), Some("$ref(e)"));
 }
+
+#[test]
+fn parse_block_scalar_description() {
+    let yaml = "version: 1\noperations:\n  - action: create\n    entity: story\n    fields:\n      name: \"Block test\"\n      description: |\n        Line one.\n        Line two.\n\n        Paragraph two.\n";
+    let t = parse(yaml).unwrap();
+    let fields = t.operations[0].fields.as_ref().unwrap();
+    let desc = fields
+        .get(serde_yaml::Value::String("description".into()))
+        .unwrap();
+    let text = desc.as_str().unwrap();
+    assert!(
+        text.contains("Line one.\nLine two."),
+        "Expected preserved newlines, got: {text:?}"
+    );
+    assert!(
+        text.contains("\n\nParagraph two."),
+        "Expected blank line between paragraphs, got: {text:?}"
+    );
+}

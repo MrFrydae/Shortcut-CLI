@@ -109,7 +109,7 @@ Note: When `repeat` is present, required fields may come from repeat entries ins
 Required fields marked with `*`.
 
 ### story
-`name*` `description` `type` `owner` `owners` `state` `epic_id` `iteration_id` `project_id` `group_id` `estimate` `labels` `followers` `requested_by` `deadline` `custom_fields` `tasks` `comments` `story_links`
+`name*` `description` `type` `owner` `owners` `state` `epic_id` `iteration_id` `project_id` `group_id` `estimate` `labels` `followers` `requested_by` `deadline` `custom_fields` `tasks` `comments` `story_links` `parent_story_id`
 
 ### epic
 `name*` `description` `state` `deadline` `owners` `followers` `requested_by` `labels` `objective_ids` `milestone_id` `group_ids` `planned_start_date`
@@ -201,6 +201,43 @@ References resolve to results of previously executed operations.
 
 ---
 
+## Multiline Text (Block Scalars)
+
+YAML block scalars work in any text field (`description`, `text`, `content`). `serde_yaml` handles them natively — no special STL syntax is needed.
+
+### Literal block (`|`) — preserves newlines
+
+```yaml
+description: |
+  Line one.
+  Line two.
+
+  Paragraph two.
+```
+
+Produces: `"Line one.\nLine two.\n\nParagraph two.\n"`
+
+### Folded block (`>`) — joins lines with spaces
+
+```yaml
+description: >
+  This is a long sentence
+  that spans multiple lines
+  in the YAML source.
+```
+
+Produces: `"This is a long sentence that spans multiple lines in the YAML source.\n"`
+
+### Chomping indicators
+
+| Indicator | Trailing newline |
+|-----------|-----------------|
+| `\|` or `>` (clip) | Single trailing `\n` |
+| `\|-` or `>-` (strip) | No trailing `\n` |
+| `\|+` or `>+` (keep) | All trailing `\n` preserved |
+
+---
+
 ## Error Handling
 
 | Scope | Key | Values | Default |
@@ -277,7 +314,10 @@ operations:
     alias: auth-epic
     fields:
       name: "Auth Hardening"
-      description: "Harden authentication across all services"
+      description: |
+        Harden authentication across all services.
+        This includes JWT rotation, session management,
+        and rate limiting.
 
   - action: create
     entity: story

@@ -1,0 +1,33 @@
+# Shortcut Template Language (STL) v1
+# Validate: shortcut template validate <this-file>
+# Run:      shortcut template run <this-file> --confirm
+# Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
+#
+# Demonstrates YAML block scalars (| and >) for multiline descriptions.
+
+version: 1
+
+operations:
+  # Literal block scalar — preserves newlines exactly as written
+  - action: create
+    entity: story
+    fields:
+      name: "Story with literal block description"
+      type: feature
+      description: |
+        This story covers multiple areas:
+
+        - First, implement the new endpoint
+        - Then, write integration tests
+        - Finally, update the API docs
+
+  # Folded block scalar — joins lines into a single paragraph
+  - action: create
+    entity: epic
+    fields:
+      name: "Epic with folded block description"
+      description: >
+        This epic tracks the rollout of the new
+        authentication system across all backend
+        services, replacing the legacy token-based
+        approach with short-lived JWTs.

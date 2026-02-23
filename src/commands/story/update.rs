@@ -55,6 +55,10 @@ pub struct UpdateArgs {
     /// Set a custom field value (format: "FieldName=Value", repeatable)
     #[arg(long = "custom-field")]
     pub custom_fields: Vec<String>,
+
+    /// The parent story ID (makes this a sub-task)
+    #[arg(long)]
+    pub parent_story_id: Option<i64>,
 }
 
 pub async fn run(
@@ -144,6 +148,9 @@ pub async fn run(
         if let Some(iter_id) = args.iteration_id {
             body.insert("iteration_id".into(), serde_json::json!(iter_id));
         }
+        if let Some(parent_id) = args.parent_story_id {
+            body.insert("parent_story_id".into(), serde_json::json!(parent_id));
+        }
         if !custom_field_params.is_empty() {
             body.insert(
                 "custom_fields".into(),
@@ -184,6 +191,9 @@ pub async fn run(
             }
             if let Some(iter_id) = args.iteration_id {
                 b = b.iteration_id(Some(iter_id));
+            }
+            if let Some(parent_id) = args.parent_story_id {
+                b = b.parent_story_id(Some(parent_id));
             }
             if !custom_field_params.is_empty() {
                 b = b.custom_fields(custom_field_params);

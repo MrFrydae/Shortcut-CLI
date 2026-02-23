@@ -379,6 +379,7 @@ fn known_fields(entity: &Entity) -> &[&str] {
             "tasks",
             "comments",
             "story_links",
+            "parent_story_id",
         ],
         Entity::Epic => &[
             "name",

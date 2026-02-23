@@ -1,7 +1,12 @@
 # Parent Story with Sub-Stories and Tasks
 #
-# Creates a parent story, two child stories linked to it via "blocks"
-# story links, and tasks on each story.
+# Creates a parent story and two child sub-task stories using
+# parent_story_id (requires the Sub-task feature enabled in your
+# workspace).  Each story gets inline tasks.
+#
+# If your workspace does not have Sub-tasks enabled, you can use
+# story_link operations with a "blocks" verb instead (see the
+# commented-out alternative at the bottom).
 #
 # Demonstrates inline tasks arrays on story creation.
 #
@@ -16,7 +21,7 @@
 version: 1
 
 meta:
-  description: Parent story with two child stories and tasks on each
+  description: Parent story with two child sub-task stories and tasks on each
 
 vars:
   parent_name: "Parent Story"
@@ -35,7 +40,7 @@ operations:
         - description: "Review requirements"
         - description: "Write acceptance criteria"
 
-  # 2. Create two child stories with inline tasks
+  # 2. Create two child stories as sub-tasks of the parent
   - action: create
     entity: story
     alias: children
@@ -50,19 +55,39 @@ operations:
         tasks:
           - description: "Implement feature"
           - description: "Write tests"
-
-  # 3. Link child A → parent (child A blocks parent)
-  - action: link
-    entity: story_link
     fields:
-      subject_id: "$ref(children.0)"
-      object_id: "$ref(parent)"
-      verb: blocks
+      parent_story_id: "$ref(parent)"
 
-  # 4. Link child B → parent (child B blocks parent)
-  - action: link
-    entity: story_link
-    fields:
-      subject_id: "$ref(children.1)"
-      object_id: "$ref(parent)"
-      verb: blocks
+# --- Alternative: story_link approach (no Sub-task feature needed) ---
+#
+# Replace operation 2 above with the following if your workspace does
+# not have the Sub-task feature enabled:
+#
+#   - action: create
+#     entity: story
+#     alias: children
+#     repeat:
+#       - name: "$var(child_a_name)"
+#         type: feature
+#         tasks:
+#           - description: "Implement feature"
+#           - description: "Write tests"
+#       - name: "$var(child_b_name)"
+#         type: feature
+#         tasks:
+#           - description: "Implement feature"
+#           - description: "Write tests"
+#
+#   - action: link
+#     entity: story_link
+#     fields:
+#       subject_id: "$ref(children.0)"
+#       object_id: "$ref(parent)"
+#       verb: blocks
+#
+#   - action: link
+#     entity: story_link
+#     fields:
+#       subject_id: "$ref(children.1)"
+#       object_id: "$ref(parent)"
+#       verb: blocks

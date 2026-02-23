@@ -78,6 +78,7 @@ fn empty_interactive_args() -> shortcut_cli::commands::story::CreateArgs {
         labels: vec![],
         iteration_id: None,
         custom_fields: vec![],
+        parent_story_id: None,
     }
 }
 

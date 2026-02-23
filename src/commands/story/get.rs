@@ -32,6 +32,8 @@ pub async fn run(
             "estimate": story.estimate,
             "owner_ids": story.owner_ids,
             "labels": story.labels.iter().map(|l| &l.name).collect::<Vec<_>>(),
+            "parent_story_id": story.parent_story_id,
+            "sub_task_story_ids": story.sub_task_story_ids,
             "description": story.description,
             "branches": story.branches.iter().map(|b| serde_json::json!({
                 "name": b.name,
@@ -61,6 +63,17 @@ pub async fn run(
     out_println!(out, "  Type:        {}", story.story_type);
     out_println!(out, "  State ID:    {}", story.workflow_state_id);
     out_println!(out, "  Workflow ID: {}", story.workflow_id);
+    if let Some(parent_id) = story.parent_story_id {
+        out_println!(out, "  Parent:      {parent_id}");
+    }
+    if !story.sub_task_story_ids.is_empty() {
+        let ids: Vec<String> = story
+            .sub_task_story_ids
+            .iter()
+            .map(|id| id.to_string())
+            .collect();
+        out_println!(out, "  Sub-tasks:   {}", ids.join(", "));
+    }
     if let Some(epic_id) = story.epic_id {
         out_println!(out, "  Epic ID:     {epic_id}");
     }
