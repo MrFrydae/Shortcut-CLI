@@ -1,12 +1,21 @@
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
+use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
+
 use crate::support::{
     default_icon, full_story_json, make_dry_run_output, member_json, workflow_json,
     workflow_state_json,
 };
 use crate::{UUID_ALICE, make_update_args};
 use shortcut_cli::{api, commands::story};
+
+/// Build a full story JSON with a specific workflow_state_id.
+fn full_story_json_with_state(id: i64, name: &str, desc: &str, state_id: i64) -> serde_json::Value {
+    let mut story = full_story_json(id, name, desc);
+    story["workflow_state_id"] = serde_json::json!(state_id);
+    story
+}
 
 #[tokio::test]
 async fn update_story_name_and_description() {
@@ -276,4 +285,225 @@ async fn dry_run_story_update_shows_request() {
     assert!(output.contains("\"estimate\": 5"));
     // Fields not set should NOT appear
     assert!(!output.contains("\"description\""));
+}
+
+// --- --unless-state tests ---
+
+fn standard_workflows_body() -> serde_json::Value {
+    serde_json::json!([workflow_json(
+        500000006,
+        "Default",
+        vec![
+            workflow_state_json(500000007, "Unstarted", "unstarted", 0),
+            workflow_state_json(500000008, "In Progress", "started", 1),
+            workflow_state_json(500000009, "Done", "done", 2),
+            workflow_state_json(500000010, "In Review", "started", 3),
+        ]
+    )])
+}
+
+#[tokio::test]
+async fn unless_state_skips_when_matched() {
+    let out = crate::support::make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    // Story is currently in "Done" (state_id 500000009)
+    let get_body = full_story_json_with_state(42, "My Story", "desc", 500000009);
+    Mock::given(method("GET"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&get_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/workflows"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .mount(&server)
+        .await;
+
+    // PUT should NOT be called
+    Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(0)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.state = Some("In Progress".to_string());
+    update_args.unless_state = vec!["Done".to_string()];
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn unless_state_proceeds_when_not_matched() {
+    let out = crate::support::make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    // Story is currently in "Unstarted" (state_id 500000007)
+    let get_body = full_story_json_with_state(42, "My Story", "desc", 500000007);
+    Mock::given(method("GET"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&get_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/workflows"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .mount(&server)
+        .await;
+
+    let put_body = full_story_json(42, "My Story", "desc");
+    Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&put_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.state = Some("In Progress".to_string());
+    update_args.unless_state = vec!["Done".to_string()];
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn unless_state_multiple_values() {
+    let out = crate::support::make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    // Story is currently in "In Review" (state_id 500000010)
+    let get_body = full_story_json_with_state(42, "My Story", "desc", 500000010);
+    Mock::given(method("GET"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&get_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/workflows"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .mount(&server)
+        .await;
+
+    // PUT should NOT be called
+    Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(0)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.state = Some("In Progress".to_string());
+    update_args.unless_state = vec!["In Review".to_string(), "Done".to_string()];
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn unless_state_normalizes_names() {
+    let out = crate::support::make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    // Story is currently in "In Progress" (state_id 500000008)
+    let get_body = full_story_json_with_state(42, "My Story", "desc", 500000008);
+    Mock::given(method("GET"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&get_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/workflows"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .mount(&server)
+        .await;
+
+    // PUT should NOT be called — "in_progress" normalizes to match "In Progress"
+    Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(0)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.state = Some("Done".to_string());
+    update_args.unless_state = vec!["in_progress".to_string()];
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn unless_state_json_output() {
+    let (out, buf) = OutputConfig::with_buffer(OutputMode::Json, ColorMode::Never);
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    // Story is currently in "Done" (state_id 500000009)
+    let get_body = full_story_json_with_state(42, "My Story", "desc", 500000009);
+    Mock::given(method("GET"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&get_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/workflows"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&standard_workflows_body()))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(0)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.state = Some("In Progress".to_string());
+    update_args.unless_state = vec!["Done".to_string()];
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok());
+
+    let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+    let json: serde_json::Value = serde_json::from_str(output.trim()).unwrap();
+    assert_eq!(json["id"], 42);
+    assert_eq!(json["skipped"], true);
+    assert_eq!(json["current_state"], "Done");
+    assert!(json["reason"].as_str().unwrap().contains("--unless-state"));
 }

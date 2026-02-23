@@ -6,7 +6,7 @@ use clap::Args;
 use crate::api;
 use crate::output::OutputConfig;
 
-use super::helpers::resolve_epic_state_id;
+use super::helpers::{normalize_name, resolve_epic_state_id, resolve_epic_state_name};
 use crate::out_println;
 
 #[derive(Args)]
@@ -55,6 +55,10 @@ pub struct UpdateArgs {
     /// The UUID of the member that requested the epic
     #[arg(long)]
     pub requested_by_id: Option<uuid::Uuid>,
+
+    /// Skip update if the epic is currently in any of these states (comma-separated)
+    #[arg(long, value_delimiter = ',')]
+    pub unless_state: Vec<String>,
 }
 
 pub async fn run(
@@ -96,6 +100,30 @@ pub async fn run(
             })
         })
         .collect::<Result<_, _>>()?;
+
+    // --- unless-state guard (before state resolution to avoid cache artifacts) ---
+    if !args.unless_state.is_empty() {
+        let epic = client
+            .get_epic()
+            .epic_public_id(args.id)
+            .send()
+            .await
+            .map_err(|e| {
+                format!(
+                    "Failed to fetch epic for --unless-state check: {}",
+                    crate::api::format_api_error(&e)
+                )
+            })?;
+
+        let current_name = resolve_epic_state_name(epic.epic_state_id, client, cache_dir).await;
+
+        let normalized_current = normalize_name(&current_name);
+        for excluded in &args.unless_state {
+            if normalize_name(excluded) == normalized_current {
+                return output_skipped(args.id, &current_name, excluded, out);
+            }
+        }
+    }
 
     let resolved_state_id = match &args.epic_state_id {
         Some(val) => Some(resolve_epic_state_id(val, client, cache_dir).await?),
@@ -199,5 +227,37 @@ pub async fn run(
         return Ok(());
     }
     out_println!(out, "Updated epic {} - {}", epic.id, epic.name);
+    Ok(())
+}
+
+fn output_skipped(
+    id: i64,
+    current_state: &str,
+    matched_arg: &str,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
+    if out.is_json() {
+        out_println!(
+            out,
+            "{}",
+            serde_json::json!({
+                "id": id,
+                "skipped": true,
+                "current_state": current_state,
+                "reason": format!(
+                    "epic is in '{}' (matches --unless-state '{}')",
+                    current_state, matched_arg
+                )
+            })
+        );
+    } else if !out.is_quiet() {
+        out_println!(
+            out,
+            "Skipped: epic {} is in '{}' (matches --unless-state '{}')",
+            id,
+            current_state,
+            matched_arg
+        );
+    }
     Ok(())
 }

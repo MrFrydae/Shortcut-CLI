@@ -6,7 +6,10 @@ use clap::Args;
 use crate::api;
 use crate::output::OutputConfig;
 
-use super::helpers::{resolve_custom_field_args, resolve_owners, resolve_workflow_state_id};
+use super::helpers::{
+    normalize_name, resolve_custom_field_args, resolve_owners, resolve_workflow_state_id,
+    resolve_workflow_state_name,
+};
 use crate::out_println;
 
 #[derive(Args)]
@@ -59,6 +62,10 @@ pub struct UpdateArgs {
     /// The parent story ID (makes this a sub-task)
     #[arg(long)]
     pub parent_story_id: Option<i64>,
+
+    /// Skip update if the story is currently in any of these states (comma-separated)
+    #[arg(long, value_delimiter = ',')]
+    pub unless_state: Vec<String>,
 }
 
 pub async fn run(
@@ -110,6 +117,32 @@ pub async fn run(
 
     let custom_field_params =
         resolve_custom_field_args(&args.custom_fields, client, cache_dir).await?;
+
+    // --- unless-state guard ---
+    if !args.unless_state.is_empty() {
+        let story = client
+            .get_story()
+            .story_public_id(args.id)
+            .send()
+            .await
+            .map_err(|e| {
+                format!(
+                    "Failed to fetch story for --unless-state check: {}",
+                    crate::api::format_api_error(&e)
+                )
+            })?;
+
+        let current_name = resolve_workflow_state_name(story.workflow_state_id, client, cache_dir)
+            .await?
+            .unwrap_or_else(|| story.workflow_state_id.to_string());
+
+        let normalized_current = normalize_name(&current_name);
+        for excluded in &args.unless_state {
+            if normalize_name(excluded) == normalized_current {
+                return output_skipped(args.id, &current_name, excluded, out);
+            }
+        }
+    }
 
     if out.is_dry_run() {
         let mut body = serde_json::Map::new();
@@ -222,5 +255,37 @@ pub async fn run(
         return Ok(());
     }
     out_println!(out, "Updated story {} - {}", story.id, story.name);
+    Ok(())
+}
+
+fn output_skipped(
+    id: i64,
+    current_state: &str,
+    matched_arg: &str,
+    out: &OutputConfig,
+) -> Result<(), Box<dyn Error>> {
+    if out.is_json() {
+        out_println!(
+            out,
+            "{}",
+            serde_json::json!({
+                "id": id,
+                "skipped": true,
+                "current_state": current_state,
+                "reason": format!(
+                    "story is in '{}' (matches --unless-state '{}')",
+                    current_state, matched_arg
+                )
+            })
+        );
+    } else if !out.is_quiet() {
+        out_println!(
+            out,
+            "Skipped: story {} is in '{}' (matches --unless-state '{}')",
+            id,
+            current_state,
+            matched_arg
+        );
+    }
     Ok(())
 }

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":rebaseStalePrs",
+    ":separatePatchReleases"
+  ],
+  "enabledManagers": ["cargo", "github-actions"],
+  "labels": ["dependencies", "renovate"],
+  "prConcurrentLimit": 8,
+  "prHourlyLimit": 2,
+  "minimumReleaseAge": "3 days",
+  "rangeStrategy": "bump",
+  "schedule": ["after 2am and before 6am on monday"],
+  "dependencyDashboardTitle": "Renovate Dashboard",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security", "dependencies"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 5am on monday"],
+    "automerge": true
+  },
+  "packageRules": [
+    {
+      "description": "Automerge safe Rust crate updates",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "rust crates (non-major)",
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Automerge safe GitHub Action updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "groupName": "github actions (non-major)",
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Require manual approval for all major updates",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "labels": ["dependencies", "major-update"]
+    }
+  ]
+}

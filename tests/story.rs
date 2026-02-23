@@ -66,6 +66,7 @@ pub fn make_update_args(id: i64) -> shortcut_cli::commands::story::UpdateArgs {
         iteration_id: None,
         custom_fields: vec![],
         parent_story_id: None,
+        unless_state: vec![],
     }
 }
 

@@ -18,7 +18,7 @@ pub async fn resolve_owners(
     Ok(ids)
 }
 
-fn normalize_name(name: &str) -> String {
+pub(crate) fn normalize_name(name: &str) -> String {
     name.to_lowercase()
         .replace(['_', '-'], " ")
         .split_whitespace()

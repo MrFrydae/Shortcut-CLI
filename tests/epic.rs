@@ -38,6 +38,7 @@ pub fn make_update_args(id: i64) -> shortcut_cli::commands::epic::UpdateArgs {
         owner_ids: vec![],
         follower_ids: vec![],
         requested_by_id: None,
+        unless_state: vec![],
     }
 }
 

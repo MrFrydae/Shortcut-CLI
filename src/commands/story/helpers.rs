@@ -177,6 +177,17 @@ pub async fn build_workflow_state_id_map(
     Ok(map)
 }
 
+// --- Resolve a single state ID to its display name ---
+
+pub async fn resolve_workflow_state_name(
+    state_id: i64,
+    client: &api::Client,
+    cache_dir: &Path,
+) -> Result<Option<String>, Box<dyn Error>> {
+    let id_map = build_workflow_state_id_map(client, cache_dir).await?;
+    Ok(id_map.get(&state_id).cloned())
+}
+
 // --- Fetch workflow state names for wizard ---
 
 pub async fn fetch_workflow_state_names(

@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/MrFrydae/Shortcut-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/MrFrydae/Shortcut-CLI/actions/workflows/ci.yml)
 [![Release](https://github.com/MrFrydae/Shortcut-CLI/actions/workflows/release.yml/badge.svg)](https://github.com/MrFrydae/Shortcut-CLI/actions/workflows/release.yml)
+[![Renovate enabled](https://img.shields.io/badge/Renovate-enabled-brightgreen?logo=renovatebot)](https://github.com/renovatebot/renovate)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![Homebrew](https://img.shields.io/badge/Homebrew-MrFrydae%2Ftap-orange.svg)](https://github.com/MrFrydae/homebrew-tap)
 
@@ -17,6 +18,16 @@ A fast, ergonomic command-line interface for the [Shortcut](https://shortcut.com
 - **Local caching** — workspace members, epic states, and workflow data are cached and refreshed on miss
 - **Per-project config** — each project directory gets its own token and cache under `~/.shortcut/`
 - **Secure token storage** — API tokens are written with `0600` permissions
+
+## Dependency Updates
+
+Dependency updates are managed by Renovate using `.github/renovate.json5`:
+
+- Weekly update window (early Monday morning) to keep noise low
+- Grouped non-major updates for Cargo crates and GitHub Actions
+- Automatic merge for safe patch/minor updates
+- Major updates require manual dashboard approval
+- Weekly lockfile maintenance and separate security alert handling
 
 ## Installation
 
