@@ -63,12 +63,12 @@ pub async fn run(
         for reference in &entry.references {
             match reference {
                 api::types::HistoryReferencesItem::WorkflowState(ws) => {
-                    if let api::types::HistoryReferenceWorkflowStateId::Variant0(id) = ws.id {
+                    if let api::types::HistoryReferenceWorkflowStateId::Int64(id) = ws.id {
                         state_map.insert(id, ws.name.clone());
                     }
                 }
                 api::types::HistoryReferencesItem::Label(lb) => {
-                    if let api::types::HistoryReferenceLabelId::Variant0(id) = lb.id {
+                    if let api::types::HistoryReferenceLabelId::Int64(id) = lb.id {
                         label_map.insert(id, lb.name.clone());
                     }
                 }
