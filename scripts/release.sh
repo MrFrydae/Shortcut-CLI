@@ -3,16 +3,16 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/release.sh <semver>
+Usage: scripts/release.sh <semver> [--confirm|--yes]
 
 Example:
-  scripts/release.sh 0.0.12
+  scripts/release.sh 0.0.12 --confirm
 EOF
 }
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || $# -ne 1 ]]; then
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || $# -lt 1 || $# -gt 2 ]]; then
   usage
-  exit $(( $# == 1 ? 0 : 1 ))
+  exit $(( $# >= 1 ? 0 : 1 ))
 fi
 
 VERSION="${1#v}"
@@ -22,8 +22,28 @@ if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-
   exit 1
 fi
 
+CONFIRM_FLAG="${2:-}"
+if [[ -n "${CONFIRM_FLAG}" && "${CONFIRM_FLAG}" != "--confirm" && "${CONFIRM_FLAG}" != "--yes" ]]; then
+  echo "Unknown flag: ${CONFIRM_FLAG}" >&2
+  echo "Use --confirm (or --yes) to execute." >&2
+  exit 1
+fi
+
 ROOT="$(git rev-parse --show-toplevel)"
 cd "${ROOT}"
+
+CURRENT_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+if [[ -z "${CURRENT_VERSION}" ]]; then
+  echo "Failed to read current version from Cargo.toml" >&2
+  exit 1
+fi
+
+echo "Update: v${CURRENT_VERSION} -> v${VERSION}"
+
+if [[ "${CONFIRM_FLAG}" != "--confirm" && "${CONFIRM_FLAG}" != "--yes" ]]; then
+  echo "Dry-run only. Re-run with --confirm (or --yes) to execute."
+  exit 0
+fi
 
 if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "Working tree must be clean before release." >&2
