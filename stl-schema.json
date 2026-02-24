@@ -462,7 +462,7 @@
       "unevaluatedProperties": false
     },
 
-    "operationBase": {
+    "operation": {
       "type": "object",
       "required": ["action", "entity"],
       "properties": {
@@ -494,12 +494,8 @@
           "description": "List of mappings; each entry is merged with fields and executed as a separate operation.",
           "items": { "type": "object" }
         }
-      }
-    },
-
-    "operation": {
+      },
       "allOf": [
-        { "$ref": "#/$defs/operationBase" },
         {
           "if": {
             "anyOf": [
