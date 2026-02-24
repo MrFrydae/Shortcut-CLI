@@ -7,14 +7,32 @@
 
 ## File Format
 
-- YAML 1.0, file extension: `.shortcut.yml`
-- Every generated file MUST begin with this header comment:
+- **YAML** (recommended): file extension `.shortcut.yml`
+- **JSON**: file extension `.shortcut.json`
+- Both formats are accepted by all `sc template` subcommands (`run`, `sync`, `validate`)
+- A **JSON Schema** is available at [`stl-schema.json`](stl-schema.json) for IDE validation and autocompletion
+- Every generated YAML file SHOULD begin with this header comment:
 
 ```yaml
 # Shortcut Template Language (STL) v1
 # Validate: shortcut template validate <this-file>
 # Run:      shortcut template run <this-file> --confirm
 # Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
+```
+
+### IDE Schema Association
+
+**VS Code** — add to `.vscode/settings.json`:
+
+```json
+{
+  "yaml.schemas": {
+    "./stl-schema.json": "*.shortcut.yml"
+  },
+  "json.schemas": [
+    { "fileMatch": ["*.shortcut.json"], "url": "./stl-schema.json" }
+  ]
+}
 ```
 
 ---
@@ -395,6 +413,28 @@ operations:
     id: $ref(stories.0)
     fields:
       text: "Tracking epic: $ref(onboard-epic)"
+```
+
+### JSON Format — Minimal example
+
+The same template structure works in JSON. Note: `$var()` and `$ref()` expressions are used as regular string values.
+
+```json
+{
+  "$schema": "./stl-schema.json",
+  "version": 1,
+  "operations": [
+    {
+      "action": "create",
+      "entity": "story",
+      "fields": {
+        "name": "Fix login redirect bug",
+        "type": "bug",
+        "state": "In Progress"
+      }
+    }
+  ]
+}
 ```
 
 ---

@@ -1,0 +1,18 @@
+{
+  "$schema": "../stl-schema.json",
+  "version": 1,
+  "meta": {
+    "description": "Minimal JSON example — creates a single story"
+  },
+  "operations": [
+    {
+      "action": "create",
+      "entity": "story",
+      "fields": {
+        "name": "Fix login redirect bug",
+        "type": "bug",
+        "state": "In Progress"
+      }
+    }
+  ]
+}

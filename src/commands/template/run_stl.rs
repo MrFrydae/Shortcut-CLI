@@ -10,7 +10,7 @@ use crate::stl::{executor, parser, validator};
 
 #[derive(Args)]
 pub struct RunArgs {
-    /// Path to the .shortcut.yml template file (use - for stdin)
+    /// Path to the .shortcut.yml or .shortcut.json template file (use - for stdin)
     pub file: String,
 
     /// Skip the interactive confirmation prompt

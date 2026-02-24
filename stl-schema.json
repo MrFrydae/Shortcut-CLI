@@ -1,0 +1,819 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MrFrydae/Shortcut-CLI/blob/main/stl-schema.json",
+  "title": "Shortcut Template Language (STL) v1",
+  "description": "Schema for .shortcut.yml and .shortcut.json template files used by the Shortcut CLI.",
+  "type": "object",
+  "required": ["version", "operations"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1,
+      "description": "STL format version. Must be 1."
+    },
+    "meta": { "$ref": "#/$defs/meta" },
+    "vars": {
+      "type": "object",
+      "description": "Variable declarations for $var() substitution. Keys must match [a-zA-Z][a-zA-Z0-9_]*.",
+      "propertyNames": {
+        "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/anyValue"
+      }
+    },
+    "on_error": { "$ref": "#/$defs/errorHandling" },
+    "operations": {
+      "type": "array",
+      "description": "List of operations to execute.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    }
+  },
+  "$defs": {
+    "anyValue": {
+      "description": "Any scalar or structured value (used for vars and field values)."
+    },
+    "stringOrExpr": {
+      "type": "string",
+      "description": "A string value, which may contain $var() or $ref() expressions."
+    },
+    "integerOrExpr": {
+      "anyOf": [
+        { "type": "integer" },
+        { "type": "string", "description": "An integer value or a $var()/$ref() expression that resolves to one." }
+      ]
+    },
+    "booleanOrExpr": {
+      "anyOf": [
+        { "type": "boolean" },
+        { "type": "string", "description": "A boolean value or a $var()/$ref() expression that resolves to one." }
+      ]
+    },
+    "numberOrExpr": {
+      "anyOf": [
+        { "type": "number" },
+        { "type": "string", "description": "A number value or a $var()/$ref() expression that resolves to one." }
+      ]
+    },
+    "arrayOfStringOrExpr": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/stringOrExpr" }
+    },
+    "meta": {
+      "type": "object",
+      "description": "Informational metadata (not sent to the API).",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string", "description": "Human-readable description of this template." },
+        "author": { "type": "string", "description": "Author or team name." }
+      }
+    },
+    "errorHandling": {
+      "type": "string",
+      "enum": ["continue"],
+      "description": "Error handling strategy. 'continue' keeps executing after failures."
+    },
+    "alias": {
+      "type": "string",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+      "description": "Name for referencing this operation's result via $ref(). Must match [a-zA-Z][a-zA-Z0-9_-]*."
+    },
+    "inlineTask": {
+      "type": "object",
+      "description": "An inline task to create with a story.",
+      "required": ["description"],
+      "properties": {
+        "description": { "$ref": "#/$defs/stringOrExpr" },
+        "complete": { "$ref": "#/$defs/booleanOrExpr" },
+        "owners": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "key": { "$ref": "#/$defs/stringOrExpr" }
+      },
+      "additionalProperties": false
+    },
+    "customFieldEntry": {
+      "type": "object",
+      "description": "A custom field value.",
+      "properties": {
+        "field_id": { "$ref": "#/$defs/stringOrExpr" },
+        "value": { "$ref": "#/$defs/anyValue" },
+        "value_id": { "$ref": "#/$defs/stringOrExpr" }
+      },
+      "additionalProperties": false
+    },
+    "inlineComment": {
+      "type": "object",
+      "description": "An inline comment to create with a story.",
+      "properties": {
+        "text": { "$ref": "#/$defs/stringOrExpr" },
+        "text_file": { "$ref": "#/$defs/stringOrExpr" }
+      },
+      "additionalProperties": false
+    },
+    "inlineStoryLink": {
+      "type": "object",
+      "description": "An inline story link to create with a story.",
+      "properties": {
+        "subject_id": { "$ref": "#/$defs/integerOrExpr" },
+        "object_id": { "$ref": "#/$defs/integerOrExpr" },
+        "verb": { "$ref": "#/$defs/stringOrExpr" }
+      },
+      "additionalProperties": false
+    },
+
+    "storyFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" },
+        "type": { "$ref": "#/$defs/stringOrExpr" },
+        "owner": { "$ref": "#/$defs/stringOrExpr" },
+        "owners": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "state": { "$ref": "#/$defs/stringOrExpr" },
+        "epic_id": { "$ref": "#/$defs/integerOrExpr" },
+        "iteration_id": { "$ref": "#/$defs/integerOrExpr" },
+        "project_id": { "$ref": "#/$defs/integerOrExpr" },
+        "group_id": { "$ref": "#/$defs/stringOrExpr" },
+        "estimate": { "$ref": "#/$defs/integerOrExpr" },
+        "labels": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "followers": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "requested_by": { "$ref": "#/$defs/stringOrExpr" },
+        "deadline": { "$ref": "#/$defs/stringOrExpr" },
+        "custom_fields": { "type": "array", "items": { "$ref": "#/$defs/customFieldEntry" } },
+        "tasks": { "type": "array", "items": { "$ref": "#/$defs/inlineTask" } },
+        "comments": { "type": "array", "items": { "$ref": "#/$defs/inlineComment" } },
+        "story_links": { "type": "array", "items": { "$ref": "#/$defs/inlineStoryLink" } },
+        "parent_story_id": { "$ref": "#/$defs/integerOrExpr" }
+      }
+    },
+    "epicFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" },
+        "state": { "$ref": "#/$defs/stringOrExpr" },
+        "deadline": { "$ref": "#/$defs/stringOrExpr" },
+        "owners": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "followers": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "requested_by": { "$ref": "#/$defs/stringOrExpr" },
+        "labels": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "objective_ids": { "type": "array", "items": { "$ref": "#/$defs/integerOrExpr" } },
+        "milestone_id": { "$ref": "#/$defs/integerOrExpr" },
+        "group_ids": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "planned_start_date": { "$ref": "#/$defs/stringOrExpr" }
+      }
+    },
+    "iterationFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "start_date": { "$ref": "#/$defs/stringOrExpr" },
+        "end_date": { "$ref": "#/$defs/stringOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" },
+        "followers": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "labels": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "group_ids": { "$ref": "#/$defs/arrayOfStringOrExpr" }
+      }
+    },
+    "labelFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "color": { "$ref": "#/$defs/stringOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" }
+      }
+    },
+    "objectiveFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" },
+        "categories": { "$ref": "#/$defs/arrayOfStringOrExpr" }
+      }
+    },
+    "milestoneFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" },
+        "categories": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "state": { "$ref": "#/$defs/stringOrExpr" }
+      }
+    },
+    "categoryFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "color": { "$ref": "#/$defs/stringOrExpr" },
+        "type": { "$ref": "#/$defs/stringOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" }
+      }
+    },
+    "groupFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" },
+        "member_ids": { "$ref": "#/$defs/arrayOfStringOrExpr" },
+        "mention_name": { "$ref": "#/$defs/stringOrExpr" },
+        "workflow_ids": { "type": "array", "items": { "$ref": "#/$defs/integerOrExpr" } }
+      }
+    },
+    "documentFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "content": { "$ref": "#/$defs/stringOrExpr" },
+        "content_file": { "$ref": "#/$defs/stringOrExpr" }
+      }
+    },
+    "projectFieldProps": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/$defs/stringOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" },
+        "team_id": { "$ref": "#/$defs/integerOrExpr" },
+        "abbreviation": { "$ref": "#/$defs/stringOrExpr" },
+        "color": { "$ref": "#/$defs/stringOrExpr" }
+      }
+    },
+    "taskFieldProps": {
+      "type": "object",
+      "properties": {
+        "story_id": { "$ref": "#/$defs/integerOrExpr" },
+        "description": { "$ref": "#/$defs/stringOrExpr" },
+        "complete": { "$ref": "#/$defs/booleanOrExpr" },
+        "owners": { "$ref": "#/$defs/arrayOfStringOrExpr" }
+      }
+    },
+    "commentFieldProps": {
+      "type": "object",
+      "properties": {
+        "story_id": { "$ref": "#/$defs/integerOrExpr" },
+        "epic_id": { "$ref": "#/$defs/integerOrExpr" },
+        "text": { "$ref": "#/$defs/stringOrExpr" },
+        "text_file": { "$ref": "#/$defs/stringOrExpr" }
+      }
+    },
+    "storyLinkFieldProps": {
+      "type": "object",
+      "properties": {
+        "subject_id": { "$ref": "#/$defs/integerOrExpr" },
+        "object_id": { "$ref": "#/$defs/integerOrExpr" },
+        "verb": { "$ref": "#/$defs/stringOrExpr" }
+      }
+    },
+
+    "storyCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/storyFieldProps" }],
+      "required": ["name"],
+      "unevaluatedProperties": false
+    },
+    "storyUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/storyFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "storyRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/storyFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "epicCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/epicFieldProps" }],
+      "required": ["name"],
+      "unevaluatedProperties": false
+    },
+    "epicUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/epicFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "epicRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/epicFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "iterationCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/iterationFieldProps" }],
+      "required": ["name", "start_date", "end_date"],
+      "unevaluatedProperties": false
+    },
+    "iterationUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/iterationFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "iterationRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/iterationFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "labelCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/labelFieldProps" }],
+      "required": ["name"],
+      "unevaluatedProperties": false
+    },
+    "labelUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/labelFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "labelRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/labelFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "objectiveCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/objectiveFieldProps" }],
+      "required": ["name"],
+      "unevaluatedProperties": false
+    },
+    "objectiveUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/objectiveFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "objectiveRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/objectiveFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "milestoneCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/milestoneFieldProps" }],
+      "required": ["name"],
+      "unevaluatedProperties": false
+    },
+    "milestoneUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/milestoneFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "milestoneRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/milestoneFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "categoryCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/categoryFieldProps" }],
+      "required": ["name"],
+      "unevaluatedProperties": false
+    },
+    "categoryUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/categoryFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "categoryRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/categoryFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "groupCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/groupFieldProps" }],
+      "required": ["name"],
+      "unevaluatedProperties": false
+    },
+    "groupUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/groupFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "groupRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/groupFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "documentCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/documentFieldProps" }],
+      "required": ["name"],
+      "unevaluatedProperties": false
+    },
+    "documentUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/documentFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "documentRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/documentFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "projectCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/projectFieldProps" }],
+      "required": ["name"],
+      "unevaluatedProperties": false
+    },
+    "projectUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/projectFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "projectRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/projectFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "taskCreateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/taskFieldProps" }],
+      "required": ["description"],
+      "unevaluatedProperties": false
+    },
+    "taskUpdateFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/taskFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "taskRepeatEntry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/taskFieldProps" }],
+      "properties": { "key": { "$ref": "#/$defs/stringOrExpr" } },
+      "unevaluatedProperties": false
+    },
+    "commentFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/commentFieldProps" }],
+      "unevaluatedProperties": false
+    },
+    "storyLinkFields": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/storyLinkFieldProps" }],
+      "unevaluatedProperties": false
+    },
+
+    "operationBase": {
+      "type": "object",
+      "required": ["action", "entity"],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["create", "update", "delete", "comment", "link", "unlink", "check", "uncheck"],
+          "description": "The action to perform."
+        },
+        "entity": {
+          "type": "string",
+          "enum": ["story", "epic", "iteration", "label", "objective", "milestone", "category", "group", "document", "project", "task", "comment", "story_link"],
+          "description": "The entity type to operate on."
+        },
+        "alias": { "$ref": "#/$defs/alias" },
+        "id": {
+          "description": "Target entity ID. Required for update, delete, comment, unlink, check, uncheck. Can be a $ref() expression.",
+          "anyOf": [
+            { "type": "integer" },
+            { "type": "string" }
+          ]
+        },
+        "on_error": { "$ref": "#/$defs/errorHandling" },
+        "fields": {
+          "type": "object",
+          "description": "Field values to send to the API."
+        },
+        "repeat": {
+          "type": "array",
+          "description": "List of mappings; each entry is merged with fields and executed as a separate operation.",
+          "items": { "type": "object" }
+        }
+      }
+    },
+
+    "operation": {
+      "allOf": [
+        { "$ref": "#/$defs/operationBase" },
+        {
+          "if": {
+            "anyOf": [
+              { "properties": { "action": { "const": "update" } } },
+              { "properties": { "action": { "const": "delete" } } },
+              { "properties": { "action": { "const": "comment" } } },
+              { "properties": { "action": { "const": "unlink" } } },
+              { "properties": { "action": { "const": "check" } } },
+              { "properties": { "action": { "const": "uncheck" } } }
+            ]
+          },
+          "then": {
+            "required": ["id"]
+          }
+        },
+
+        {
+          "description": "Action-entity validity matrix: only allow valid combinations.",
+          "oneOf": [
+            {
+              "description": "create: story, epic, iteration, label, objective, milestone, category, group, document, project, task",
+              "properties": {
+                "action": { "const": "create" },
+                "entity": { "enum": ["story", "epic", "iteration", "label", "objective", "milestone", "category", "group", "document", "project", "task"] }
+              }
+            },
+            {
+              "description": "update: story, epic, iteration, label, objective, milestone, category, group, document, project",
+              "properties": {
+                "action": { "const": "update" },
+                "entity": { "enum": ["story", "epic", "iteration", "label", "objective", "milestone", "category", "group", "document", "project"] }
+              }
+            },
+            {
+              "description": "delete: story, epic, iteration, label, objective, milestone, category, document, project, task, story_link",
+              "properties": {
+                "action": { "const": "delete" },
+                "entity": { "enum": ["story", "epic", "iteration", "label", "objective", "milestone", "category", "document", "project", "task", "story_link"] }
+              }
+            },
+            {
+              "description": "comment: story, epic",
+              "properties": {
+                "action": { "const": "comment" },
+                "entity": { "enum": ["story", "epic"] }
+              }
+            },
+            {
+              "description": "link: story_link",
+              "properties": {
+                "action": { "const": "link" },
+                "entity": { "const": "story_link" }
+              }
+            },
+            {
+              "description": "unlink: story_link",
+              "properties": {
+                "action": { "const": "unlink" },
+                "entity": { "const": "story_link" }
+              }
+            },
+            {
+              "description": "check: task",
+              "properties": {
+                "action": { "const": "check" },
+                "entity": { "const": "task" }
+              }
+            },
+            {
+              "description": "uncheck: task",
+              "properties": {
+                "action": { "const": "uncheck" },
+                "entity": { "const": "task" }
+              }
+            }
+          ]
+        },
+
+        {
+          "description": "Conditional field validation: apply entity-specific field schemas based on action+entity.",
+          "allOf": [
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "story" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/storyCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/storyRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "story" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/storyUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/storyRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "epic" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/epicCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/epicRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "epic" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/epicUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/epicRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "iteration" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/iterationCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/iterationRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "iteration" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/iterationUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/iterationRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "label" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/labelCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/labelRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "label" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/labelUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/labelRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "objective" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/objectiveCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/objectiveRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "objective" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/objectiveUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/objectiveRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "milestone" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/milestoneCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/milestoneRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "milestone" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/milestoneUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/milestoneRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "category" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/categoryCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/categoryRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "category" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/categoryUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/categoryRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "group" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/groupCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/groupRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "group" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/groupUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/groupRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "document" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/documentCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/documentRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "document" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/documentUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/documentRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "project" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/projectCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/projectRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "update" }, "entity": { "const": "project" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/projectUpdateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/projectRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "create" }, "entity": { "const": "task" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/taskCreateFields" },
+                  "repeat": { "items": { "$ref": "#/$defs/taskRepeatEntry" } }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "comment" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/commentFields" }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "link" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/storyLinkFields" }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "unlink" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/storyLinkFields" }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "check" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/taskUpdateFields" }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "action": { "const": "uncheck" } } },
+              "then": {
+                "properties": {
+                  "fields": { "$ref": "#/$defs/taskUpdateFields" }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  }
+}
