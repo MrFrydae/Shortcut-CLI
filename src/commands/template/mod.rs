@@ -4,6 +4,7 @@ mod get;
 pub mod init;
 mod list;
 pub mod run_stl;
+pub mod sync_stl;
 mod update;
 mod use_template;
 pub mod validate_stl;
@@ -53,6 +54,8 @@ pub enum TemplateAction {
     },
     /// Execute a template file (.shortcut.yml)
     Run(Box<run_stl::RunArgs>),
+    /// Declaratively sync a template file against existing resources
+    Sync(Box<sync_stl::SyncArgs>),
     /// Validate a template file without executing
     Validate(validate_stl::ValidateArgs),
     /// Initialize STL agent instructions in CLAUDE.md
@@ -77,6 +80,7 @@ pub async fn run(
         }
         TemplateAction::Delete { id, confirm } => delete::run(id, *confirm, client, out).await,
         TemplateAction::Run(run_args) => run_stl::run(run_args, client, &cache_dir, out).await,
+        TemplateAction::Sync(sync_args) => sync_stl::run(sync_args, client, &cache_dir, out).await,
         TemplateAction::Validate(validate_args) => validate_stl::run(validate_args, out).await,
         TemplateAction::Init(init_args) => init::run(init_args, out).await,
     }

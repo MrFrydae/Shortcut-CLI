@@ -396,3 +396,163 @@ operations:
     fields:
       text: "Tracking epic: $ref(onboard-epic)"
 ```
+
+---
+
+## Declarative Sync — `sc template sync`
+
+The `sync` command enables Terraform-style declarative resource management. The same `.shortcut.yml` files work with both `run` (imperative, fire-and-forget) and `sync` (declarative, state-tracked).
+
+### Command
+
+```
+sc template sync <file> [--state <path>] [--var key=value]... [--confirm] [--prune]
+```
+
+| Flag | Purpose |
+|------|---------|
+| `--state <path>` | Override state file location (default: `<file>.state.json`) |
+| `--prune` | Delete resources that exist in state but were removed from the template |
+| `--confirm` | Skip interactive confirmation |
+| `--var` | Same as `run` — override template variables |
+
+### State File
+
+Stored alongside the template by default: `sprint.shortcut.yml` → `sprint.shortcut.yml.state.json`.
+
+```json
+{
+  "version": 1,
+  "created_at": "2026-02-24T12:00:00Z",
+  "updated_at": "2026-02-24T12:30:00Z",
+  "resources": {
+    "my-epic": {
+      "type": "single",
+      "entity": "epic",
+      "id": 55
+    },
+    "child-stories": {
+      "type": "repeat",
+      "entity": "story",
+      "entries": {
+        "story-a": { "id": 1001 },
+        "story-b": { "id": 1002 }
+      }
+    }
+  },
+  "applied": ["op-3-comment", "op-4-link"]
+}
+```
+
+- **`resources`**: Keyed by alias. Single ops store one ID. Repeat ops store a map of `key → id`.
+- **`applied`**: Tracks imperative side-effect operations (comment/link/check) that have already been executed, keyed by `"op-{index}-{action}"`.
+- State is saved incrementally after each successful operation, so partial failures don't lose progress.
+
+### Sync-Specific Validation
+
+In addition to standard validation, `sync` enforces:
+
+| Condition | Error |
+|-----------|-------|
+| `create` operation without `alias` | `sync requires an 'alias' on every create operation` |
+| Repeat entry without `key` field | `repeat entry N is missing required 'key' field for sync` |
+| Duplicate `key` within a repeat block | `duplicate key 'X' in repeat entry N` |
+| Inline task without `key` field | `task N is missing required 'key' field for sync` |
+| Duplicate task `key` within a story | `duplicate task key 'X' in task N` |
+
+### Key-Based Matching for Repeat Operations
+
+Repeat entries use an explicit `key` field for stable identity across sync runs. The `key` is stripped before sending to the API.
+
+```yaml
+operations:
+  - action: create
+    entity: story
+    alias: child-stories
+    repeat:
+      - key: auth-design        # required in sync mode
+        name: "Auth Design Doc"
+      - key: auth-impl
+        name: "Auth Implementation"
+    fields:
+      epic_id: $ref(my-epic)
+```
+
+This means reordering or inserting entries is safe — keys are matched by name, not position.
+
+### Reconciliation Logic
+
+| Template operation | State entry? | Sync action |
+|---|---|---|
+| `create` (no repeat), alias not in state | No | **Create** — POST, save ID to state |
+| `create` (no repeat), alias in state | Yes | **Update** — PATCH using stored ID |
+| `create` repeat, entry key not in state | No | **Create** that entry |
+| `create` repeat, entry key in state | Yes | **Update** that entry using stored ID |
+| `create` repeat, key in state but removed from template | Orphan entry | **Warn** (delete with `--prune`) |
+| `comment` / `link` / `check` etc. | Already in `applied` | **Skip** |
+| `comment` / `link` / `check` etc. | Not in `applied` | **Execute** and record in `applied` |
+| `update` / `delete` (explicit `id:`) | N/A | **Execute** as-is (not state-managed) |
+| Alias in state but not in template | Orphan | **Warn** (delete with `--prune`) |
+
+### Inline Task Sync
+
+Stories can embed tasks in their `tasks` field. During sync, tasks require `key` fields:
+
+```yaml
+- action: create
+  entity: story
+  alias: my-story
+  fields:
+    name: "Feature X"
+    tasks:
+      - key: design
+        description: "Design"
+      - key: implement
+        description: "Implement"
+```
+
+On first sync, task IDs are extracted from the story creation response and stored in state. On subsequent syncs, tasks are updated individually (not via the story update), and the `complete` status is never sent — preserving whatever the user set in Shortcut.
+
+### Sync Example
+
+```yaml
+# Shortcut Template Language (STL) v1
+# Sync:     shortcut template sync <this-file>
+# Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
+
+version: 1
+vars:
+  sprint: "Sprint 25"
+
+operations:
+  - action: create
+    entity: epic
+    alias: auth-epic
+    fields:
+      name: "Auth Hardening"
+
+  - action: create
+    entity: story
+    alias: auth-stories
+    repeat:
+      - key: jwt-rotation
+        name: "Implement JWT rotation"
+        estimate: 5
+      - key: session-mgmt
+        name: "Session management overhaul"
+        estimate: 8
+    fields:
+      epic_id: $ref(auth-epic)
+      labels:
+        - security
+
+  - action: comment
+    entity: story
+    id: $ref(auth-stories.0)
+    fields:
+      text: "Tracking epic: $ref(auth-epic)"
+```
+
+First run: creates the epic, 2 stories, and a comment. Writes state file.
+Edit template (e.g., change an estimate), run again: patches the story, skips the comment.
+Remove a story entry, run with `--prune`: deletes the orphaned story from Shortcut.

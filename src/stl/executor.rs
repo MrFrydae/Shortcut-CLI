@@ -7,8 +7,21 @@ use crate::commands::{custom_field, epic, group, member, story};
 use crate::out_println;
 use crate::output::OutputConfig;
 
+use super::reconciler::SyncAction;
 use super::resolver::{resolve_refs, substitute_vars, yaml_mapping_to_json, yaml_to_json};
+use super::state::{EntryState, ResourceState, SyncState, TaskEntry};
 use super::types::*;
+
+/// Common parameters shared across sync execution helper functions.
+struct SyncExecContext<'a> {
+    results: &'a HashMap<String, serde_json::Value>,
+    client: &'a api::Client,
+    cache_dir: &'a Path,
+    out: &'a OutputConfig,
+    counter: usize,
+    total: usize,
+    show_progress: bool,
+}
 
 /// Execute a validated template.
 pub async fn execute(
@@ -1292,4 +1305,1414 @@ fn dry_run_placeholder(entity: &Entity, counter: usize) -> serde_json::Value {
         "id": counter * 1000,
         "entity_type": entity.to_string(),
     })
+}
+
+// ── Sync execution ───────────────────────────────────────────────
+
+/// Execute a sync plan (list of SyncActions) against the API.
+///
+/// This is the sync counterpart of `execute()`. It processes reconciled actions,
+/// calling the API for creates/updates/deletes and updating state incrementally.
+#[allow(clippy::too_many_arguments)]
+pub async fn execute_sync(
+    template: &mut Template,
+    actions: &[SyncAction],
+    state: &mut SyncState,
+    state_path: &Path,
+    client: &api::Client,
+    cache_dir: &Path,
+    out: &OutputConfig,
+    prune: bool,
+    confirm: bool,
+) -> Result<ExecutionResult, Box<dyn Error>> {
+    // Pre-pass: substitute all $var()
+    let vars = template.vars.clone().unwrap_or_default();
+    for op in &mut template.operations {
+        if let Some(fields) = &mut op.fields {
+            let mut val = serde_yaml::Value::Mapping(fields.clone());
+            substitute_vars(&mut val, &vars).map_err(|errs| errs.join("; "))?;
+            if let serde_yaml::Value::Mapping(m) = val {
+                *fields = m;
+            }
+        }
+        if let Some(repeat) = &mut op.repeat {
+            for entry in repeat.iter_mut() {
+                let mut val = serde_yaml::Value::Mapping(entry.clone());
+                substitute_vars(&mut val, &vars).map_err(|errs| errs.join("; "))?;
+                if let serde_yaml::Value::Mapping(m) = val {
+                    *entry = m;
+                }
+            }
+        }
+        if let Some(id) = &mut op.id {
+            substitute_vars(id, &vars).map_err(|errs| errs.join("; "))?;
+        }
+    }
+
+    let total = actions.len();
+    let show_progress = !out.is_json();
+
+    // Print plan summary and confirm
+    if !confirm && !out.is_dry_run() && show_progress {
+        print_sync_summary(actions, out)?;
+        if !prompt_confirm()? {
+            return Err("Aborted by user.".into());
+        }
+    }
+
+    let mut results: HashMap<String, serde_json::Value> = HashMap::new();
+
+    // Seed results from existing state so $ref() works for already-synced resources
+    for (alias, resource) in &state.resources {
+        match resource {
+            ResourceState::Single { id, entity, .. } => {
+                results.insert(
+                    alias.clone(),
+                    serde_json::json!({"id": id, "entity_type": entity}),
+                );
+            }
+            ResourceState::Repeat {
+                entries, entity, ..
+            } => {
+                let arr: Vec<serde_json::Value> = entries
+                    .values()
+                    .map(|e| serde_json::json!({"id": e.id, "entity_type": entity}))
+                    .collect();
+                results.insert(alias.clone(), serde_json::Value::Array(arr));
+            }
+        }
+    }
+
+    let mut op_results: Vec<OperationResult> = Vec::new();
+    let doc_on_error = &template.on_error;
+
+    for (action_idx, sync_action) in actions.iter().enumerate() {
+        let counter = action_idx + 1;
+
+        match sync_action {
+            SyncAction::Create { op_index, alias } => {
+                let op = &template.operations[*op_index];
+                let should_continue = should_continue_on_error(op, doc_on_error);
+
+                let result = {
+                    let ctx = SyncExecContext {
+                        results: &results,
+                        client,
+                        cache_dir,
+                        out,
+                        counter,
+                        total,
+                        show_progress,
+                    };
+                    execute_single_create(op, alias, &ctx).await
+                };
+
+                match result {
+                    Ok(response) => {
+                        // Extract task IDs if this is a story with inline tasks
+                        let task_state = extract_inline_task_state(op, &response);
+
+                        state.resources.insert(
+                            alias.clone(),
+                            ResourceState::Single {
+                                entity: op.entity.to_string(),
+                                id: response
+                                    .get("id")
+                                    .cloned()
+                                    .unwrap_or(serde_json::Value::Null),
+                                tasks: task_state,
+                            },
+                        );
+                        state.touch();
+                        super::state::save_state(state, state_path)?;
+
+                        results.insert(alias.clone(), response.clone());
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: "create".to_string(),
+                            entity: op.entity.to_string(),
+                            status: "success".to_string(),
+                            result: Some(response),
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: "create".to_string(),
+                            entity: op.entity.to_string(),
+                            status: "failed".to_string(),
+                            result: None,
+                            error: Some(e.to_string()),
+                        });
+                        if !should_continue {
+                            return Ok(build_result(op_results, total));
+                        }
+                    }
+                }
+            }
+
+            SyncAction::Update {
+                op_index,
+                alias,
+                existing_id,
+            } => {
+                let op = &template.operations[*op_index];
+                let should_continue = should_continue_on_error(op, doc_on_error);
+
+                let result = {
+                    let ctx = SyncExecContext {
+                        results: &results,
+                        client,
+                        cache_dir,
+                        out,
+                        counter,
+                        total,
+                        show_progress,
+                    };
+                    execute_single_update(op, alias, existing_id, state, &ctx).await
+                };
+
+                match result {
+                    Ok(response) => {
+                        // Update state with fresh response
+                        let existing_tasks = match state.resources.get(alias) {
+                            Some(ResourceState::Single { tasks, .. }) => tasks.clone(),
+                            _ => None,
+                        };
+                        state.resources.insert(
+                            alias.clone(),
+                            ResourceState::Single {
+                                entity: op.entity.to_string(),
+                                id: response.get("id").cloned().unwrap_or(existing_id.clone()),
+                                tasks: existing_tasks,
+                            },
+                        );
+                        state.touch();
+                        super::state::save_state(state, state_path)?;
+
+                        results.insert(alias.clone(), response.clone());
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: "update".to_string(),
+                            entity: op.entity.to_string(),
+                            status: "success".to_string(),
+                            result: Some(response),
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: "update".to_string(),
+                            entity: op.entity.to_string(),
+                            status: "failed".to_string(),
+                            result: None,
+                            error: Some(e.to_string()),
+                        });
+                        if !should_continue {
+                            return Ok(build_result(op_results, total));
+                        }
+                    }
+                }
+            }
+
+            SyncAction::CreateEntry {
+                op_index,
+                alias,
+                key,
+            } => {
+                let op = &template.operations[*op_index];
+                let should_continue = should_continue_on_error(op, doc_on_error);
+
+                let result = {
+                    let ctx = SyncExecContext {
+                        results: &results,
+                        client,
+                        cache_dir,
+                        out,
+                        counter,
+                        total,
+                        show_progress,
+                    };
+                    execute_entry_create(op, alias, key, &ctx).await
+                };
+
+                match result {
+                    Ok(response) => {
+                        let task_state = extract_inline_task_state_from_entry(op, key, &response);
+                        let entry_id = response
+                            .get("id")
+                            .cloned()
+                            .unwrap_or(serde_json::Value::Null);
+
+                        // Ensure the Repeat resource exists in state
+                        let resource = state.resources.entry(alias.clone()).or_insert_with(|| {
+                            ResourceState::Repeat {
+                                entity: op.entity.to_string(),
+                                entries: HashMap::new(),
+                            }
+                        });
+                        if let ResourceState::Repeat { entries, .. } = resource {
+                            entries.insert(
+                                key.clone(),
+                                EntryState {
+                                    id: entry_id,
+                                    tasks: task_state,
+                                },
+                            );
+                        }
+                        state.touch();
+                        super::state::save_state(state, state_path)?;
+
+                        // Update results for $ref
+                        update_repeat_results(&mut results, alias, &state.resources);
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: "create".to_string(),
+                            entity: op.entity.to_string(),
+                            status: "success".to_string(),
+                            result: Some(response),
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: "create".to_string(),
+                            entity: op.entity.to_string(),
+                            status: "failed".to_string(),
+                            result: None,
+                            error: Some(e.to_string()),
+                        });
+                        if !should_continue {
+                            return Ok(build_result(op_results, total));
+                        }
+                    }
+                }
+            }
+
+            SyncAction::UpdateEntry {
+                op_index,
+                alias,
+                key,
+                existing_id,
+            } => {
+                let op = &template.operations[*op_index];
+                let should_continue = should_continue_on_error(op, doc_on_error);
+
+                let result = {
+                    let ctx = SyncExecContext {
+                        results: &results,
+                        client,
+                        cache_dir,
+                        out,
+                        counter,
+                        total,
+                        show_progress,
+                    };
+                    execute_entry_update(op, alias, key, existing_id, state, &ctx).await
+                };
+
+                match result {
+                    Ok(response) => {
+                        let entry_id = response.get("id").cloned().unwrap_or(existing_id.clone());
+                        // Preserve existing task state
+                        let existing_tasks = match state.resources.get(alias) {
+                            Some(ResourceState::Repeat { entries, .. }) => {
+                                entries.get(key).and_then(|e| e.tasks.clone())
+                            }
+                            _ => None,
+                        };
+                        if let Some(ResourceState::Repeat { entries, .. }) =
+                            state.resources.get_mut(alias)
+                        {
+                            entries.insert(
+                                key.clone(),
+                                EntryState {
+                                    id: entry_id,
+                                    tasks: existing_tasks,
+                                },
+                            );
+                        }
+                        state.touch();
+                        super::state::save_state(state, state_path)?;
+
+                        update_repeat_results(&mut results, alias, &state.resources);
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: "update".to_string(),
+                            entity: op.entity.to_string(),
+                            status: "success".to_string(),
+                            result: Some(response),
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: "update".to_string(),
+                            entity: op.entity.to_string(),
+                            status: "failed".to_string(),
+                            result: None,
+                            error: Some(e.to_string()),
+                        });
+                        if !should_continue {
+                            return Ok(build_result(op_results, total));
+                        }
+                    }
+                }
+            }
+
+            SyncAction::Skip { op_index, reason } => {
+                if show_progress {
+                    let op = &template.operations[*op_index];
+                    out_println!(
+                        out,
+                        "[{}/{}] Skipped {} {} ({})",
+                        counter,
+                        total,
+                        op.action,
+                        op.entity,
+                        reason
+                    );
+                }
+                op_results.push(OperationResult {
+                    index: counter - 1,
+                    action: "skip".to_string(),
+                    entity: "".to_string(),
+                    status: "success".to_string(),
+                    result: None,
+                    error: None,
+                });
+            }
+
+            SyncAction::RunSideEffect { op_index } => {
+                let op = &template.operations[*op_index];
+                let should_continue = should_continue_on_error(op, doc_on_error);
+
+                let result = {
+                    let ctx = SyncExecContext {
+                        results: &results,
+                        client,
+                        cache_dir,
+                        out,
+                        counter,
+                        total,
+                        show_progress,
+                    };
+                    execute_side_effect(op, *op_index, &ctx).await
+                };
+
+                match result {
+                    Ok(response) => {
+                        let key = format!("op-{}-{}", op_index, op.action);
+                        if !state.applied.contains(&key) {
+                            state.applied.push(key);
+                        }
+                        state.touch();
+                        super::state::save_state(state, state_path)?;
+
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: op.action.to_string(),
+                            entity: op.entity.to_string(),
+                            status: "success".to_string(),
+                            result: Some(response),
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: op.action.to_string(),
+                            entity: op.entity.to_string(),
+                            status: "failed".to_string(),
+                            result: None,
+                            error: Some(e.to_string()),
+                        });
+                        if !should_continue {
+                            return Ok(build_result(op_results, total));
+                        }
+                    }
+                }
+            }
+
+            SyncAction::Passthrough { op_index } => {
+                let op = &template.operations[*op_index];
+                let should_continue = should_continue_on_error(op, doc_on_error);
+
+                let result = {
+                    let ctx = SyncExecContext {
+                        results: &results,
+                        client,
+                        cache_dir,
+                        out,
+                        counter,
+                        total,
+                        show_progress,
+                    };
+                    execute_passthrough(op, &ctx).await
+                };
+
+                match result {
+                    Ok(response) => {
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: op.action.to_string(),
+                            entity: op.entity.to_string(),
+                            status: "success".to_string(),
+                            result: Some(response),
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        op_results.push(OperationResult {
+                            index: counter - 1,
+                            action: op.action.to_string(),
+                            entity: op.entity.to_string(),
+                            status: "failed".to_string(),
+                            result: None,
+                            error: Some(e.to_string()),
+                        });
+                        if !should_continue {
+                            return Ok(build_result(op_results, total));
+                        }
+                    }
+                }
+            }
+
+            SyncAction::Orphan { alias, entity, ids } => {
+                if prune {
+                    for id in ids {
+                        let entity_enum: Entity =
+                            serde_json::from_value(serde_json::Value::String(entity.clone()))
+                                .unwrap_or(Entity::Story);
+                        if show_progress {
+                            out_println!(
+                                out,
+                                "[{}/{}] Deleting orphaned {} {} (alias: {})",
+                                counter,
+                                total,
+                                entity,
+                                json_value_display(id),
+                                alias
+                            );
+                        }
+                        if !out.is_dry_run() {
+                            match dispatch_api_call(
+                                client,
+                                &Action::Delete,
+                                &entity_enum,
+                                Some(id),
+                                None,
+                                serde_json::json!({}),
+                            )
+                            .await
+                            {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    if show_progress {
+                                        out_println!(
+                                            out,
+                                            "  Warning: failed to delete orphan: {e}"
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    state.resources.remove(alias);
+                    state.touch();
+                    super::state::save_state(state, state_path)?;
+
+                    op_results.push(OperationResult {
+                        index: counter - 1,
+                        action: "delete".to_string(),
+                        entity: entity.clone(),
+                        status: "success".to_string(),
+                        result: None,
+                        error: None,
+                    });
+                } else {
+                    if show_progress {
+                        let id_strs: Vec<String> = ids.iter().map(json_value_display).collect();
+                        out_println!(
+                            out,
+                            "[{}/{}] Warning: orphaned {} '{}' (ids: {}) — use --prune to delete",
+                            counter,
+                            total,
+                            entity,
+                            alias,
+                            id_strs.join(", ")
+                        );
+                    }
+                    op_results.push(OperationResult {
+                        index: counter - 1,
+                        action: "orphan".to_string(),
+                        entity: entity.clone(),
+                        status: "success".to_string(),
+                        result: None,
+                        error: None,
+                    });
+                }
+            }
+
+            SyncAction::OrphanEntry {
+                alias,
+                key,
+                entity,
+                id,
+            } => {
+                if prune {
+                    let entity_enum: Entity =
+                        serde_json::from_value(serde_json::Value::String(entity.clone()))
+                            .unwrap_or(Entity::Story);
+                    if show_progress {
+                        out_println!(
+                            out,
+                            "[{}/{}] Deleting orphaned {} entry '{}' {} (alias: {})",
+                            counter,
+                            total,
+                            entity,
+                            key,
+                            json_value_display(id),
+                            alias
+                        );
+                    }
+                    if !out.is_dry_run() {
+                        match dispatch_api_call(
+                            client,
+                            &Action::Delete,
+                            &entity_enum,
+                            Some(id),
+                            None,
+                            serde_json::json!({}),
+                        )
+                        .await
+                        {
+                            Ok(_) => {}
+                            Err(e) => {
+                                if show_progress {
+                                    out_println!(
+                                        out,
+                                        "  Warning: failed to delete orphan entry: {e}"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    if let Some(ResourceState::Repeat { entries, .. }) =
+                        state.resources.get_mut(alias)
+                    {
+                        entries.remove(key);
+                    }
+                    state.touch();
+                    super::state::save_state(state, state_path)?;
+
+                    op_results.push(OperationResult {
+                        index: counter - 1,
+                        action: "delete".to_string(),
+                        entity: entity.clone(),
+                        status: "success".to_string(),
+                        result: None,
+                        error: None,
+                    });
+                } else {
+                    if show_progress {
+                        out_println!(
+                            out,
+                            "[{}/{}] Warning: orphaned {} entry '{}' {} (alias: {}) — use --prune to delete",
+                            counter,
+                            total,
+                            entity,
+                            key,
+                            json_value_display(id),
+                            alias
+                        );
+                    }
+                    op_results.push(OperationResult {
+                        index: counter - 1,
+                        action: "orphan".to_string(),
+                        entity: entity.clone(),
+                        status: "success".to_string(),
+                        result: None,
+                        error: None,
+                    });
+                }
+            }
+        }
+    }
+
+    Ok(build_result(op_results, total))
+}
+
+// ── Sync helper functions ────────────────────────────────────────
+
+fn should_continue_on_error(op: &Operation, doc_on_error: &Option<ErrorHandling>) -> bool {
+    op.on_error
+        .as_ref()
+        .or(doc_on_error.as_ref())
+        .map(|e| *e == ErrorHandling::Continue)
+        .unwrap_or(false)
+}
+
+/// Execute a single create operation (no repeat).
+async fn execute_single_create(
+    op: &Operation,
+    alias: &str,
+    ctx: &SyncExecContext<'_>,
+) -> Result<serde_json::Value, Box<dyn Error>> {
+    let mut json_body = op
+        .fields
+        .as_ref()
+        .map(yaml_mapping_to_json)
+        .unwrap_or(serde_json::json!({}));
+
+    resolve_refs(&mut json_body, ctx.results).map_err(|e| -> Box<dyn Error> { e.into() })?;
+    let story_id = json_body.get("story_id").and_then(|v| v.as_i64());
+    resolve_entity_fields(
+        &op.entity,
+        &Action::Create,
+        &mut json_body,
+        ctx.client,
+        ctx.cache_dir,
+    )
+    .await?;
+
+    if ctx.out.is_dry_run() {
+        if ctx.show_progress {
+            out_println!(
+                ctx.out,
+                "[{}/{}] create {} (new, alias: {})",
+                ctx.counter,
+                ctx.total,
+                op.entity,
+                alias
+            );
+            if !json_body_is_empty(&json_body) {
+                let pretty = serde_json::to_string_pretty(&json_body)?;
+                out_println!(ctx.out, "  {}", pretty.replace('\n', "\n  "));
+            }
+        }
+        return Ok(dry_run_placeholder(&op.entity, ctx.counter));
+    }
+
+    let response = dispatch_api_call(
+        ctx.client,
+        &Action::Create,
+        &op.entity,
+        None,
+        story_id,
+        json_body,
+    )
+    .await?;
+
+    if ctx.show_progress {
+        let name = response.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        let id_display = response
+            .get("id")
+            .map(json_value_display)
+            .unwrap_or_default();
+        out_println!(
+            ctx.out,
+            "[{}/{}] Created {} {} - {}",
+            ctx.counter,
+            ctx.total,
+            op.entity,
+            id_display,
+            name
+        );
+    }
+
+    Ok(response)
+}
+
+/// Execute a single update operation (alias exists in state).
+async fn execute_single_update(
+    op: &Operation,
+    alias: &str,
+    existing_id: &serde_json::Value,
+    state: &SyncState,
+    ctx: &SyncExecContext<'_>,
+) -> Result<serde_json::Value, Box<dyn Error>> {
+    let mut json_body = op
+        .fields
+        .as_ref()
+        .map(yaml_mapping_to_json)
+        .unwrap_or(serde_json::json!({}));
+
+    resolve_refs(&mut json_body, ctx.results).map_err(|e| -> Box<dyn Error> { e.into() })?;
+
+    // Strip inline tasks from update body — they're managed separately
+    let inline_tasks = json_body
+        .as_object_mut()
+        .and_then(|obj| obj.remove("tasks"));
+
+    resolve_entity_fields(
+        &op.entity,
+        &Action::Update,
+        &mut json_body,
+        ctx.client,
+        ctx.cache_dir,
+    )
+    .await?;
+
+    if ctx.out.is_dry_run() {
+        if ctx.show_progress {
+            out_println!(
+                ctx.out,
+                "[{}/{}] update {} {} (existing, alias: {})",
+                ctx.counter,
+                ctx.total,
+                op.entity,
+                json_value_display(existing_id),
+                alias
+            );
+            if !json_body_is_empty(&json_body) {
+                let pretty = serde_json::to_string_pretty(&json_body)?;
+                out_println!(ctx.out, "  {}", pretty.replace('\n', "\n  "));
+            }
+        }
+        return Ok(dry_run_placeholder(&op.entity, ctx.counter));
+    }
+
+    let response = dispatch_api_call(
+        ctx.client,
+        &Action::Update,
+        &op.entity,
+        Some(existing_id),
+        None,
+        json_body,
+    )
+    .await?;
+
+    if ctx.show_progress {
+        let name = response.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        out_println!(
+            ctx.out,
+            "[{}/{}] Updated {} {} - {}",
+            ctx.counter,
+            ctx.total,
+            op.entity,
+            json_value_display(existing_id),
+            name
+        );
+    }
+
+    // Sync inline tasks if present
+    if let Some(tasks_val) = inline_tasks {
+        sync_inline_tasks(
+            op,
+            alias,
+            existing_id,
+            &tasks_val,
+            state,
+            ctx.client,
+            ctx.cache_dir,
+            ctx.out,
+            ctx.show_progress,
+        )
+        .await?;
+    }
+
+    Ok(response)
+}
+
+/// Execute a repeat entry create.
+async fn execute_entry_create(
+    op: &Operation,
+    alias: &str,
+    key: &str,
+    ctx: &SyncExecContext<'_>,
+) -> Result<serde_json::Value, Box<dyn Error>> {
+    let entry = find_repeat_entry(op, key)?;
+    let shared_fields = op.fields.as_ref().cloned().unwrap_or_default();
+    let merged = merge_mappings(&shared_fields, &entry);
+    let mut json_body = yaml_mapping_to_json(&merged);
+
+    // Strip the `key` field
+    if let Some(obj) = json_body.as_object_mut() {
+        obj.remove("key");
+    }
+
+    resolve_refs(&mut json_body, ctx.results).map_err(|e| -> Box<dyn Error> { e.into() })?;
+    let story_id = json_body.get("story_id").and_then(|v| v.as_i64());
+    resolve_entity_fields(
+        &op.entity,
+        &Action::Create,
+        &mut json_body,
+        ctx.client,
+        ctx.cache_dir,
+    )
+    .await?;
+
+    if ctx.out.is_dry_run() {
+        if ctx.show_progress {
+            out_println!(
+                ctx.out,
+                "[{}/{}] create {} (new entry '{}', alias: {})",
+                ctx.counter,
+                ctx.total,
+                op.entity,
+                key,
+                alias
+            );
+            if !json_body_is_empty(&json_body) {
+                let pretty = serde_json::to_string_pretty(&json_body)?;
+                out_println!(ctx.out, "  {}", pretty.replace('\n', "\n  "));
+            }
+        }
+        return Ok(dry_run_placeholder(&op.entity, ctx.counter));
+    }
+
+    let response = dispatch_api_call(
+        ctx.client,
+        &Action::Create,
+        &op.entity,
+        None,
+        story_id,
+        json_body,
+    )
+    .await?;
+
+    if ctx.show_progress {
+        let name = response.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        let id_display = response
+            .get("id")
+            .map(json_value_display)
+            .unwrap_or_default();
+        out_println!(
+            ctx.out,
+            "[{}/{}] Created {} {} - {} (entry '{}')",
+            ctx.counter,
+            ctx.total,
+            op.entity,
+            id_display,
+            name,
+            key
+        );
+    }
+
+    Ok(response)
+}
+
+/// Execute a repeat entry update.
+async fn execute_entry_update(
+    op: &Operation,
+    alias: &str,
+    key: &str,
+    existing_id: &serde_json::Value,
+    state: &SyncState,
+    ctx: &SyncExecContext<'_>,
+) -> Result<serde_json::Value, Box<dyn Error>> {
+    let entry = find_repeat_entry(op, key)?;
+    let shared_fields = op.fields.as_ref().cloned().unwrap_or_default();
+    let merged = merge_mappings(&shared_fields, &entry);
+    let mut json_body = yaml_mapping_to_json(&merged);
+
+    // Strip the `key` field
+    if let Some(obj) = json_body.as_object_mut() {
+        obj.remove("key");
+    }
+
+    resolve_refs(&mut json_body, ctx.results).map_err(|e| -> Box<dyn Error> { e.into() })?;
+
+    // Strip inline tasks from update body
+    let inline_tasks = json_body
+        .as_object_mut()
+        .and_then(|obj| obj.remove("tasks"));
+
+    resolve_entity_fields(
+        &op.entity,
+        &Action::Update,
+        &mut json_body,
+        ctx.client,
+        ctx.cache_dir,
+    )
+    .await?;
+
+    if ctx.out.is_dry_run() {
+        if ctx.show_progress {
+            out_println!(
+                ctx.out,
+                "[{}/{}] update {} {} (existing entry '{}', alias: {})",
+                ctx.counter,
+                ctx.total,
+                op.entity,
+                json_value_display(existing_id),
+                key,
+                alias
+            );
+            if !json_body_is_empty(&json_body) {
+                let pretty = serde_json::to_string_pretty(&json_body)?;
+                out_println!(ctx.out, "  {}", pretty.replace('\n', "\n  "));
+            }
+        }
+        return Ok(dry_run_placeholder(&op.entity, ctx.counter));
+    }
+
+    let response = dispatch_api_call(
+        ctx.client,
+        &Action::Update,
+        &op.entity,
+        Some(existing_id),
+        None,
+        json_body,
+    )
+    .await?;
+
+    if ctx.show_progress {
+        let name = response.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        out_println!(
+            ctx.out,
+            "[{}/{}] Updated {} {} - {} (entry '{}')",
+            ctx.counter,
+            ctx.total,
+            op.entity,
+            json_value_display(existing_id),
+            name,
+            key
+        );
+    }
+
+    // Sync inline tasks if present
+    if let Some(tasks_val) = inline_tasks {
+        sync_inline_tasks(
+            op,
+            alias,
+            existing_id,
+            &tasks_val,
+            state,
+            ctx.client,
+            ctx.cache_dir,
+            ctx.out,
+            ctx.show_progress,
+        )
+        .await?;
+    }
+
+    Ok(response)
+}
+
+/// Execute a side-effect operation (comment/link/check/uncheck).
+async fn execute_side_effect(
+    op: &Operation,
+    _op_index: usize,
+    ctx: &SyncExecContext<'_>,
+) -> Result<serde_json::Value, Box<dyn Error>> {
+    let mut json_body = op
+        .fields
+        .as_ref()
+        .map(yaml_mapping_to_json)
+        .unwrap_or(serde_json::json!({}));
+
+    let resolved_id = if let Some(id_val) = &op.id {
+        let mut json_id = yaml_to_json(id_val);
+        resolve_refs(&mut json_id, ctx.results).map_err(|e| -> Box<dyn Error> { e.into() })?;
+        Some(json_id)
+    } else {
+        None
+    };
+
+    resolve_refs(&mut json_body, ctx.results).map_err(|e| -> Box<dyn Error> { e.into() })?;
+    let story_id = json_body.get("story_id").and_then(|v| v.as_i64());
+    resolve_entity_fields(
+        &op.entity,
+        &op.action,
+        &mut json_body,
+        ctx.client,
+        ctx.cache_dir,
+    )
+    .await?;
+
+    if ctx.out.is_dry_run() {
+        if ctx.show_progress {
+            out_println!(
+                ctx.out,
+                "[{}/{}] {} {}",
+                ctx.counter,
+                ctx.total,
+                op.action,
+                op.entity
+            );
+            if !json_body_is_empty(&json_body) {
+                let pretty = serde_json::to_string_pretty(&json_body)?;
+                out_println!(ctx.out, "  {}", pretty.replace('\n', "\n  "));
+            }
+        }
+        return Ok(dry_run_placeholder(&op.entity, ctx.counter));
+    }
+
+    let response = dispatch_api_call(
+        ctx.client,
+        &op.action,
+        &op.entity,
+        resolved_id.as_ref(),
+        story_id,
+        json_body,
+    )
+    .await?;
+
+    if ctx.show_progress {
+        let action_past = action_past_tense(&op.action);
+        print_success_line(
+            ctx.out,
+            ctx.counter,
+            ctx.total,
+            &action_past,
+            &op.action,
+            &op.entity,
+            &response,
+            resolved_id.as_ref(),
+        )?;
+    }
+
+    Ok(response)
+}
+
+/// Execute a passthrough operation (explicit update/delete with id).
+async fn execute_passthrough(
+    op: &Operation,
+    ctx: &SyncExecContext<'_>,
+) -> Result<serde_json::Value, Box<dyn Error>> {
+    let mut json_body = op
+        .fields
+        .as_ref()
+        .map(yaml_mapping_to_json)
+        .unwrap_or(serde_json::json!({}));
+
+    let resolved_id = if let Some(id_val) = &op.id {
+        let mut json_id = yaml_to_json(id_val);
+        resolve_refs(&mut json_id, ctx.results).map_err(|e| -> Box<dyn Error> { e.into() })?;
+        Some(json_id)
+    } else {
+        None
+    };
+
+    resolve_refs(&mut json_body, ctx.results).map_err(|e| -> Box<dyn Error> { e.into() })?;
+    let story_id = json_body.get("story_id").and_then(|v| v.as_i64());
+    resolve_entity_fields(
+        &op.entity,
+        &op.action,
+        &mut json_body,
+        ctx.client,
+        ctx.cache_dir,
+    )
+    .await?;
+
+    if ctx.out.is_dry_run() {
+        if ctx.show_progress {
+            out_println!(
+                ctx.out,
+                "[{}/{}] {} {}",
+                ctx.counter,
+                ctx.total,
+                op.action,
+                op.entity
+            );
+            if !json_body_is_empty(&json_body) {
+                let pretty = serde_json::to_string_pretty(&json_body)?;
+                out_println!(ctx.out, "  {}", pretty.replace('\n', "\n  "));
+            }
+        }
+        return Ok(dry_run_placeholder(&op.entity, ctx.counter));
+    }
+
+    let response = dispatch_api_call(
+        ctx.client,
+        &op.action,
+        &op.entity,
+        resolved_id.as_ref(),
+        story_id,
+        json_body,
+    )
+    .await?;
+
+    if ctx.show_progress {
+        let action_past = action_past_tense(&op.action);
+        print_success_line(
+            ctx.out,
+            ctx.counter,
+            ctx.total,
+            &action_past,
+            &op.action,
+            &op.entity,
+            &response,
+            resolved_id.as_ref(),
+        )?;
+    }
+
+    Ok(response)
+}
+
+/// Find the repeat entry matching the given key.
+fn find_repeat_entry(op: &Operation, key: &str) -> Result<serde_yaml::Mapping, Box<dyn Error>> {
+    let repeat = op.repeat.as_ref().ok_or("expected repeat block")?;
+    for entry in repeat {
+        if let Some(serde_yaml::Value::String(k)) =
+            entry.get(serde_yaml::Value::String("key".to_string()))
+            && k == key
+        {
+            return Ok(entry.clone());
+        }
+    }
+    Err(format!("repeat entry with key '{}' not found", key).into())
+}
+
+/// Extract inline task state from a story creation response.
+fn extract_inline_task_state(
+    op: &Operation,
+    response: &serde_json::Value,
+) -> Option<HashMap<String, TaskEntry>> {
+    // Only for stories with inline tasks
+    if op.entity != Entity::Story {
+        return None;
+    }
+    let fields = op.fields.as_ref()?;
+    let tasks_yaml = fields.get(serde_yaml::Value::String("tasks".to_string()))?;
+    let tasks_seq = match tasks_yaml {
+        serde_yaml::Value::Sequence(seq) => seq,
+        _ => return None,
+    };
+
+    // Get keys from template
+    let keys: Vec<String> = tasks_seq
+        .iter()
+        .filter_map(|t| {
+            if let serde_yaml::Value::Mapping(m) = t {
+                m.get(serde_yaml::Value::String("key".to_string()))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if keys.is_empty() {
+        return None;
+    }
+
+    // Match keys to task IDs from response (tasks are in creation order)
+    let response_tasks = response.get("tasks")?.as_array()?;
+    let mut task_state = HashMap::new();
+    for (i, key) in keys.iter().enumerate() {
+        if let Some(task) = response_tasks.get(i)
+            && let Some(id) = task.get("id")
+        {
+            task_state.insert(key.clone(), TaskEntry { id: id.clone() });
+        }
+    }
+
+    if task_state.is_empty() {
+        None
+    } else {
+        Some(task_state)
+    }
+}
+
+/// Extract inline task state from a repeat entry's creation response.
+fn extract_inline_task_state_from_entry(
+    op: &Operation,
+    key: &str,
+    response: &serde_json::Value,
+) -> Option<HashMap<String, TaskEntry>> {
+    if op.entity != Entity::Story {
+        return None;
+    }
+
+    // Find the repeat entry and check if it or shared fields have tasks
+    let entry = find_repeat_entry(op, key).ok()?;
+    let shared_fields = op.fields.as_ref().cloned().unwrap_or_default();
+    let merged = merge_mappings(&shared_fields, &entry);
+
+    let tasks_yaml = merged.get(serde_yaml::Value::String("tasks".to_string()))?;
+    let tasks_seq = match tasks_yaml {
+        serde_yaml::Value::Sequence(seq) => seq,
+        _ => return None,
+    };
+
+    let keys: Vec<String> = tasks_seq
+        .iter()
+        .filter_map(|t| {
+            if let serde_yaml::Value::Mapping(m) = t {
+                m.get(serde_yaml::Value::String("key".to_string()))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if keys.is_empty() {
+        return None;
+    }
+
+    let response_tasks = response.get("tasks")?.as_array()?;
+    let mut task_state = HashMap::new();
+    for (i, key) in keys.iter().enumerate() {
+        if let Some(task) = response_tasks.get(i)
+            && let Some(id) = task.get("id")
+        {
+            task_state.insert(key.clone(), TaskEntry { id: id.clone() });
+        }
+    }
+
+    if task_state.is_empty() {
+        None
+    } else {
+        Some(task_state)
+    }
+}
+
+/// Sync inline tasks for a story that's being updated.
+#[allow(clippy::too_many_arguments)]
+async fn sync_inline_tasks(
+    _op: &Operation,
+    alias: &str,
+    story_id: &serde_json::Value,
+    tasks_val: &serde_json::Value,
+    state: &SyncState,
+    client: &api::Client,
+    _cache_dir: &Path,
+    out: &OutputConfig,
+    show_progress: bool,
+) -> Result<Vec<(String, serde_json::Value)>, Box<dyn Error>> {
+    let sid = story_id
+        .as_i64()
+        .ok_or("inline task sync requires numeric story_id")?;
+    let tasks_arr = match tasks_val.as_array() {
+        Some(arr) => arr,
+        None => return Ok(Vec::new()),
+    };
+
+    // Get existing task state
+    let existing_tasks: &HashMap<String, TaskEntry> = match state.resources.get(alias) {
+        Some(ResourceState::Single { tasks: Some(t), .. }) => t,
+        _ => return Ok(Vec::new()),
+    };
+
+    let mut results = Vec::new();
+    let mut prev_task_id: Option<i64> = None;
+
+    for task in tasks_arr {
+        let task_obj = match task.as_object() {
+            Some(obj) => obj,
+            None => continue,
+        };
+        let key = match task_obj.get("key").and_then(|v| v.as_str()) {
+            Some(k) => k.to_string(),
+            None => continue,
+        };
+
+        // Build task body (without key and without complete)
+        let mut body = serde_json::Map::new();
+        for (k, v) in task_obj {
+            if k != "key" && k != "complete" {
+                body.insert(k.clone(), v.clone());
+            }
+        }
+
+        if let Some(task_entry) = existing_tasks.get(&key) {
+            // Update existing task
+            let task_id = task_entry.id.as_i64().ok_or("task id must be numeric")?;
+
+            // Add after_id for ordering
+            if let Some(prev) = prev_task_id {
+                body.insert("after_id".to_string(), serde_json::json!(prev));
+            }
+
+            if !out.is_dry_run() {
+                let update_body = serde_json::Value::Object(body);
+                let p: crate::api::types::UpdateTask = serde_json::from_value(update_body)?;
+                client
+                    .update_task()
+                    .story_public_id(sid)
+                    .task_public_id(task_id)
+                    .body(p)
+                    .send()
+                    .await
+                    .map_err(|e| crate::api::format_api_error(&e))?;
+            }
+
+            if show_progress {
+                out_println!(out, "  Updated task '{}' ({})", key, task_id);
+            }
+
+            prev_task_id = Some(task_id);
+            results.push((key, task_entry.id.clone()));
+        } else {
+            // Create new task
+            if !out.is_dry_run() {
+                let create_body = serde_json::Value::Object(body);
+                let p: crate::api::types::CreateTask = serde_json::from_value(create_body)?;
+                let r = client
+                    .create_task()
+                    .story_public_id(sid)
+                    .body(p)
+                    .send()
+                    .await
+                    .map_err(|e| crate::api::format_api_error(&e))?;
+                let resp = serde_json::to_value(&*r)?;
+                let new_id = resp.get("id").cloned().unwrap_or(serde_json::Value::Null);
+                prev_task_id = new_id.as_i64();
+
+                if show_progress {
+                    out_println!(
+                        out,
+                        "  Created task '{}' ({})",
+                        key,
+                        json_value_display(&new_id)
+                    );
+                }
+                results.push((key, new_id));
+            } else {
+                if show_progress {
+                    out_println!(out, "  Would create task '{}'", key);
+                }
+                results.push((key, serde_json::Value::Null));
+            }
+        }
+    }
+
+    Ok(results)
+}
+
+/// Update the repeat results in the results map from current state.
+fn update_repeat_results(
+    results: &mut HashMap<String, serde_json::Value>,
+    alias: &str,
+    resources: &HashMap<String, ResourceState>,
+) {
+    if let Some(ResourceState::Repeat {
+        entries, entity, ..
+    }) = resources.get(alias)
+    {
+        let arr: Vec<serde_json::Value> = entries
+            .values()
+            .map(|e| serde_json::json!({"id": e.id, "entity_type": entity}))
+            .collect();
+        results.insert(alias.to_string(), serde_json::Value::Array(arr));
+    }
+}
+
+/// Print the sync plan summary for confirmation.
+fn print_sync_summary(actions: &[SyncAction], out: &OutputConfig) -> Result<(), Box<dyn Error>> {
+    let mut counts: HashMap<&str, usize> = HashMap::new();
+    for action in actions {
+        *counts.entry(action.summary_verb()).or_default() += 1;
+    }
+
+    let total = actions.len();
+    out_println!(out, "Sync plan ({total} actions):");
+    let mut entries: Vec<_> = counts.into_iter().collect();
+    entries.sort_by_key(|(verb, _)| *verb);
+    for (verb, count) in entries {
+        out_println!(out, "  {verb:<12} {count}");
+    }
+    out_println!(out, "");
+
+    Ok(())
 }

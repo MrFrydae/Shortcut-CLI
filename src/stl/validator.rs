@@ -430,10 +430,22 @@ fn check_known_fields(
     idx: usize,
     errors: &mut Vec<ValidationError>,
 ) {
+    check_known_fields_with_extra(entity, fields, idx, errors, &[]);
+}
+
+/// Check that field names are known, with extra allowed fields.
+fn check_known_fields_with_extra(
+    entity: &Entity,
+    fields: &serde_yaml::Mapping,
+    idx: usize,
+    errors: &mut Vec<ValidationError>,
+    extra_allowed: &[&str],
+) {
     let known = known_fields(entity);
     for key in fields.keys() {
         if let serde_yaml::Value::String(name) = key
             && !known.contains(&name.as_str())
+            && !extra_allowed.contains(&name.as_str())
         {
             errors.push(ValidationError {
                 message: format!("unknown field '{name}' for {entity} entity"),
@@ -441,4 +453,113 @@ fn check_known_fields(
             });
         }
     }
+}
+
+/// Additional validation for `sync` mode.
+///
+/// Must be called after `validate()`. Checks:
+/// - Every `create` operation has an `alias`
+/// - Every repeat entry has a unique `key` field
+/// - Inline tasks (in `tasks` field) each have a unique `key` field
+pub fn validate_for_sync(template: &Template) -> Vec<ValidationError> {
+    let mut errors = Vec::new();
+
+    for (idx, op) in template.operations.iter().enumerate() {
+        if op.action == Action::Create && op.alias.is_none() {
+            errors.push(ValidationError {
+                message: "sync requires an 'alias' on every create operation".to_string(),
+                operation_index: Some(idx),
+            });
+        }
+
+        // Validate repeat entry keys
+        if let Some(repeat) = &op.repeat {
+            let mut seen_keys: HashSet<String> = HashSet::new();
+            for (entry_idx, entry) in repeat.iter().enumerate() {
+                match entry.get(serde_yaml::Value::String("key".to_string())) {
+                    Some(serde_yaml::Value::String(key)) => {
+                        if !seen_keys.insert(key.clone()) {
+                            errors.push(ValidationError {
+                                message: format!(
+                                    "duplicate key '{key}' in repeat entry {}",
+                                    entry_idx + 1
+                                ),
+                                operation_index: Some(idx),
+                            });
+                        }
+                    }
+                    Some(_) => {
+                        errors.push(ValidationError {
+                            message: format!(
+                                "repeat entry {} 'key' must be a string",
+                                entry_idx + 1
+                            ),
+                            operation_index: Some(idx),
+                        });
+                    }
+                    None => {
+                        errors.push(ValidationError {
+                            message: format!(
+                                "repeat entry {} is missing required 'key' field for sync",
+                                entry_idx + 1
+                            ),
+                            operation_index: Some(idx),
+                        });
+                    }
+                }
+
+                // Validate repeat entry fields (allow 'key' in addition to entity fields)
+                let field_entity = match op.action {
+                    Action::Comment => &Entity::Comment,
+                    Action::Link | Action::Unlink => &Entity::StoryLink,
+                    Action::Check | Action::Uncheck => &Entity::Task,
+                    _ => &op.entity,
+                };
+                check_known_fields_with_extra(field_entity, entry, idx, &mut errors, &["key"]);
+            }
+        }
+
+        // Validate inline task keys (tasks field in story fields)
+        if op.entity == Entity::Story
+            && let Some(fields) = &op.fields
+            && let Some(serde_yaml::Value::Sequence(tasks)) =
+                fields.get(serde_yaml::Value::String("tasks".to_string()))
+        {
+            let mut seen_keys: HashSet<String> = HashSet::new();
+            for (task_idx, task) in tasks.iter().enumerate() {
+                if let serde_yaml::Value::Mapping(task_map) = task {
+                    match task_map.get(serde_yaml::Value::String("key".to_string())) {
+                        Some(serde_yaml::Value::String(key)) => {
+                            if !seen_keys.insert(key.clone()) {
+                                errors.push(ValidationError {
+                                    message: format!(
+                                        "duplicate task key '{key}' in task {}",
+                                        task_idx + 1
+                                    ),
+                                    operation_index: Some(idx),
+                                });
+                            }
+                        }
+                        Some(_) => {
+                            errors.push(ValidationError {
+                                message: format!("task {} 'key' must be a string", task_idx + 1),
+                                operation_index: Some(idx),
+                            });
+                        }
+                        None => {
+                            errors.push(ValidationError {
+                                message: format!(
+                                    "task {} is missing required 'key' field for sync",
+                                    task_idx + 1
+                                ),
+                                operation_index: Some(idx),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    errors
 }

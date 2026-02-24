@@ -12,6 +12,8 @@ mod init;
 mod list;
 #[path = "template/run_stl.rs"]
 mod run_stl;
+#[path = "template/sync_stl.rs"]
+mod sync_stl;
 #[path = "template/update.rs"]
 mod update;
 #[path = "template/use_template.rs"]
