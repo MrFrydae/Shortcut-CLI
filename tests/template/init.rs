@@ -19,6 +19,7 @@ async fn init_stdout_prints_content() {
     assert!(output.contains("ACTION×ENTITY MATRIX"));
     assert!(output.contains("$var(name)"));
     assert!(output.contains("$ref(alias)"));
+    assert!(output.contains("shortcut template sync <file> --confirm"));
 }
 
 #[tokio::test]

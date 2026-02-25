@@ -130,7 +130,7 @@ Required fields marked with `*`.
 `name*` `description` `type` `owner` `owners` `state` `epic_id` `iteration_id` `project_id` `group_id` `estimate` `labels` `followers` `requested_by` `deadline` `custom_fields` `tasks` `comments` `story_links` `parent_story_id`
 
 ### epic
-`name*` `description` `state` `deadline` `owners` `followers` `requested_by` `labels` `objective_ids` `milestone_id` `group_ids` `planned_start_date`
+`name*` `description` `state` `deadline` `owners` `followers` `requested_by` `labels` `objective_ids` `milestone_id` `group_id` `group_ids` `planned_start_date`
 
 ### iteration
 `name*` `start_date*` `end_date*` `description` `followers` `labels` `group_ids`

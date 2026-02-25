@@ -652,18 +652,39 @@ async fn resolve_entity_fields(
 
     // Resolve group_id → resolve_group_id
     if let Some(gid_val) = obj.remove("group_id") {
-        if let Some(gid_str) = gid_val.as_str() {
+        let resolved_gid = if let Some(gid_str) = gid_val.as_str() {
             if gid_str.starts_with('@') {
                 let uuid = group::helpers::resolve_group_id(gid_str, client, cache_dir).await?;
-                obj.insert(
-                    "group_id".into(),
-                    serde_json::Value::String(uuid.to_string()),
-                );
+                serde_json::Value::String(uuid.to_string())
             } else {
-                obj.insert("group_id".into(), gid_val);
+                gid_val
             }
         } else {
-            obj.insert("group_id".into(), gid_val);
+            gid_val
+        };
+
+        // Epic API expects `group_ids`; allow singular `group_id` in STL.
+        if *entity == Entity::Epic {
+            match obj.remove("group_ids") {
+                Some(serde_json::Value::Array(mut ids)) => {
+                    ids.insert(0, resolved_gid);
+                    obj.insert("group_ids".into(), serde_json::Value::Array(ids));
+                }
+                Some(other) => {
+                    obj.insert(
+                        "group_ids".into(),
+                        serde_json::Value::Array(vec![resolved_gid, other]),
+                    );
+                }
+                None => {
+                    obj.insert(
+                        "group_ids".into(),
+                        serde_json::Value::Array(vec![resolved_gid]),
+                    );
+                }
+            }
+        } else {
+            obj.insert("group_id".into(), resolved_gid);
         }
     }
 

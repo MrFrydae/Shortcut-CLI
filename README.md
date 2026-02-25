@@ -62,7 +62,7 @@ shortcut search stories "bug"  # Search across stories
 | `group` | `list` `create` `get` `update` `stories` | Manage groups (teams) and view their stories |
 | `doc` | `list` `create` `get` `update` `delete` `link` `unlink` `epics` | Manage documents with linking support |
 | `custom-field` | `list` `get` | View custom field definitions |
-| `template` | `list` `create` `get` `update` `delete` `use` `run` `validate` `init` | Entity templates and STL execution |
+| `template` | `list` `create` `get` `update` `delete` `use` `run` `sync` `validate` `init` | Entity templates and STL execution |
 | `search` | `all` `stories` `epics` `iterations` `milestones` `objectives` `documents` | Search across Shortcut entities |
 | `member` | — | List or look up workspace members by UUID or @mention |
 | `workflow` | — | List workflows or view a workflow's states |
@@ -166,6 +166,8 @@ operations:
 shortcut template validate my-template.shortcut.yml   # Validate without executing
 shortcut template run my-template.shortcut.yml         # Execute the template
 shortcut template run my-template.shortcut.yml --dry-run  # Preview API calls
+shortcut template sync my-template.shortcut.yml --confirm  # Reconcile template with prior state
+shortcut template sync my-template.shortcut.yml --prune --confirm  # Also delete orphans from state
 ```
 
 **Features:** variables (`$var()`), cross-operation references (`$ref()`), repeat blocks for batch creation, parent/child story relationships, inline tasks, block scalar descriptions, and configurable error handling (`on_error: continue`).

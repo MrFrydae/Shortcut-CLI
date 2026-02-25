@@ -2,8 +2,8 @@ use wiremock::matchers::{body_partial_json, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{
-    full_epic_json, full_story_json, iteration_json, label_json, make_dry_run_output, make_output,
-    mount_default_workflow, story_comment_json, story_link_json,
+    full_epic_json, full_story_json, group_json, iteration_json, label_json, make_dry_run_output,
+    make_output, member_json, mount_default_workflow, story_comment_json, story_link_json,
 };
 use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
 use shortcut_cli::{api, commands::template};
@@ -106,6 +106,84 @@ operations:
     fields:
       name: "JWT Story"
       epic_id: $ref(my-epic)
+"#;
+    let file = write_template(&tmp, yaml);
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let args = run_args(&file);
+    let result = template::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "Expected ok, got: {result:?}");
+}
+
+#[tokio::test]
+async fn run_create_epic_with_group_id_and_owners() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/members"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!([
+            member_json(
+                "00000000-0000-0000-0000-000000000001",
+                "alice",
+                "Alice",
+                "member",
+                false,
+                None
+            ),
+            member_json(
+                "00000000-0000-0000-0000-000000000002",
+                "bob",
+                "Bob",
+                "member",
+                false,
+                None
+            )
+        ])))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/groups"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!([group_json(
+                "00000000-0000-0000-0000-000000000010",
+                "Platform",
+                "platform"
+            )])),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let epic_response = full_epic_json(55, "Roadmap", "");
+    Mock::given(method("POST"))
+        .and(path("/api/v3/epics"))
+        .and(body_partial_json(serde_json::json!({
+            "name": "Roadmap",
+            "owner_ids": [
+                "00000000-0000-0000-0000-000000000001",
+                "00000000-0000-0000-0000-000000000002"
+            ],
+            "group_ids": ["00000000-0000-0000-0000-000000000010"]
+        })))
+        .respond_with(ResponseTemplate::new(201).set_body_json(&epic_response))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let yaml = r#"
+version: 1
+operations:
+  - action: create
+    entity: epic
+    fields:
+      name: "Roadmap"
+      group_id: "@platform"
+      owners:
+        - "@alice"
+        - "@bob"
 "#;
     let file = write_template(&tmp, yaml);
     let client = api::client_with_token("test-token", &server.uri()).unwrap();

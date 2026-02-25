@@ -384,3 +384,22 @@ operations:
     );
     assert!(errors.is_empty());
 }
+
+#[test]
+fn epic_allows_group_id_and_owners_fields() {
+    let errors = parse_and_validate(
+        r#"
+version: 1
+operations:
+  - action: create
+    entity: epic
+    fields:
+      name: "Roadmap"
+      group_id: "@platform"
+      owners:
+        - "@alice"
+        - "@bob"
+"#,
+    );
+    assert!(errors.is_empty(), "Expected no errors, got: {errors:?}");
+}

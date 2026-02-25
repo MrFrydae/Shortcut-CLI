@@ -392,6 +392,7 @@ fn known_fields(entity: &Entity) -> &[&str] {
             "labels",
             "objective_ids",
             "milestone_id",
+            "group_id",
             "group_ids",
             "planned_start_date",
         ],

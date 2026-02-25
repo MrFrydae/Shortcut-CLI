@@ -74,13 +74,14 @@ pub fn stl_instructions() -> String {
 ## STL (Shortcut Template Language) — Agent Instructions
 
 File: `.shortcut.yml` | YAML 1.0 | `version: 1` required
-Validate: `shortcut template validate <file>` | Run: `shortcut template run <file> --confirm`
+Validate: `shortcut template validate <file>` | Run: `shortcut template run <file> --confirm` | Sync: `shortcut template sync <file> --confirm`
 
 HEADER — prepend to every generated `.shortcut.yml`:
 ```yaml
 # Shortcut Template Language (STL) v1
 # Validate: shortcut template validate <this-file>
 # Run:      shortcut template run <this-file> --confirm
+# Sync:     shortcut template sync <this-file> --confirm
 # Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
 ```
 
@@ -104,7 +105,7 @@ uncheck     -    -    -     -    -    -    -    -    -    -    Y    -    -
 
 FIELDS (* = required on create):
 - story: `name*` description type owner owners state epic_id iteration_id project_id group_id estimate labels followers requested_by deadline custom_fields tasks comments story_links
-- epic: `name*` description state deadline owners followers requested_by labels objective_ids milestone_id group_ids planned_start_date
+- epic: `name*` description state deadline owners followers requested_by labels objective_ids milestone_id group_id group_ids planned_start_date
 - iteration: `name*` `start_date*` `end_date*` description followers labels group_ids
 - label: `name*` color description
 - objective: `name*` description categories
@@ -131,6 +132,7 @@ EXAMPLE:
 # Shortcut Template Language (STL) v1
 # Validate: shortcut template validate <this-file>
 # Run:      shortcut template run <this-file> --confirm
+# Sync:     shortcut template sync <this-file> --confirm
 # Docs:     https://github.com/MrFrydae/Shortcut-CLI/blob/main/STL_SPEC.md
 
 version: 1
