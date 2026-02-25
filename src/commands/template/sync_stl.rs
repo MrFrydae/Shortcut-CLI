@@ -13,7 +13,7 @@ pub struct SyncArgs {
     /// Path to the .shortcut.yml or .shortcut.json template file
     pub file: String,
 
-    /// Override state file location (default: <file>.state.json)
+    /// Override state file location (default: file.state.json)
     #[arg(long)]
     pub state: Option<String>,
 
