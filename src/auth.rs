@@ -10,7 +10,10 @@ pub enum AuthError {
 impl fmt::Display for AuthError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AuthError::NotFound => write!(f, "No API token found. Run `sc login` first."),
+            AuthError::NotFound => write!(
+                f,
+                "No API token found. Set SHORTCUT_API_TOKEN or run `sc login` first."
+            ),
             AuthError::Io(e) => write!(f, "Token storage error: {e}"),
         }
     }

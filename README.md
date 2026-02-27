@@ -115,6 +115,17 @@ shortcut story list --format "{id} - {name} ({type})"
 shortcut story create --dry-run
 ```
 
+## Authentication via Environment Variable
+
+For CI/non-interactive environments, you can authenticate with:
+
+```sh
+export SHORTCUT_API_TOKEN="<your-token>"
+shortcut story list
+```
+
+`SHORTCUT_API_TOKEN` takes precedence over a stored project token file.
+
 ## STL (Shortcut Template Language)
 
 Declare stories, epics, and related entities in a `.shortcut.yml` file and apply them in one command.

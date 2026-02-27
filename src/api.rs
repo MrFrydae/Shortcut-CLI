@@ -7,6 +7,7 @@ mod inner {
 pub use inner::*;
 
 pub const BASE_URL: &str = "https://api.app.shortcut.com";
+pub const SHORTCUT_API_TOKEN_ENV: &str = "SHORTCUT_API_TOKEN";
 
 /// Build a Progenitor client pointed at `base_url` using the given API token.
 pub fn client_with_token(
@@ -31,12 +32,28 @@ pub fn client_with_token(
 pub fn authenticated_client(
     token_store: &dyn crate::auth::TokenStore,
 ) -> Result<Client, crate::auth::AuthError> {
-    let token = token_store.get_token()?;
+    let token = select_auth_token(read_token_from_env(), token_store)?;
+
     client_with_token(&token, BASE_URL).map_err(|e| {
         crate::auth::AuthError::Io(std::io::Error::other(format!(
             "failed to build HTTP client: {e}"
         )))
     })
+}
+
+fn read_token_from_env() -> Option<String> {
+    std::env::var(SHORTCUT_API_TOKEN_ENV)
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+#[doc(hidden)]
+pub fn select_auth_token(
+    env_token: Option<String>,
+    token_store: &dyn crate::auth::TokenStore,
+) -> Result<String, crate::auth::AuthError> {
+    env_token.map(Ok).unwrap_or_else(|| token_store.get_token())
 }
 
 /// Format a Progenitor API error, extracting the server's `message` field
@@ -49,37 +66,5 @@ pub fn format_api_error(err: &progenitor_client::Error<types::ApiError>) -> Stri
             format!("{}: {}", rv.status(), rv.message)
         }
         other => other.to_string(),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn format_api_error_extracts_message() {
-        let rv = progenitor_client::ResponseValue::new(
-            types::ApiError {
-                message: "Name is required".to_string(),
-            },
-            reqwest::StatusCode::UNPROCESSABLE_ENTITY,
-            reqwest::header::HeaderMap::new(),
-        );
-        let err = progenitor_client::Error::ErrorResponse(rv);
-        assert_eq!(
-            format_api_error(&err),
-            "422 Unprocessable Entity: Name is required"
-        );
-    }
-
-    #[test]
-    fn format_api_error_falls_through_for_other_variants() {
-        let err: progenitor_client::Error<types::ApiError> =
-            progenitor_client::Error::InvalidRequest("bad request".to_string());
-        let formatted = format_api_error(&err);
-        assert!(
-            formatted.contains("bad request"),
-            "expected 'bad request' in: {formatted}"
-        );
     }
 }

@@ -13,7 +13,7 @@ done
 
 # ── Step 2: cargo clippy ──────────────────────────────────────
 echo "Running cargo clippy..."
-cargo clippy -- -D warnings
+cargo clippy --all-targets --all-features -- -D warnings
 
 # ── Step 3: Secret scanning with gitleaks ─────────────────────
 if command -v gitleaks &>/dev/null; then

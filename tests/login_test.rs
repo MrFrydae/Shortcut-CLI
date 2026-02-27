@@ -1,6 +1,10 @@
 mod support;
 
 use shortcut_cli::{auth::TokenStore, commands::login};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use support::{MockTokenStore, member_info_json};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -97,4 +101,53 @@ async fn login_prompt_error_propagates() {
             .to_string()
             .contains("terminal not available")
     );
+}
+
+#[test]
+fn select_login_token_prefers_arg_over_env() {
+    let prompt_called = Arc::new(AtomicBool::new(false));
+    let prompt_flag = Arc::clone(&prompt_called);
+
+    let token = login::select_login_token(
+        Some("arg-token".to_string()),
+        Some("env-token".to_string()),
+        move || {
+            prompt_flag.store(true, Ordering::SeqCst);
+            Ok("prompt-token".to_string())
+        },
+    )
+    .expect("token should resolve");
+
+    assert_eq!(token, "arg-token");
+    assert!(!prompt_called.load(Ordering::SeqCst));
+}
+
+#[test]
+fn select_login_token_uses_env_when_arg_missing() {
+    let prompt_called = Arc::new(AtomicBool::new(false));
+    let prompt_flag = Arc::clone(&prompt_called);
+
+    let token = login::select_login_token(None, Some(" env-token ".to_string()), move || {
+        prompt_flag.store(true, Ordering::SeqCst);
+        Ok("prompt-token".to_string())
+    })
+    .expect("token should resolve");
+
+    assert_eq!(token, "env-token");
+    assert!(!prompt_called.load(Ordering::SeqCst));
+}
+
+#[test]
+fn select_login_token_falls_back_to_prompt_for_blank_env() {
+    let prompt_called = Arc::new(AtomicBool::new(false));
+    let prompt_flag = Arc::clone(&prompt_called);
+
+    let token = login::select_login_token(None, Some("   ".to_string()), move || {
+        prompt_flag.store(true, Ordering::SeqCst);
+        Ok("prompt-token".to_string())
+    })
+    .expect("token should resolve");
+
+    assert_eq!(token, "prompt-token");
+    assert!(prompt_called.load(Ordering::SeqCst));
 }
