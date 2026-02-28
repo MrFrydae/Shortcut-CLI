@@ -10,6 +10,7 @@ use colored::Colorize;
 pub enum OutputMode {
     Human,
     Json,
+    Toon,
     Quiet,
     Format(String),
 }
@@ -69,19 +70,33 @@ impl OutputConfig {
     /// Write a formatted line to the output.
     pub fn writeln(&self, args: fmt::Arguments<'_>) -> Result<(), Box<dyn std::error::Error>> {
         let mut w = self.writer.lock().unwrap();
-        writeln!(w, "{}", args)?;
+        if self.is_toon() {
+            let rendered = self.render_output_text(args.to_string())?;
+            writeln!(w, "{}", rendered)?;
+        } else {
+            writeln!(w, "{}", args)?;
+        }
         Ok(())
     }
 
     /// Write formatted content without a trailing newline.
     pub fn write_str(&self, args: fmt::Arguments<'_>) -> Result<(), Box<dyn std::error::Error>> {
         let mut w = self.writer.lock().unwrap();
-        write!(w, "{}", args)?;
+        if self.is_toon() {
+            let rendered = self.render_output_text(args.to_string())?;
+            write!(w, "{}", rendered)?;
+        } else {
+            write!(w, "{}", args)?;
+        }
         Ok(())
     }
 
     pub fn is_json(&self) -> bool {
-        matches!(self.mode, OutputMode::Json)
+        matches!(self.mode, OutputMode::Json | OutputMode::Toon)
+    }
+
+    pub fn is_toon(&self) -> bool {
+        matches!(self.mode, OutputMode::Toon)
     }
 
     pub fn is_quiet(&self) -> bool {
@@ -124,6 +139,18 @@ impl OutputConfig {
             ColorMode::Never => false,
             ColorMode::Auto => atty::is(atty::Stream::Stdout),
         }
+    }
+
+    fn render_output_text(&self, rendered: String) -> Result<String, Box<dyn std::error::Error>> {
+        if !self.is_toon() {
+            return Ok(rendered);
+        }
+
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(&rendered) else {
+            return Ok(rendered);
+        };
+
+        Ok(toon::encode(&value, None))
     }
 }
 
@@ -424,6 +451,12 @@ mod tests {
         let out = OutputConfig::new(OutputMode::Json, ColorMode::Never);
         assert!(out.is_json());
         assert!(!out.is_quiet());
+        assert!(!out.is_toon());
+
+        let out = OutputConfig::new(OutputMode::Toon, ColorMode::Never);
+        assert!(out.is_json());
+        assert!(!out.is_quiet());
+        assert!(out.is_toon());
 
         let out = OutputConfig::new(OutputMode::Quiet, ColorMode::Never);
         assert!(out.is_quiet());
@@ -432,5 +465,34 @@ mod tests {
         let out = OutputConfig::new(OutputMode::Format("test".into()), ColorMode::Never);
         assert!(out.is_format());
         assert_eq!(out.format_template(), Some("test"));
+    }
+
+    #[test]
+    fn toon_mode_converts_json_output() {
+        let (out, buf) = OutputConfig::with_buffer(OutputMode::Toon, ColorMode::Never);
+        let value = serde_json::json!({
+            "story_id": 42,
+            "name": "Add TOON support",
+            "labels": ["ai", "llm"],
+        });
+
+        out.writeln(format_args!(
+            "{}",
+            serde_json::to_string_pretty(&value).unwrap()
+        ))
+        .unwrap();
+
+        let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+        let expected = format!("{}\n", toon::encode(&value, None));
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn toon_mode_keeps_non_json_text() {
+        let (out, buf) = OutputConfig::with_buffer(OutputMode::Toon, ColorMode::Never);
+        out.writeln(format_args!("not json")).unwrap();
+
+        let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+        assert_eq!(output, "not json\n");
     }
 }
