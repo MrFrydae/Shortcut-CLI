@@ -12,7 +12,7 @@ pub async fn run(client: &api::Client, out: &OutputConfig) -> Result<(), Box<dyn
         )
     })?;
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         let json = serde_json::to_string_pretty(&*docs)?;
         out.write_str(format_args!("{json}"))?;
         return Ok(());

@@ -109,6 +109,8 @@ Every command supports these global flags:
 | `--color` | Force colored output |
 | `--no-color` | Disable colored output |
 
+Output mode precedence: `--json` > `--toon` > `--quiet` > `--format` > Human (default).
+
 ```sh
 shortcut story list --json
 shortcut story list --toon

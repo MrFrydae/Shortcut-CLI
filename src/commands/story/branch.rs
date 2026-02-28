@@ -53,7 +53,7 @@ pub async fn run_with_git(
     if args.checkout {
         git_runner.checkout_new_branch(&branch)?;
         out_println!(out, "Checked out new branch: {branch}");
-    } else if out.is_json() {
+    } else if out.is_machine_readable() {
         let json = serde_json::json!({ "branch": branch });
         out_println!(out, "{}", serde_json::to_string_pretty(&json)?);
     } else if out.is_quiet() {

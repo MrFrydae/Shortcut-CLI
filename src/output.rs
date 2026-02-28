@@ -69,10 +69,14 @@ impl OutputConfig {
 
     /// Write a formatted line to the output.
     pub fn writeln(&self, args: fmt::Arguments<'_>) -> Result<(), Box<dyn std::error::Error>> {
+        let rendered = if self.is_toon() {
+            Some(self.render_output_text(args.to_string())?)
+        } else {
+            None
+        };
         let mut w = self.writer.lock().unwrap();
-        if self.is_toon() {
-            let rendered = self.render_output_text(args.to_string())?;
-            writeln!(w, "{}", rendered)?;
+        if let Some(rendered) = rendered {
+            writeln!(w, "{rendered}")?;
         } else {
             writeln!(w, "{}", args)?;
         }
@@ -81,10 +85,14 @@ impl OutputConfig {
 
     /// Write formatted content without a trailing newline.
     pub fn write_str(&self, args: fmt::Arguments<'_>) -> Result<(), Box<dyn std::error::Error>> {
+        let rendered = if self.is_toon() {
+            Some(self.render_output_text(args.to_string())?)
+        } else {
+            None
+        };
         let mut w = self.writer.lock().unwrap();
-        if self.is_toon() {
-            let rendered = self.render_output_text(args.to_string())?;
-            write!(w, "{}", rendered)?;
+        if let Some(rendered) = rendered {
+            write!(w, "{rendered}")?;
         } else {
             write!(w, "{}", args)?;
         }
@@ -92,6 +100,10 @@ impl OutputConfig {
     }
 
     pub fn is_json(&self) -> bool {
+        matches!(self.mode, OutputMode::Json)
+    }
+
+    pub fn is_machine_readable(&self) -> bool {
         matches!(self.mode, OutputMode::Json | OutputMode::Toon)
     }
 
@@ -450,17 +462,20 @@ mod tests {
     fn output_config_mode_checks() {
         let out = OutputConfig::new(OutputMode::Json, ColorMode::Never);
         assert!(out.is_json());
+        assert!(out.is_machine_readable());
         assert!(!out.is_quiet());
         assert!(!out.is_toon());
 
         let out = OutputConfig::new(OutputMode::Toon, ColorMode::Never);
-        assert!(out.is_json());
+        assert!(!out.is_json());
+        assert!(out.is_machine_readable());
         assert!(!out.is_quiet());
         assert!(out.is_toon());
 
         let out = OutputConfig::new(OutputMode::Quiet, ColorMode::Never);
         assert!(out.is_quiet());
         assert!(!out.is_json());
+        assert!(!out.is_machine_readable());
 
         let out = OutputConfig::new(OutputMode::Format("test".into()), ColorMode::Never);
         assert!(out.is_format());

@@ -65,7 +65,7 @@ pub async fn run(
     let result = executor::execute(&mut template, client, cache_dir, out, args.confirm).await?;
 
     // Print summary
-    if out.is_json() {
+    if out.is_machine_readable() {
         out_println!(out, "{}", serde_json::to_string_pretty(&result)?);
     } else if !out.is_dry_run() {
         let summary = &result.summary;

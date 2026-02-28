@@ -36,7 +36,7 @@ pub async fn run(
         .await
         .map_err(|e| format!("Failed to search: {}", crate::api::format_api_error(&e)))?;
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         let json = serde_json::to_string_pretty(&*results)?;
         out.write_str(format_args!("{json}"))?;
         return Ok(());

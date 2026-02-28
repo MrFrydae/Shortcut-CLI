@@ -208,7 +208,7 @@ pub async fn run(
             )
         })?;
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         out_println!(
             out,
             "{}",

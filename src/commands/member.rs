@@ -69,7 +69,7 @@ async fn run_list(
         )
     })?;
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         let json: Vec<serde_json::Value> = members
             .iter()
             .filter(|m| !active_only || !m.disabled)
@@ -143,7 +143,7 @@ async fn run_get(
         .await
         .map_err(|e| format!("Failed to get member: {}", crate::api::format_api_error(&e)))?;
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         let json = serde_json::json!({
             "id": member.id,
             "mention_name": member.profile.mention_name,

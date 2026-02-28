@@ -23,7 +23,7 @@ pub async fn run(
     let cache = build_cache(&fields);
     write_cache(&cache, cache_dir);
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         let json = serde_json::to_string_pretty(&*fields)?;
         out.write_str(format_args!("{json}"))?;
         return Ok(());
