@@ -20,7 +20,7 @@ pub async fn run(
         )
     })?;
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         let json = serde_json::to_string_pretty(&*groups)?;
         out.write_str(format_args!("{json}"))?;
         write_cache(&groups, cache_dir);

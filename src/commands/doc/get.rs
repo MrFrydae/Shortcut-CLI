@@ -21,7 +21,7 @@ pub async fn run(id: &str, client: &api::Client, out: &OutputConfig) -> Result<(
             )
         })?;
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         let json = serde_json::to_string_pretty(&*doc)?;
         out.write_str(format_args!("{json}"))?;
         return Ok(());

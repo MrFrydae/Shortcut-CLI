@@ -10,6 +10,8 @@ async fn main() {
     // Determine output mode
     let mode = if cli.json {
         OutputMode::Json
+    } else if cli.toon {
+        OutputMode::Toon
     } else if cli.quiet {
         OutputMode::Quiet
     } else if let Some(fmt) = cli.format.clone() {

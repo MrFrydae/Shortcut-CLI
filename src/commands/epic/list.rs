@@ -18,7 +18,7 @@ pub async fn run(
         .await
         .map_err(|e| format!("Failed to list epics: {}", crate::api::format_api_error(&e)))?;
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         let json: Vec<serde_json::Value> = epics
             .iter()
             .map(|e| serde_json::json!({"id": e.id, "name": e.name}))

@@ -58,7 +58,7 @@ pub async fn execute(
     // Count total operations (expanding repeats)
     let total = count_operations(&template.operations);
     let doc_on_error = &template.on_error;
-    let show_progress = !out.is_json();
+    let show_progress = !out.is_machine_readable();
 
     if !confirm && !out.is_dry_run() && show_progress {
         print_confirmation_summary(template, total, out)?;
@@ -1371,7 +1371,7 @@ pub async fn execute_sync(
     }
 
     let total = actions.len();
-    let show_progress = !out.is_json();
+    let show_progress = !out.is_machine_readable();
 
     // Print plan summary and confirm
     if !confirm && !out.is_dry_run() && show_progress {

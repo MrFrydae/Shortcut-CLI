@@ -21,13 +21,14 @@ Apply to every command.
 | Flag | Short | Effect |
 |------|-------|--------|
 | `--json` | | Raw JSON output |
+| `--toon` | | TOON output |
 | `--quiet` | `-q` | Suppress output; print only IDs |
 | `--format <TPL>` | | Template string output (e.g. `"{id} {name}"`) — supports dot notation `{stats.num_stories}` |
 | `--dry-run` | | Preview API request without sending |
 | `--color` | | Force colored output |
 | `--no-color` | | Disable colored output |
 
-Output mode precedence: `--json` > `--quiet` > `--format` > Human (default).
+Output mode precedence: `--json` > `--toon` > `--quiet` > `--format` > Human (default).
 
 ---
 

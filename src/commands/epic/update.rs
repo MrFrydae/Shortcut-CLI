@@ -271,7 +271,7 @@ fn output_skipped(
     matched_arg: &str,
     out: &OutputConfig,
 ) -> Result<(), Box<dyn Error>> {
-    if out.is_json() {
+    if out.is_machine_readable() {
         out_println!(
             out,
             "{}",

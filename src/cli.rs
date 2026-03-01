@@ -13,6 +13,10 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub json: bool,
 
+    /// Output TOON instead of human-readable text
+    #[arg(long, global = true)]
+    pub toon: bool,
+
     /// Suppress output; print only IDs
     #[arg(long, short = 'q', global = true)]
     pub quiet: bool,
@@ -74,4 +78,23 @@ pub enum Command {
         /// The shell to generate completions for
         shell: clap_complete::Shell,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_toon_global_flag() {
+        let cli = Cli::parse_from(["shortcut", "--toon", "member", "--list"]);
+        assert!(cli.toon);
+        assert!(!cli.json);
+    }
+
+    #[test]
+    fn parses_json_and_toon_flags_together() {
+        let cli = Cli::parse_from(["shortcut", "--json", "--toon", "member", "--list"]);
+        assert!(cli.json);
+        assert!(cli.toon);
+    }
 }

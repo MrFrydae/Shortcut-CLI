@@ -117,7 +117,7 @@ pub async fn run(
     let limit = args.limit as usize;
     let items: Vec<_> = stories.iter().take(limit).collect();
 
-    if out.is_json() {
+    if out.is_machine_readable() {
         let json: Vec<serde_json::Value> = items
             .iter()
             .map(|s| {

@@ -14,7 +14,7 @@ A fast, ergonomic command-line interface for the [Shortcut](https://shortcut.com
 - **Interactive wizards** — `login` prompts for your token; story/epic creation walks you through required fields
 - **Git integration** — generate branch names from stories and create commits prefixed with `[sc-ID]`
 - **Shortcut Template Language (STL)** — declare stories, epics, and tasks in YAML and apply them in one command
-- **Flexible output** — `--json`, `--quiet`, `--format "{id} {name}"`, `--dry-run`, and color control
+- **Flexible output** — `--json`, `--toon`, `--quiet`, `--format "{id} {name}"`, `--dry-run`, and color control
 - **Local caching** — workspace members, epic states, and workflow data are cached and refreshed on miss
 - **Per-project config** — each project directory gets its own token and cache under `~/.shortcut/`
 - **Secure token storage** — API tokens are written with `0600` permissions
@@ -102,14 +102,18 @@ Every command supports these global flags:
 | Flag | Effect |
 |---|---|
 | `--json` | Output raw JSON instead of human-readable text |
+| `--toon` | Output TOON instead of human-readable text |
 | `--quiet` / `-q` | Suppress output; print only IDs |
 | `--format <TPL>` | Format output using a template string (e.g. `"{id} {name}"`) |
 | `--dry-run` | Preview the API request without sending it |
 | `--color` | Force colored output |
 | `--no-color` | Disable colored output |
 
+Output mode precedence: `--json` > `--toon` > `--quiet` > `--format` > Human (default).
+
 ```sh
 shortcut story list --json
+shortcut story list --toon
 shortcut story list --quiet
 shortcut story list --format "{id} - {name} ({type})"
 shortcut story create --dry-run
