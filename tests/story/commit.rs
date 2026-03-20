@@ -25,6 +25,14 @@ impl git::GitRunner for TestGitRunner {
         Ok(self.branch.clone())
     }
 
+    fn branch_exists(&self, _branch: &str) -> Result<bool, Box<dyn Error>> {
+        unimplemented!("not used in commit tests")
+    }
+
+    fn checkout_branch(&self, _branch: &str) -> Result<(), Box<dyn Error>> {
+        unimplemented!("not used in commit tests")
+    }
+
     fn checkout_new_branch(&self, _branch: &str) -> Result<(), Box<dyn Error>> {
         unimplemented!("not used in commit tests")
     }

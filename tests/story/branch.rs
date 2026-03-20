@@ -11,21 +11,30 @@ use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
 use crate::support::full_story_json;
 
 struct TestGitRunner {
+    branch_exists: bool,
     checkout_result: Result<(), String>,
+    checkout_new_branch_called: RefCell<bool>,
+    checkout_branch_called: RefCell<bool>,
     checked_out_branch: RefCell<Option<String>>,
 }
 
 impl TestGitRunner {
-    fn ok() -> Self {
+    fn new(branch_exists: bool) -> Self {
         Self {
+            branch_exists,
             checkout_result: Ok(()),
+            checkout_new_branch_called: RefCell::new(false),
+            checkout_branch_called: RefCell::new(false),
             checked_out_branch: RefCell::new(None),
         }
     }
 
-    fn failing(msg: &str) -> Self {
+    fn failing(branch_exists: bool, msg: &str) -> Self {
         Self {
+            branch_exists,
             checkout_result: Err(msg.to_string()),
+            checkout_new_branch_called: RefCell::new(false),
+            checkout_branch_called: RefCell::new(false),
             checked_out_branch: RefCell::new(None),
         }
     }
@@ -36,7 +45,20 @@ impl git::GitRunner for TestGitRunner {
         unimplemented!("not used in branch tests")
     }
 
+    fn branch_exists(&self, _branch: &str) -> Result<bool, Box<dyn Error>> {
+        Ok(self.branch_exists)
+    }
+
+    fn checkout_branch(&self, branch: &str) -> Result<(), Box<dyn Error>> {
+        *self.checkout_branch_called.borrow_mut() = true;
+        *self.checked_out_branch.borrow_mut() = Some(branch.to_string());
+        self.checkout_result
+            .clone()
+            .map_err(|e| -> Box<dyn Error> { e.into() })
+    }
+
     fn checkout_new_branch(&self, branch: &str) -> Result<(), Box<dyn Error>> {
+        *self.checkout_new_branch_called.borrow_mut() = true;
         *self.checked_out_branch.borrow_mut() = Some(branch.to_string());
         self.checkout_result
             .clone()
@@ -65,7 +87,7 @@ async fn print_branch_name() {
     setup_mock(&server, 123, "Fix Login Bug").await;
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
-    let git_runner = TestGitRunner::ok();
+    let git_runner = TestGitRunner::new(false);
     let args = branch::BranchArgs {
         id: 123,
         prefix: None,
@@ -86,7 +108,7 @@ async fn custom_prefix() {
     setup_mock(&server, 123, "Fix Login Bug").await;
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
-    let git_runner = TestGitRunner::ok();
+    let git_runner = TestGitRunner::new(false);
     let args = branch::BranchArgs {
         id: 123,
         prefix: Some("hotfix".to_string()),
@@ -107,7 +129,7 @@ async fn checkout_mode() {
     setup_mock(&server, 123, "Fix Login Bug").await;
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
-    let git_runner = TestGitRunner::ok();
+    let git_runner = TestGitRunner::new(false);
     let args = branch::BranchArgs {
         id: 123,
         prefix: None,
@@ -118,11 +140,40 @@ async fn checkout_mode() {
     assert!(result.is_ok());
 
     let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
-    assert!(output.contains("Checked out new branch:"));
+    assert!(output.contains("Created and checked out branch:"));
     assert!(output.contains("feature/sc-123-fix-login-bug"));
 
     let checked_out = git_runner.checked_out_branch.borrow();
     assert_eq!(checked_out.as_deref(), Some("feature/sc-123-fix-login-bug"));
+    assert!(*git_runner.checkout_new_branch_called.borrow());
+    assert!(!*git_runner.checkout_branch_called.borrow());
+}
+
+#[tokio::test]
+async fn checkout_existing_branch() {
+    let (out, buf) = OutputConfig::with_buffer(OutputMode::Human, ColorMode::Never);
+    let server = MockServer::start().await;
+    setup_mock(&server, 123, "Fix Login Bug").await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let git_runner = TestGitRunner::new(true);
+    let args = branch::BranchArgs {
+        id: 123,
+        prefix: None,
+        checkout: true,
+    };
+
+    let result = branch::run_with_git(&args, &client, &out, &git_runner).await;
+    assert!(result.is_ok());
+
+    let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+    assert!(output.contains("Checked out existing branch:"));
+    assert!(output.contains("feature/sc-123-fix-login-bug"));
+
+    let checked_out = git_runner.checked_out_branch.borrow();
+    assert_eq!(checked_out.as_deref(), Some("feature/sc-123-fix-login-bug"));
+    assert!(!*git_runner.checkout_new_branch_called.borrow());
+    assert!(*git_runner.checkout_branch_called.borrow());
 }
 
 #[tokio::test]
@@ -138,7 +189,7 @@ async fn api_failure_returns_error() {
         .await;
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
-    let git_runner = TestGitRunner::ok();
+    let git_runner = TestGitRunner::new(false);
     let args = branch::BranchArgs {
         id: 999,
         prefix: None,
@@ -156,7 +207,7 @@ async fn git_checkout_failure_propagates() {
     setup_mock(&server, 123, "Fix Login Bug").await;
 
     let client = api::client_with_token("test-token", &server.uri()).unwrap();
-    let git_runner = TestGitRunner::failing("branch already exists");
+    let git_runner = TestGitRunner::failing(false, "branch already exists");
     let args = branch::BranchArgs {
         id: 123,
         prefix: None,

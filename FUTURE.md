@@ -2140,7 +2140,7 @@ sc story branch --id 123 --checkout
 - Naming convention: `{type}/sc-{id}-{slugified-name}`.
   - Slugify: lowercase, replace non-alphanumeric with hyphens, collapse consecutive hyphens, truncate to 50 chars.
 - The `--prefix` flag overrides the type-based prefix.
-- The `--checkout` flag (or `-c`) creates the branch and checks it out (`git checkout -b <branch>`).
+- The `--checkout` flag (or `-c`) checks out the branch, creating it first only when it does not already exist locally.
 - Without `--checkout`, just print the suggested branch name.
 - Use `std::process::Command` to run git commands.
 

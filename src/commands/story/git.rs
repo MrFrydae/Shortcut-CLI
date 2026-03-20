@@ -55,6 +55,8 @@ pub fn extract_story_id_from_branch(branch: &str) -> Option<i64> {
 /// Abstraction over git operations for testability.
 pub trait GitRunner {
     fn current_branch(&self) -> Result<String, Box<dyn Error>>;
+    fn branch_exists(&self, branch: &str) -> Result<bool, Box<dyn Error>>;
+    fn checkout_branch(&self, branch: &str) -> Result<(), Box<dyn Error>>;
     fn checkout_new_branch(&self, branch: &str) -> Result<(), Box<dyn Error>>;
     fn commit(&self, args: &[&str]) -> Result<String, Box<dyn Error>>;
 }
@@ -76,6 +78,42 @@ impl GitRunner for RealGitRunner {
             .into());
         }
         Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    }
+
+    fn branch_exists(&self, branch: &str) -> Result<bool, Box<dyn Error>> {
+        let ref_name = format!("refs/heads/{branch}");
+        let output = std::process::Command::new("git")
+            .args(["show-ref", "--verify", "--quiet", &ref_name])
+            .output()
+            .map_err(|e| format!("Failed to run git: {e}"))?;
+        if output.status.success() {
+            return Ok(true);
+        }
+
+        if output.status.code() == Some(1) {
+            return Ok(false);
+        }
+
+        Err(format!(
+            "git show-ref failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        )
+        .into())
+    }
+
+    fn checkout_branch(&self, branch: &str) -> Result<(), Box<dyn Error>> {
+        let output = std::process::Command::new("git")
+            .args(["checkout", branch])
+            .output()
+            .map_err(|e| format!("Failed to run git: {e}"))?;
+        if !output.status.success() {
+            return Err(format!(
+                "git checkout failed: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            )
+            .into());
+        }
+        Ok(())
     }
 
     fn checkout_new_branch(&self, branch: &str) -> Result<(), Box<dyn Error>> {
