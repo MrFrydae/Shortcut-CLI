@@ -292,7 +292,7 @@ Generates branch name: `<type>/sc-<id>/<slugified-title>`.
 
 ```sh
 shortcut story branch --id 12345              # feature/sc-12345/add-user-auth
-shortcut story branch --id 12345 --checkout   # create + checkout
+shortcut story branch --id 12345 --checkout   # create if needed + checkout
 shortcut story branch --id 12345 --prefix hotfix  # hotfix/sc-12345/...
 ```
 

@@ -78,7 +78,7 @@ Run `shortcut <command> --help` for full flag documentation.
 shortcut story branch --id 12345
 # feature/sc-12345/add-user-authentication
 
-# Create and checkout the branch
+# Create the branch if needed, then checkout
 shortcut story branch --id 12345 --checkout
 
 # Override the type prefix
