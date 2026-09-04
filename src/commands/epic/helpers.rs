@@ -171,7 +171,7 @@ pub async fn fetch_epic_choices(
             id: e.id,
         })
         .collect();
-    choices.sort_by(|a, b| a.display.to_lowercase().cmp(&b.display.to_lowercase()));
+    choices.sort_by_key(|a| a.display.to_lowercase());
     Ok(choices)
 }
 

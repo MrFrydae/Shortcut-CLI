@@ -57,7 +57,7 @@ pub async fn run(
             .await
         {
             Ok(task) => out_println!(out, "Created task {} - {}", task.id, task.description),
-            Err(e) => errors.push(format!("Failed to create task '{}': {e}", &*desc)),
+            Err(e) => errors.push(format!("Failed to create task '{}': {e}", *desc)),
         }
     }
 

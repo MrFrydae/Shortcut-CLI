@@ -259,10 +259,7 @@ pub fn format_template<T: serde::Serialize>(
 
     // Find all {field} placeholders
     let mut start = 0;
-    loop {
-        let Some(open) = result[start..].find('{') else {
-            break;
-        };
+    while let Some(open) = result[start..].find('{') {
         let open = start + open;
         let Some(close) = result[open..].find('}') else {
             break;
