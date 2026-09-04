@@ -47,6 +47,8 @@ Output mode precedence: `--json` > `--toon` > `--quiet` > `--format` > Human (de
 | `branch` | `--id <i64>` | `--prefix <STR>` (override type prefix) `-c`/`--checkout` |
 | `commit` | `-m <MSG>` | `--id <i64>` (overrides branch detection) `-- <extra git args>` |
 
+`get`, `create`, `update`, and `list` emit the full API story object under `--json`/`--toon` (`group_id`, `iteration_id`, `app_url`, `story_links`, `label_ids`, `custom_fields`, timestamps, …), so a write can be verified from its own output. Adjusted fields: `labels` = label names (full objects in `label_details`); `pull_requests[].status` = `merged|closed|draft|open`; `custom_fields[]` = `{field_id, value_id, value, field_name}`. Optional fields are always present as `null`/`[]`.
+
 #### story task
 
 | Subcommand | Required Args | Optional Args |

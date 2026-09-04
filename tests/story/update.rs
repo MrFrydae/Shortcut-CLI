@@ -4,10 +4,10 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
 
 use crate::support::{
-    default_icon, full_story_json, make_dry_run_output, member_json, workflow_json,
-    workflow_state_json,
+    custom_field_enum_value_json, custom_field_json, default_icon, full_story_json, label_json,
+    make_dry_run_output, member_json, story_custom_field_json, workflow_json, workflow_state_json,
 };
-use crate::{UUID_ALICE, make_update_args};
+use crate::{UUID_ALICE, UUID_FIELD_1, UUID_VAL_B, make_update_args};
 use shortcut_cli::{api, commands::story};
 
 /// Build a full story JSON with a specific workflow_state_id.
@@ -41,6 +41,65 @@ async fn update_story_name_and_description() {
     };
     let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn update_story_json_emits_full_story() {
+    let (out, buf) = OutputConfig::with_buffer(OutputMode::Json, ColorMode::Never);
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    // Resolves "Priority=Low" before the write and `field_name` after it.
+    let cf_body = serde_json::json!([custom_field_json(
+        UUID_FIELD_1,
+        "Priority",
+        vec![custom_field_enum_value_json(UUID_VAL_B, "Low", 1, true)]
+    )]);
+    Mock::given(method("GET"))
+        .and(path("/api/v3/custom-fields"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&cf_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let group_id = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+    let mut body = full_story_json(42, "New Title", "New description");
+    body["group_id"] = serde_json::json!(group_id);
+    body["label_ids"] = serde_json::json!([3]);
+    body["labels"] = serde_json::json!([label_json(3, "backend")]);
+    body["custom_fields"] =
+        serde_json::json!([story_custom_field_json(UUID_FIELD_1, UUID_VAL_B, "Low")]);
+
+    Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.name = Some("New Title".to_string());
+    update_args.custom_fields = vec!["Priority=Low".to_string()];
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "{result:?}");
+
+    let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+    let json: serde_json::Value = serde_json::from_str(output.trim()).unwrap();
+    assert_eq!(json["id"], 42);
+    assert_eq!(json["name"], "New Title");
+    assert_eq!(json["description"], "New description");
+    assert_eq!(json["group_id"], group_id);
+    assert_eq!(json["app_url"], "https://app.shortcut.com/test/story/42");
+    assert_eq!(json["labels"], serde_json::json!(["backend"]));
+    assert_eq!(json["label_details"][0]["id"], 3);
+    assert_eq!(json["custom_fields"][0]["field_id"], UUID_FIELD_1);
+    assert_eq!(json["custom_fields"][0]["value_id"], UUID_VAL_B);
+    assert_eq!(json["custom_fields"][0]["value"], "Low");
+    assert_eq!(json["custom_fields"][0]["field_name"], "Priority");
 }
 
 #[tokio::test]
