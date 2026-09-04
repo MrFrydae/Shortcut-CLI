@@ -8,6 +8,7 @@ use crate::output::{OutputConfig, Table, format_template};
 
 use super::super::member;
 use super::helpers::{build_workflow_state_id_map, resolve_workflow_state_id};
+use super::json::story_values;
 use crate::out_println;
 
 #[derive(Args)]
@@ -115,33 +116,23 @@ pub async fn run(
         })?;
 
     let limit = args.limit as usize;
-    let items: Vec<_> = stories.iter().take(limit).collect();
+    let items: &[api::types::StorySlim] = &stories[..limit.min(stories.len())];
 
     if out.is_machine_readable() {
-        let json: Vec<serde_json::Value> = items
-            .iter()
-            .map(|s| {
-                serde_json::json!({
-                    "id": s.id,
-                    "name": s.name,
-                    "story_type": s.story_type,
-                    "workflow_state_id": s.workflow_state_id,
-                })
-            })
-            .collect();
+        let json = story_values(items, client, cache_dir).await?;
         out_println!(out, "{}", serde_json::to_string_pretty(&json)?);
         return Ok(());
     }
 
     if out.is_quiet() {
-        for story in &items {
+        for story in items {
             out_println!(out, "{}", story.id);
         }
         return Ok(());
     }
 
     if let Some(template) = out.format_template() {
-        for story in &items {
+        for story in items {
             let val = serde_json::json!({
                 "id": story.id,
                 "name": story.name,
@@ -161,7 +152,7 @@ pub async fn run(
     let state_map = build_workflow_state_id_map(client, cache_dir).await?;
 
     let mut table = Table::new(vec!["ID", "Type", "State", "Name"]);
-    for story in &items {
+    for story in items {
         table.add_row(vec![
             story.id.to_string(),
             story.story_type.to_string(),
@@ -175,7 +166,7 @@ pub async fn run(
     out.write_str(format_args!("{}", table.render()))?;
 
     if args.desc {
-        for story in &items {
+        for story in items {
             if let Some(d) = &story.description {
                 out_println!(out, "  {}: {d}", story.id);
             }
