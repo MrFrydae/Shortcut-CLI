@@ -57,6 +57,12 @@ pub async fn run(
         );
     }
 
+    let color = args
+        .color
+        .as_deref()
+        .map(str::parse::<api::types::UpdateCategoryColor>)
+        .transpose()
+        .map_err(|e| format!("Invalid color: {e}"))?;
     let category = client
         .update_category()
         .category_public_id(args.id)
@@ -64,8 +70,8 @@ pub async fn run(
             if let Some(name) = name {
                 b = b.name(Some(name));
             }
-            if let Some(color) = &args.color {
-                b = b.color(Some(color.clone()));
+            if let Some(color) = color {
+                b = b.color(Some(color));
             }
             if let Some(archived) = args.archived {
                 b = b.archived(Some(archived));

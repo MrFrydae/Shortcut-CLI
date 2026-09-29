@@ -103,6 +103,12 @@ pub async fn run(
         return out.dry_run_request("PUT", &format!("/api/v3/groups/{group_id}"), Some(&body));
     }
 
+    let color = args
+        .color
+        .as_deref()
+        .map(str::parse::<api::types::UpdateGroupColor>)
+        .transpose()
+        .map_err(|e| format!("Invalid color: {e}"))?;
     let group = client
         .update_group()
         .group_public_id(group_id)
@@ -119,8 +125,8 @@ pub async fn run(
             if let Some(archived) = args.archived {
                 b = b.archived(Some(archived));
             }
-            if let Some(color) = &args.color {
-                b = b.color(Some(color.clone()));
+            if let Some(color) = color {
+                b = b.color(Some(color));
             }
             if !member_ids.is_empty() {
                 b = b.member_ids(member_ids);
