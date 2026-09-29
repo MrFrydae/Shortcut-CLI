@@ -95,6 +95,12 @@ pub async fn run(
         return out.dry_run_request("PUT", &format!("/api/v3/projects/{}", args.id), Some(&body));
     }
 
+    let color = args
+        .color
+        .as_deref()
+        .map(str::parse::<api::types::UpdateProjectColor>)
+        .transpose()
+        .map_err(|e| format!("Invalid color: {e}"))?;
     let project = client
         .update_project()
         .project_public_id(args.id)
@@ -105,8 +111,8 @@ pub async fn run(
             if let Some(desc) = description {
                 b = b.description(Some(desc));
             }
-            if let Some(color) = &args.color {
-                b = b.color(Some(color.clone()));
+            if let Some(color) = color {
+                b = b.color(Some(color));
             }
             if let Some(abbr) = &args.abbreviation {
                 b = b.abbreviation(Some(abbr.clone()));

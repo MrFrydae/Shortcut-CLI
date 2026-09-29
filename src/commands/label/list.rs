@@ -28,7 +28,7 @@ pub async fn run(
 
     let mut table = Table::new(vec!["ID", "Color", "Name"]);
     for label in labels.iter() {
-        let color = label.color.as_deref().unwrap_or("");
+        let color = label.color.as_deref().map(String::as_str).unwrap_or("");
         table.add_row(vec![
             label.id.to_string(),
             color.to_string(),
