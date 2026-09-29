@@ -80,10 +80,7 @@ fn resolve_var_string(
     // Inline interpolation: replace all $var(name) within the string
     let mut result = s.to_string();
     let mut search_start = 0;
-    loop {
-        let Some(start) = result[search_start..].find("$var(") else {
-            break;
-        };
+    while let Some(start) = result[search_start..].find("$var(") {
         let abs_start = search_start + start;
         let after = &result[abs_start + 5..];
         let Some(end) = after.find(')') else {
@@ -174,10 +171,7 @@ fn resolve_ref_string(
     // Inline interpolation
     let mut result = s.to_string();
     let mut search_start = 0;
-    loop {
-        let Some(start) = result[search_start..].find("$ref(") else {
-            break;
-        };
+    while let Some(start) = result[search_start..].find("$ref(") {
         let abs_start = search_start + start;
         let after = &result[abs_start + 5..];
         let Some(end) = after.find(')') else {

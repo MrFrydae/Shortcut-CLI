@@ -10,6 +10,7 @@ pub mod wizard;
 pub use create::CreateArgs;
 
 use std::error::Error;
+use std::io::IsTerminal;
 use std::path::PathBuf;
 
 use clap::{Args, Subcommand};
@@ -71,7 +72,7 @@ pub async fn run(
         IterationAction::List { state } => list::run(state.as_deref(), client, out).await,
         IterationAction::Create(create_args) => {
             if create_args.interactive {
-                if !atty::is(atty::Stream::Stdin) {
+                if !std::io::stdin().is_terminal() {
                     return Err("Interactive mode requires a terminal".into());
                 }
                 let members =

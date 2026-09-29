@@ -12,7 +12,6 @@ name = "shortcut"
 path = "src/main.rs"
 
 [dependencies]
-atty = "0.2.14"
 chrono = { version = "0.4.45", features = ["serde"] }
 clap = { version = "4.6.7", features = ["derive"] }
 clap_complete = "4.6.11"
@@ -38,4 +37,4 @@ openapiv3 = "2.2.0"
 prettyplease = "0.2.37"
 progenitor = { version = "0.13.0", default-features = false }
 serde_json = "1.0.151"
-syn = "2.0.119"
+syn = { version = "2.0.119", features = ["full"] }

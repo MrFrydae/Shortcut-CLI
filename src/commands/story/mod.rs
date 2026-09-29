@@ -22,6 +22,7 @@ pub use list::ListArgs;
 pub use update::UpdateArgs;
 
 use std::error::Error;
+use std::io::IsTerminal;
 use std::path::PathBuf;
 
 use clap::{Args, Subcommand};
@@ -81,7 +82,7 @@ pub async fn run(
     match &args.action {
         StoryAction::Create(create_args) => {
             if create_args.interactive {
-                if !atty::is(atty::Stream::Stdin) {
+                if !std::io::stdin().is_terminal() {
                     return Err("Interactive mode requires a terminal".into());
                 }
                 let members =
