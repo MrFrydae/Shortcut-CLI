@@ -30,7 +30,12 @@ pub async fn run(
         .map(|n| n.parse::<api::types::UpdateLabelName>())
         .transpose()
         .map_err(|e| format!("Invalid name: {e}"))?;
-    let color = args.color.clone();
+    let color = args
+        .color
+        .as_deref()
+        .map(str::parse::<api::types::UpdateLabelColor>)
+        .transpose()
+        .map_err(|e| format!("Invalid color: {e}"))?;
     let description = args
         .description
         .as_ref()

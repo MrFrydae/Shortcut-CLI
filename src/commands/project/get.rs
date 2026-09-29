@@ -42,7 +42,11 @@ pub async fn run(id: i64, client: &api::Client, out: &OutputConfig) -> Result<()
     out_println!(
         out,
         "  Color:       {}",
-        project.color.as_deref().unwrap_or("none")
+        project
+            .color
+            .as_deref()
+            .map(String::as_str)
+            .unwrap_or("none")
     );
     out_println!(out, "  Team ID:     {}", project.team_id);
     out_println!(out, "  Workflow ID: {}", project.workflow_id);

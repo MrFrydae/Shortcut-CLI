@@ -32,7 +32,11 @@ pub async fn run(id: i64, client: &api::Client, out: &OutputConfig) -> Result<()
     out_println!(
         out,
         "  Color:       {}",
-        category.color.as_deref().unwrap_or("none")
+        category
+            .color
+            .as_deref()
+            .map(String::as_str)
+            .unwrap_or("none")
     );
     out_println!(out, "  Type:        {}", category.type_);
     out_println!(out, "  Archived:    {}", category.archived);
