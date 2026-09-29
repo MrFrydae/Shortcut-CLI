@@ -26,7 +26,12 @@ pub async fn run(
         .name
         .parse::<api::types::CreateLabelParamsName>()
         .map_err(|e| format!("Invalid name: {e}"))?;
-    let color = args.color.clone();
+    let color = args
+        .color
+        .as_deref()
+        .map(str::parse::<api::types::CreateLabelParamsColor>)
+        .transpose()
+        .map_err(|e| format!("Invalid color: {e}"))?;
     let description = args
         .description
         .as_ref()

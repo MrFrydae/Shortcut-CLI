@@ -189,7 +189,7 @@ async fn get_story_prints_details() {
         action: story::StoryAction::Get { id: 99 },
     };
     let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
 }
 
 #[tokio::test]
@@ -225,7 +225,7 @@ async fn get_story_shows_branches_and_prs() {
         action: story::StoryAction::Get { id: 99 },
     };
     let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
 
     let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
     assert!(output.contains("Branches:"));

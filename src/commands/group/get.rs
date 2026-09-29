@@ -46,7 +46,7 @@ pub async fn run(
     out_println!(
         out,
         "  Color:       {}",
-        group.color.as_deref().unwrap_or("none")
+        group.color.as_deref().map(String::as_str).unwrap_or("none")
     );
     out_println!(out, "  Members:     {}", group.member_ids.len());
 

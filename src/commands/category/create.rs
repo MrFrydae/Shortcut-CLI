@@ -57,12 +57,18 @@ pub async fn run(
         return out.dry_run_request("POST", "/api/v3/categories", Some(&body));
     }
 
+    let color = args
+        .color
+        .as_deref()
+        .map(str::parse::<api::types::CreateCategoryColor>)
+        .transpose()
+        .map_err(|e| format!("Invalid color: {e}"))?;
     let category = client
         .create_category()
         .body_map(|mut b| {
             b = b.name(name);
-            if let Some(color) = &args.color {
-                b = b.color(Some(color.clone()));
+            if let Some(color) = color {
+                b = b.color(Some(color));
             }
             if let Some(t) = &args.category_type {
                 b = b.type_(Some(serde_json::Value::String(t.clone())));
@@ -92,7 +98,11 @@ pub async fn run(
         return Ok(());
     }
 
-    let color = category.color.as_deref().unwrap_or("none");
+    let color = category
+        .color
+        .as_deref()
+        .map(String::as_str)
+        .unwrap_or("none");
     out_println!(
         out,
         "Created category {} - {} ({})",

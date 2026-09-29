@@ -82,6 +82,12 @@ pub async fn run(
         return out.dry_run_request("POST", "/api/v3/groups", Some(&body));
     }
 
+    let color = args
+        .color
+        .as_deref()
+        .map(str::parse::<api::types::CreateGroupColor>)
+        .transpose()
+        .map_err(|e| format!("Invalid color: {e}"))?;
     let group = client
         .create_group()
         .body_map(|mut b| {
@@ -89,8 +95,8 @@ pub async fn run(
             if let Some(desc) = description {
                 b = b.description(Some(desc));
             }
-            if let Some(color) = &args.color {
-                b = b.color(Some(color.clone()));
+            if let Some(color) = color {
+                b = b.color(Some(color));
             }
             if !member_ids.is_empty() {
                 b = b.member_ids(member_ids);

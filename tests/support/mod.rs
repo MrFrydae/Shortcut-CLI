@@ -1093,6 +1093,7 @@ pub fn pull_request_json(
         "merged": merged,
         "num_added": 10,
         "num_commits": 3,
+        "num_modified": 5,
         "num_removed": 2,
         "number": number,
         "repository_id": 42,

@@ -61,7 +61,11 @@ pub async fn story_values<T: Serialize>(
         .collect::<Result<Vec<_>, _>>()?;
 
     let field_ids = collect_custom_field_ids(&values);
-    let names = custom_field::resolve_custom_field_names(&field_ids, client, cache_dir).await?;
+    // A write may already have succeeded by the time we render its response.
+    // Keep the story usable when the optional name lookup is unavailable.
+    let names = custom_field::resolve_custom_field_names(&field_ids, client, cache_dir)
+        .await
+        .unwrap_or_default();
 
     for value in &mut values {
         enrich_story(value, &names);
@@ -204,5 +208,23 @@ mod tests {
         ];
         let ids = collect_custom_field_ids(&values);
         assert_eq!(ids, vec![id.parse::<uuid::Uuid>().unwrap()]);
+    }
+
+    #[tokio::test]
+    async fn story_value_survives_custom_field_lookup_failure() {
+        let server = wiremock::MockServer::start().await;
+        let client = api::client_with_token("test-token", &server.uri()).unwrap();
+        let cache_dir = tempfile::tempdir().unwrap();
+        let story = serde_json::json!({
+            "id": 42,
+            "custom_fields": [{"field_id": "11111111-1111-1111-1111-111111111111"}],
+        });
+
+        // The unmocked custom-fields endpoint returns 404.
+        let value = story_value(&story, &client, cache_dir.path())
+            .await
+            .unwrap();
+        assert_eq!(value["id"], 42);
+        assert!(value["custom_fields"][0]["field_name"].is_null());
     }
 }
