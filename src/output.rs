@@ -1,5 +1,5 @@
 use std::fmt;
-use std::io::Write;
+use std::io::{IsTerminal, Write};
 use std::sync::{Arc, Mutex};
 
 use colored::Colorize;
@@ -149,7 +149,7 @@ impl OutputConfig {
         match self.color_mode {
             ColorMode::Always => true,
             ColorMode::Never => false,
-            ColorMode::Auto => atty::is(atty::Stream::Stdout),
+            ColorMode::Auto => std::io::stdout().is_terminal(),
         }
     }
 
@@ -259,10 +259,7 @@ pub fn format_template<T: serde::Serialize>(
 
     // Find all {field} placeholders
     let mut start = 0;
-    loop {
-        let Some(open) = result[start..].find('{') else {
-            break;
-        };
+    while let Some(open) = result[start..].find('{') {
         let open = start + open;
         let Some(close) = result[open..].find('}') else {
             break;

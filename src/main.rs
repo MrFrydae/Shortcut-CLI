@@ -2,6 +2,7 @@ use clap::Parser;
 use shortcut_cli::cli::{Cli, Command};
 use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
 use shortcut_cli::{api, auth, commands, project};
+use std::io::IsTerminal;
 
 #[tokio::main]
 async fn main() {
@@ -34,7 +35,7 @@ async fn main() {
         ColorMode::Always => colored::control::set_override(true),
         ColorMode::Never => colored::control::set_override(false),
         ColorMode::Auto => {
-            if !atty::is(atty::Stream::Stdout) {
+            if !std::io::stdout().is_terminal() {
                 colored::control::set_override(false);
             }
         }
