@@ -464,5 +464,6 @@ operations:
 ```
 
 - Project discovery walks up from cwd to find registered project
+- Linked Git worktrees reuse the main checkout's registered token and cache unless the worktree has its own registration; init/login from an unregistered worktree register the main checkout
 - Caches auto-populated on first use, refreshed on miss
 - `shortcut init` creates the directory; `shortcut login` stores the token

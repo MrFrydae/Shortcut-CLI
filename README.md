@@ -217,7 +217,7 @@ All config lives under `~/.shortcut/`, with per-project directories keyed by pat
             └── member_cache.json       # @mention → UUID mapping
 ```
 
-- **Project discovery** walks up from the current directory to find a registered project, so `shortcut` works from any subdirectory.
+- **Project discovery** walks up from the current directory to find a registered project, so `shortcut` works from any subdirectory. In a linked Git worktree, it uses the main checkout's token and cache when the worktree has no registration of its own. Running `shortcut init` or `shortcut login` from an unregistered worktree registers the main checkout.
 - **Caches** are populated automatically on first use and refreshed on cache miss.
 
 </details>
