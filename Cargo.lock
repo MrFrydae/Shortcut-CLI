@@ -1698,7 +1698,7 @@ checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 
 [[package]]
 name = "shortcut-cli"
-version = "0.0.22"
+version = "0.0.23"
 dependencies = [
  "chrono",
  "clap",
