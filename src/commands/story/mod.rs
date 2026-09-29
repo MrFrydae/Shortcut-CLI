@@ -6,6 +6,7 @@ mod get;
 pub mod git;
 pub mod helpers;
 mod history;
+mod json;
 mod list;
 mod update;
 pub mod wizard;

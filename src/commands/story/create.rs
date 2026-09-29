@@ -10,6 +10,7 @@ use super::helpers::{
     get_default_workflow_state_id, resolve_custom_field_args, resolve_owners,
     resolve_workflow_state_id,
 };
+use super::json::story_value;
 use crate::out_println;
 
 #[derive(Args)]
@@ -214,11 +215,8 @@ pub async fn run(
         })?;
 
     if out.is_machine_readable() {
-        out_println!(
-            out,
-            "{}",
-            serde_json::json!({"id": story.id, "name": story.name})
-        );
+        let json = story_value(&*story, client, cache_dir).await?;
+        out_println!(out, "{}", serde_json::to_string_pretty(&json)?);
         return Ok(());
     }
     if out.is_quiet() {

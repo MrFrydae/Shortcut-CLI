@@ -119,6 +119,19 @@ shortcut story list --format "{id} - {name} ({type})"
 shortcut story create --dry-run
 ```
 
+### Story JSON / TOON output
+
+`story get`, `story create`, `story update`, and `story list` emit the full API
+story object in `--json` and `--toon` modes (including `group_id`,
+`iteration_id`, `app_url`, `story_links`, `label_ids`, `custom_fields`, and
+timestamps), so a script can verify a write without a second lookup. On top of
+the raw object:
+
+- `labels` is a list of label names; the full label objects are in `label_details`.
+- `pull_requests[].status` is `merged`, `closed`, `draft`, or `open`.
+- `custom_fields[]` entries carry `field_id`, `value_id`, `value`, and a resolved `field_name`.
+- Optional fields are always present (`null` or `[]`), so the key set is stable.
+
 ## Authentication via Environment Variable
 
 For CI/non-interactive environments, you can authenticate with:

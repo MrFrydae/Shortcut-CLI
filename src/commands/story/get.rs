@@ -5,6 +5,7 @@ use crate::api;
 use crate::output::OutputConfig;
 
 use super::super::custom_field;
+use super::json::{pr_status, story_value};
 use super::link::invert_verb;
 use crate::out_println;
 
@@ -22,34 +23,7 @@ pub async fn run(
         .map_err(|e| format!("Failed to get story: {}", crate::api::format_api_error(&e)))?;
 
     if out.is_machine_readable() {
-        let json = serde_json::json!({
-            "id": story.id,
-            "name": story.name,
-            "story_type": story.story_type,
-            "workflow_state_id": story.workflow_state_id,
-            "workflow_id": story.workflow_id,
-            "epic_id": story.epic_id,
-            "estimate": story.estimate,
-            "owner_ids": story.owner_ids,
-            "labels": story.labels.iter().map(|l| &l.name).collect::<Vec<_>>(),
-            "parent_story_id": story.parent_story_id,
-            "sub_task_story_ids": story.sub_task_story_ids,
-            "description": story.description,
-            "branches": story.branches.iter().map(|b| serde_json::json!({
-                "name": b.name,
-                "url": b.url,
-                "repository_id": b.repository_id,
-            })).collect::<Vec<_>>(),
-            "pull_requests": story.pull_requests.iter().map(|pr| {
-                serde_json::json!({
-                    "number": pr.number,
-                    "title": pr.title,
-                    "url": pr.url,
-                    "status": pr_status(pr),
-                    "repository_id": pr.repository_id,
-                })
-            }).collect::<Vec<_>>(),
-        });
+        let json = story_value(&*story, client, cache_dir).await?;
         out_println!(out, "{}", serde_json::to_string_pretty(&json)?);
         return Ok(());
     }
@@ -122,7 +96,7 @@ pub async fn run(
     if !story.pull_requests.is_empty() {
         out_println!(out, "  Pull Requests:");
         for pr in &story.pull_requests {
-            let status = pr_status(pr);
+            let status = pr_status(pr.merged, pr.closed, pr.draft);
             out_println!(
                 out,
                 "    #{} \"{}\" ({}) — {}",
@@ -135,16 +109,4 @@ pub async fn run(
     }
 
     Ok(())
-}
-
-fn pr_status(pr: &crate::api::types::PullRequest) -> &'static str {
-    if pr.merged {
-        "merged"
-    } else if pr.closed {
-        "closed"
-    } else if pr.draft {
-        "draft"
-    } else {
-        "open"
-    }
 }

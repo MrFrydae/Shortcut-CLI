@@ -2,10 +2,12 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::support::{
-    default_icon, full_story_json, make_dry_run_output, make_output, member_json,
-    mount_default_workflow, workflow_json, workflow_state_json,
+    custom_field_enum_value_json, custom_field_json, default_icon, full_story_json,
+    make_dry_run_output, make_output, member_json, mount_default_workflow, story_custom_field_json,
+    workflow_json, workflow_state_json,
 };
-use crate::{UUID_ALICE, UUID_BOB, make_create_args};
+use crate::{UUID_ALICE, UUID_BOB, UUID_FIELD_1, UUID_VAL_A, make_create_args};
+use shortcut_cli::output::{ColorMode, OutputConfig, OutputMode};
 use shortcut_cli::{api, commands::story};
 
 #[tokio::test]
@@ -32,6 +34,64 @@ async fn create_story_minimal() {
     };
     let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
     assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn create_story_json_emits_full_story() {
+    let (out, buf) = OutputConfig::with_buffer(OutputMode::Json, ColorMode::Never);
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    mount_default_workflow(&server).await;
+
+    // Resolves "Priority=High" before the write and `field_name` after it.
+    let cf_body = serde_json::json!([custom_field_json(
+        UUID_FIELD_1,
+        "Priority",
+        vec![custom_field_enum_value_json(UUID_VAL_A, "High", 0, true)]
+    )]);
+    Mock::given(method("GET"))
+        .and(path("/api/v3/custom-fields"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&cf_body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let group_id = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+    let mut body = full_story_json(123, "Fix login bug", "");
+    body["group_id"] = serde_json::json!(group_id);
+    body["iteration_id"] = serde_json::json!(88);
+    body["custom_fields"] =
+        serde_json::json!([story_custom_field_json(UUID_FIELD_1, UUID_VAL_A, "High")]);
+
+    Mock::given(method("POST"))
+        .and(path("/api/v3/stories"))
+        .respond_with(ResponseTemplate::new(201).set_body_json(&body))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut create_args = make_create_args("Fix login bug");
+    create_args.custom_fields = vec!["Priority=High".to_string()];
+    let args = story::StoryArgs {
+        action: story::StoryAction::Create(Box::new(create_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "{result:?}");
+
+    let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+    let json: serde_json::Value = serde_json::from_str(output.trim()).unwrap();
+    assert_eq!(json["id"], 123);
+    assert_eq!(json["name"], "Fix login bug");
+    assert_eq!(json["group_id"], group_id);
+    assert_eq!(json["iteration_id"], 88);
+    assert_eq!(json["app_url"], "https://app.shortcut.com/test/story/123");
+    assert_eq!(json["workflow_state_id"], 500000007);
+    assert_eq!(json["custom_fields"][0]["field_id"], UUID_FIELD_1);
+    assert_eq!(json["custom_fields"][0]["value_id"], UUID_VAL_A);
+    assert_eq!(json["custom_fields"][0]["value"], "High");
+    assert_eq!(json["custom_fields"][0]["field_name"], "Priority");
 }
 
 #[tokio::test]
