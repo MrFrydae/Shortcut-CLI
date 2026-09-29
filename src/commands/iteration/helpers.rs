@@ -22,7 +22,7 @@ pub async fn fetch_iteration_choices(
             id: i.id,
         })
         .collect();
-    choices.sort_by(|a, b| a.display.to_lowercase().cmp(&b.display.to_lowercase()));
+    choices.sort_by_key(|choice| choice.display.to_lowercase());
     Ok(choices)
 }
 
