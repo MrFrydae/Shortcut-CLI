@@ -64,6 +64,7 @@ async fn main() {
                     path: root.token_path(),
                 };
                 match command {
+                    Command::ConfigDir => commands::config_dir::run(&root, &output),
                     Command::Init | Command::Login(_) | Command::Completions { .. } => {
                         unreachable!()
                     }

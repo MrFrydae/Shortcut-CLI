@@ -95,6 +95,7 @@ fn path_accessors() {
 
     assert!(root.token_path().ends_with("token"));
     assert!(root.cache_dir().ends_with("cache"));
+    assert_eq!(root.config_dir(), root.token_path().parent().unwrap());
 }
 
 #[test]
@@ -165,6 +166,18 @@ fn linked_worktree_finds_main_project_token_from_subdirectory() {
     let discovered = project::discover_in(&home, &nested).unwrap();
 
     assert_eq!(discovered.token_path(), main_root.token_path());
+    let output = Command::new(env!("CARGO_BIN_EXE_shortcut"))
+        .arg("config-dir")
+        .env("HOME", &home)
+        .env_remove("SHORTCUT_API_TOKEN")
+        .current_dir(&nested)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!("{}\n", main_root.config_dir().display())
+    );
     assert_eq!(
         std::fs::read_to_string(discovered.token_path()).unwrap(),
         "main-token"

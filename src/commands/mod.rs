@@ -1,5 +1,6 @@
 pub mod category;
 pub mod completions;
+pub mod config_dir;
 pub mod custom_field;
 pub mod doc;
 pub mod epic;

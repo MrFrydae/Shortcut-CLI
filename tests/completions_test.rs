@@ -52,6 +52,7 @@ fn completions_include_all_subcommands() {
     let output = generate(Shell::Bash);
     let subcommands = [
         "init",
+        "config-dir",
         "login",
         "category",
         "custom-field",
