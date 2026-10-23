@@ -8,6 +8,7 @@ Binary: `shortcut` (aliased `sc`). Rust CLI for the [Shortcut](https://shortcut.
 
 ```sh
 shortcut init          # create ~/.shortcut/ config dir for current project
+shortcut config-dir    # print registered project's hashed config directory (no auth)
 shortcut login         # authenticate (prompts for token; or --token <TOKEN>)
 shortcut completions <shell>   # hidden; generate shell completions (bash|zsh|fish)
 ```
@@ -467,3 +468,5 @@ operations:
 - Linked Git worktrees reuse the main checkout's registered token and cache unless the worktree has its own registration; init/login from an unregistered worktree register the main checkout
 - Caches auto-populated on first use, refreshed on miss
 - `shortcut init` creates the directory; `shortcut login` stores the token
+- `shortcut config-dir` prints the discovered directory without reading the token or creating files; fails if no registration is found
+- `shortcut config-dir --format '{token_path}'` prints the token file path; `--json`/`--toon` expose `config_dir`, `token_path`, and `cache_dir`

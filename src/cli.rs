@@ -42,6 +42,19 @@ pub struct Cli {
 pub enum Command {
     /// Initialize ~/.shortcut/ directory for token and cache storage
     Init,
+    /// Print the current project's hashed directory under ~/.shortcut/projects/
+    ///
+    /// Uses the same ancestor and linked Git worktree discovery as other commands.
+    /// Prints only the absolute directory path by default, suitable for shell substitution.
+    /// The saved token is in the `token` file inside this directory.
+    /// No token or network access is required; no files are read or created inside it.
+    /// Fails if no project is registered for the current directory.
+    ///
+    /// JSON/TOON and --format expose config_dir, token_path, and cache_dir.
+    #[command(
+        after_help = "Examples:\n  shortcut config-dir\n  ls -la \"$(shortcut config-dir)\"\n  shortcut config-dir --format '{token_path}'\n  shortcut config-dir --json"
+    )]
+    ConfigDir,
     /// Authenticate with your Shortcut API token
     Login(commands::login::LoginArgs),
     /// Work with categories

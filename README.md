@@ -51,6 +51,7 @@ shortcut search stories "bug"  # Search across stories
 | Command | Subcommands | Description |
 |---|---|---|
 | `init` | — | Initialize `~/.shortcut/` directory for token and cache storage |
+| `config-dir` | — | Print the current project's hashed config directory, without authentication |
 | `login` | — | Authenticate with your Shortcut API token |
 | `story` | `list` `create` `get` `update` `delete` `task` `link` `comment` `history` `branch` `commit` | Full story management with tasks, links, comments, git integration |
 | `epic` | `list` `create` `get` `update` `delete` `comment` `docs` | Manage epics with comments and linked docs |
@@ -143,6 +144,73 @@ shortcut story list
 
 `SHORTCUT_API_TOKEN` takes precedence over a stored project token file.
 
+## Find the Config Directory and Recover a Saved Token
+
+Run `shortcut config-dir` from the project where you previously ran `shortcut init`
+or `shortcut login`, or from any subdirectory of that project:
+
+```sh
+shortcut config-dir
+# /Users/you/.shortcut/projects/0123456789abcdef
+```
+
+The output is a single absolute directory path followed by a newline, with no
+label or color codes. The example hash is illustrative; the command returns your
+project's actual directory. `--quiet` produces the same path.
+
+To inspect the directory or read your saved token in a local terminal (Bash/Zsh):
+
+```sh
+# List the token and cache files
+config_dir=$(shortcut config-dir) && ls -la "$config_dir"
+
+# Display your saved API token; keep the output private
+config_dir=$(shortcut config-dir) && cat "$config_dir/token"
+
+# Get just the token file's path, without displaying its contents
+shortcut config-dir --format '{token_path}'
+```
+
+The `token` file contains the API token in plain text, with `0600` permissions on
+Unix. `config-dir` only reports paths: it does not read or print the token, check
+its validity, contact the API, or create or modify configuration. It works even
+when the token is missing, expired, or unreadable. `--dry-run` returns the same
+paths because this command makes no changes.
+
+For scripts, use `--json` or `--toon` to return an object with `config_dir`,
+`token_path`, and `cache_dir`. The same fields are available to `--format`:
+
+```sh
+shortcut config-dir --json
+# {
+#   "cache_dir": "/Users/you/.shortcut/projects/0123456789abcdef/cache",
+#   "config_dir": "/Users/you/.shortcut/projects/0123456789abcdef",
+#   "token_path": "/Users/you/.shortcut/projects/0123456789abcdef/token"
+# }
+shortcut config-dir --format '{config_dir}'
+```
+
+Directory selection follows the same rules as API commands:
+
+- From a subdirectory, it uses the nearest registered ancestor.
+- Linked Git worktrees use their own registration when present, otherwise the
+  main checkout's registration (including registered ancestors of that checkout),
+  then a registered ancestor above the worktree.
+- The 16-character directory name is a 64-bit FNV-1a hash of the canonical
+  project path, not of your token. Symbolic links resolve to the same canonical
+  path; moving a project can change which hash is found.
+
+If no registration is found, the command exits with status 1 and prints an error
+to stderr, leaving stdout empty. For recovery, run it from the original project
+location or a checkout that shares its registration. Running `init` at a new
+location creates a new directory; it does not recover the old token. Existing
+directories can also be inspected under `~/.shortcut/projects/`.
+
+If the reported directory has no `token` file, no token is saved there. A token
+provided only through `SHORTCUT_API_TOKEN` is not saved automatically; that
+variable overrides file-based authentication but does not affect `config-dir`.
+Use `shortcut login` to save a token when needed.
+
 ## STL (Shortcut Template Language)
 
 Declare stories, epics, and related entities in a `.shortcut.yml` file and apply them in one command.
@@ -218,6 +286,7 @@ All config lives under `~/.shortcut/`, with per-project directories keyed by pat
 ```
 
 - **Project discovery** walks up from the current directory to find a registered project, so `shortcut` works from any subdirectory. In a linked Git worktree, it uses the main checkout's token and cache when the worktree has no registration of its own. Running `shortcut init` or `shortcut login` from an unregistered worktree registers the main checkout.
+- **Find storage paths** with `shortcut config-dir`; see [token recovery examples](#find-the-config-directory-and-recover-a-saved-token).
 - **Caches** are populated automatically on first use and refreshed on cache miss.
 
 </details>

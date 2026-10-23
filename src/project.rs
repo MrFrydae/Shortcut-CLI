@@ -40,6 +40,11 @@ pub struct ProjectRoot {
 }
 
 impl ProjectRoot {
+    /// The registered project's hashed directory under `~/.shortcut/projects/`.
+    pub fn config_dir(&self) -> &Path {
+        &self.shortcut_dir
+    }
+
     pub fn token_path(&self) -> PathBuf {
         self.shortcut_dir.join("token")
     }
