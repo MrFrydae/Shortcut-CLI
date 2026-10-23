@@ -23,8 +23,9 @@ reqwest = { version = "0.13.5", features = ["json", "stream"] }
 rpassword = "7.5.4"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
-serde_yaml = "0.9.34"
-tokio = { version = "1.53.2", features = ["full"] }
+# Keep the existing API while using the maintained YAML fork without unsafe-libyaml.
+serde_yaml = { package = "yaml_serde", version = "0.10.7" }
+tokio = { version = "1.53.3", features = ["full"] }
 toon = "0.1.2"
 uuid = { version = "1.28.0", features = ["serde", "v4"] }
 
