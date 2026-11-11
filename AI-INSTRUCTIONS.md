@@ -42,7 +42,7 @@ Output mode precedence: `--json` > `--toon` > `--quiet` > `--format` > Human (de
 | `list` | | `--owner <@mention\|UUID>` `--state <name\|ID>` `--epic-id <i64>` `--type <feature\|bug\|chore>` `--label <name>` `--project-id <i64>` `--limit <N>` (default 25) `--desc` |
 | `create` | `--name <STR>` (unless `-i`) | `-i` (interactive) `--description` `--type` `--owner <csv>` `--state` `--epic-id` `--estimate` `--labels <csv>` `--group-id` `--iteration-id` `--custom-field <Key=Val>` (repeatable) `--parent-story-id` |
 | `get` | `--id <i64>` | |
-| `update` | `--id <i64>` | `--name` `--description` `--type` `--owner <csv>` (replaces all) `--add-owner <csv>` (appends; conflicts with --owner) `--state` `--epic-id` `--estimate` `--labels <csv>` `--iteration-id` `--custom-field <Key=Val>` (repeatable) `--parent-story-id` `--unless-state <csv>` (skip if in these states) |
+| `update` | `--id <i64>` | `--name` `--description` or `--description-file <PATH\|->` (replaces) `--append-description <STR>` or `--append-description-file <PATH\|->` (appends as a new paragraph) `--type` `--owner <csv>` (replaces all) `--add-owner <csv>` (appends; conflicts with --owner) `--state` `--epic-id` `--estimate` `--labels <csv>` `--iteration-id` `--custom-field <Key=Val>` (repeatable) `--parent-story-id` `--unless-state <csv>` (skip if in these states) |
 | `delete` | `--id <i64>` `--confirm` | |
 | `history` | `--id <i64>` | `--limit <N>` |
 | `branch` | `--id <i64>` | `--prefix <STR>` (override type prefix) `-c`/`--checkout` |
@@ -81,6 +81,34 @@ Output mode precedence: `--json` > `--toon` > `--quiet` > `--format` > Human (de
 | `delete` | `--story-id <i64>` `--id <i64>` | `--confirm` |
 | `react` | `--story-id <i64>` `--comment-id <i64>` `--emoji <name>` | |
 | `unreact` | `--story-id <i64>` `--comment-id <i64>` `--emoji <name>` | |
+
+#### story file
+
+Story-scoped alias for `file upload --story-id`.
+
+| Subcommand | Required Args | Optional Args |
+|------------|---------------|---------------|
+| `upload` | `--story-id <i64>` `<PATH>...` (positional) | `--markdown` `--embed` |
+
+---
+
+### file
+
+Upload and manage workspace files (attachments). Uploads are sent as `multipart/form-data` in batches of 4 files per request.
+
+| Subcommand | Required Args | Optional Args |
+|------------|---------------|---------------|
+| `upload` | `<PATH>...` (positional) | `--story-id <i64>` (attach) `--markdown` (print `![name](url)` for images, `[name](url)` otherwise) `--embed` (append snippets to the story description; requires `--story-id`) |
+| `list` | | |
+| `get` | `--id <i64>` | |
+| `update` | `--id <i64>` | `--name` `--description` |
+| `delete` | `--id <i64>` `--confirm` | |
+
+- `upload` validates every path (exists, regular file, non-empty) before sending anything; MIME type is guessed from the extension
+- `upload --quiet` prints one file ID per line; `--json`/`--toon` emit the API `UploadedFile` objects plus a `markdown` field; `--format` templates can use any field, e.g. `--format '{id} {markdown}'`
+- If a later batch fails, the error lists the IDs already uploaded
+- `--dry-run` prints each multipart request (field, filename, content type, size) without sending anything
+- Attach and embed in one step: `shortcut story file upload --story-id 123 --embed a.png b.png`
 
 ---
 

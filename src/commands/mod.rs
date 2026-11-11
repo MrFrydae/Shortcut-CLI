@@ -4,6 +4,7 @@ pub mod config_dir;
 pub mod custom_field;
 pub mod doc;
 pub mod epic;
+pub mod file;
 pub mod group;
 pub mod init;
 pub mod iteration;

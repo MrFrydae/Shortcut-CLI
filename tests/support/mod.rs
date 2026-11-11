@@ -1353,3 +1353,31 @@ pub fn entity_template_json_minimal(id: &str, name: &str) -> serde_json::Value {
         "updated_at": "2024-03-01T00:00:00Z"
     })
 }
+
+/// Build a JSON value representing a valid `UploadedFile` response object.
+pub fn uploaded_file_json(
+    id: i64,
+    name: &str,
+    content_type: &str,
+    story_ids: Vec<i64>,
+) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "name": name,
+        "filename": name,
+        "content_type": content_type,
+        "size": 2048,
+        "url": format!("https://media.app.shortcut.com/api/attachments/files/clubhouse-assets/{id}/{name}"),
+        "thumbnail_url": null,
+        "description": null,
+        "external_id": null,
+        "entity_type": "file",
+        "story_ids": story_ids,
+        "mention_ids": [],
+        "member_mention_ids": [],
+        "group_mention_ids": [],
+        "uploader_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-01-01T00:00:00Z"
+    })
+}

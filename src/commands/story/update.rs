@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use clap::Args;
 
@@ -7,8 +7,8 @@ use crate::api;
 use crate::output::OutputConfig;
 
 use super::helpers::{
-    normalize_name, resolve_custom_field_args, resolve_owners, resolve_workflow_state_id,
-    resolve_workflow_state_name,
+    append_description, normalize_name, read_text_source, resolve_custom_field_args,
+    resolve_owners, resolve_workflow_state_id, resolve_workflow_state_name,
 };
 use super::json::story_value;
 use crate::out_println;
@@ -24,9 +24,29 @@ pub struct UpdateArgs {
     #[arg(long)]
     pub name: Option<String>,
 
-    /// The description of the story
-    #[arg(long)]
+    /// The description of the story (replaces the existing description)
+    #[arg(long, conflicts_with = "description_file")]
     pub description: Option<String>,
+
+    /// Read the description from a file (use `-` for stdin; replaces the existing description)
+    #[arg(long, value_name = "PATH")]
+    pub description_file: Option<PathBuf>,
+
+    /// Append text to the existing description as a new paragraph
+    #[arg(
+        long,
+        value_name = "TEXT",
+        conflicts_with_all = ["description", "description_file", "append_description_file"]
+    )]
+    pub append_description: Option<String>,
+
+    /// Append the contents of a file (use `-` for stdin) to the existing description
+    #[arg(
+        long,
+        value_name = "PATH",
+        conflicts_with_all = ["description", "description_file"]
+    )]
+    pub append_description_file: Option<PathBuf>,
 
     /// The type of story (feature, bug, chore)
     #[arg(long, name = "type")]
@@ -86,12 +106,16 @@ pub async fn run(
         .transpose()
         .map_err(|e| format!("Invalid name: {e}"))?;
 
-    let description = args
-        .description
-        .as_ref()
-        .map(|d| d.parse::<api::types::UpdateStoryDescription>())
-        .transpose()
-        .map_err(|e| format!("Invalid description: {e}"))?;
+    let replace_description = match (&args.description, &args.description_file) {
+        (Some(d), _) => Some(d.clone()),
+        (None, Some(path)) => Some(read_text_source(path)?),
+        (None, None) => None,
+    };
+    let append_text = match (&args.append_description, &args.append_description_file) {
+        (Some(t), _) => Some(t.clone()),
+        (None, Some(path)) => Some(read_text_source(path)?),
+        (None, None) => None,
+    };
 
     let story_type = args
         .story_type
@@ -125,7 +149,8 @@ pub async fn run(
         resolve_custom_field_args(&args.custom_fields, client, cache_dir).await?;
 
     // Fetch story if needed for --add-owner merge or --unless-state check
-    let need_fetch = !add_owner_ids.is_empty() || !args.unless_state.is_empty();
+    let need_fetch =
+        !add_owner_ids.is_empty() || !args.unless_state.is_empty() || append_text.is_some();
     let fetched_story = if need_fetch {
         Some(
             client
@@ -173,12 +198,24 @@ pub async fn run(
         }
     }
 
+    // --append-description: build the new description from the fetched story
+    let new_description = match (&append_text, &fetched_story) {
+        (Some(text), Some(story)) => Some(append_description(&story.description, text)),
+        _ => replace_description,
+    };
+
+    let description = new_description
+        .as_ref()
+        .map(|d| d.parse::<api::types::UpdateStoryDescription>())
+        .transpose()
+        .map_err(|e| format!("Invalid description: {e}"))?;
+
     if out.is_dry_run() {
         let mut body = serde_json::Map::new();
         if let Some(name) = &args.name {
             body.insert("name".into(), serde_json::json!(name));
         }
-        if let Some(desc) = &args.description {
+        if let Some(desc) = &new_description {
             body.insert("description".into(), serde_json::json!(desc));
         }
         if let Some(st) = &args.story_type {

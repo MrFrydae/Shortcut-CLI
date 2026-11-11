@@ -36,8 +36,15 @@ fn main() {
 
     // Patch the spec to work around Progenitor limitations.
     if let Some(paths) = spec_value.get_mut("paths").and_then(|p| p.as_object_mut()) {
-        // Remove endpoints that use multipart/form-data (unsupported by Progenitor).
-        paths.remove("/api/v3/files");
+        // Remove the multipart/form-data upload operation (unsupported by Progenitor).
+        // Only the POST is dropped so `GET /api/v3/files` (list) is still generated;
+        // uploads are hand-written in `api::upload_files`.
+        if let Some(files) = paths
+            .get_mut("/api/v3/files")
+            .and_then(|p| p.as_object_mut())
+        {
+            files.remove("post");
+        }
 
         // Replace non-2xx response content with a $ref to ApiError.
         // Progenitor asserts at most one error type per operation; using a single

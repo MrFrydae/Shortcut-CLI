@@ -25,6 +25,7 @@
 17. [Git Integration](#17-git-integration)
 18. [Entity Templates](#18-entity-templates)
 19. [Shortcut Template Language (STL)](#19-shortcut-template-language-stl)
+20. [Files & Attachments](#20-files--attachments)
 
 ## Completion Tracker
 
@@ -111,6 +112,12 @@
 | 19.13 | STL implementation notes |        |
 | 19.14 | STL grammar summary |        |
 | 19.15 | STL real-world example templates |        |
+| 20.1  | `file upload` / `story file upload` |   ✅    |
+| 20.2  | `file list` / `get` / `update` / `delete` |   ✅    |
+| 20.3  | Embed uploads in story descriptions (`--embed`, `story update --append-description`) |   ✅    |
+| 20.4  | Show attached files in `story get` |        |
+| 20.5  | Linked files (`/api/v3/linked-files`) |        |
+| 20.6  | STL `file` entity |        |
 
 <!--
 AI INSTRUCTION: When a feature listed in the Completion Tracker table above is fully
@@ -3458,6 +3465,43 @@ operations:
     fields:
       text: "Carried over from Sprint 23 → Sprint 24. Needs design review."
 ```
+
+---
+
+## 20. Files & Attachments
+
+**Motivation.** Attaching screenshots and mockups to stories (and embedding them in descriptions) previously required raw `curl` calls against the REST API.
+
+### 20.1 `file upload` / `story file upload` ✅
+
+```
+shortcut file upload [--story-id <id>] [--markdown] [--embed] <PATH>...
+shortcut story file upload --story-id <id> [--markdown] [--embed] <PATH>...
+```
+
+**API:** `POST /api/v3/files` (`multipart/form-data`; fields `story_id`, `file0`–`file3`).
+
+**Implementation notes.** Progenitor cannot generate multipart endpoints, so `build.rs` drops only the `POST` operation and `api::upload_files` builds the request by hand on the generated client's `reqwest::Client`. More than 4 files are split into multiple requests; partial failures report the IDs already uploaded.
+
+### 20.2 `file list` / `get` / `update` / `delete` ✅
+
+**API:** `GET /api/v3/files`, `GET|PUT|DELETE /api/v3/files/{file-public-id}` (generated).
+
+### 20.3 Embedding in descriptions ✅
+
+`--embed` fetches the story and appends one markdown snippet per uploaded file to its description. `story update` gains `--description-file`, `--append-description`, and `--append-description-file` (all accept `-` for stdin).
+
+### 20.4 Show attached files in `story get`
+
+List `files` (name, size, URL) in the human `story get` output.
+
+### 20.5 Linked files
+
+Commands for `/api/v3/linked-files` (Google Drive, Dropbox, etc. attachments).
+
+### 20.6 STL `file` entity
+
+Allow `upload` actions for files in STL templates.
 
 ---
 

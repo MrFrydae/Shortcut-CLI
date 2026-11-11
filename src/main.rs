@@ -89,6 +89,10 @@ async fn main() {
                         }
                         Err(e) => Err(e.into()),
                     },
+                    Command::File(args) => match api::authenticated_client(&store) {
+                        Ok(client) => commands::file::run(&args, &client, &output).await,
+                        Err(e) => Err(e.into()),
+                    },
                     Command::Group(args) => match api::authenticated_client(&store) {
                         Ok(client) => {
                             commands::group::run(&args, &client, root.cache_dir(), &output).await
