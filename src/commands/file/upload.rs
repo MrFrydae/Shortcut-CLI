@@ -86,30 +86,34 @@ pub async fn upload(
             .collect::<Result<Vec<_>, String>>()
             .map_err(|e| with_partial(e, &uploaded))?;
 
-        let result = api::upload_files(client, opts.story_id, parts)
+        let mut result = api::upload_files(client, opts.story_id, parts)
             .await
             .map_err(|e| with_partial(format!("Failed to upload files: {e}"), &uploaded))?;
-        uploaded.extend(result);
-    }
-
-    for file in &mut uploaded {
-        let md = markdown_for_value(file);
-        if let (Some(obj), Some(md)) = (file.as_object_mut(), md) {
-            obj.insert("markdown".into(), serde_json::Value::String(md));
+        for file in &mut result {
+            let md = markdown_for_value(file);
+            if let (Some(obj), Some(md)) = (file.as_object_mut(), md) {
+                obj.insert("markdown".into(), serde_json::Value::String(md));
+            }
         }
+        uploaded.extend(result);
     }
 
     if opts.embed
         && let Some(story_id) = opts.story_id
     {
-        embed_in_story(story_id, &uploaded, client).await?;
+        // The uploads already succeeded (and are attached via story_id), so a
+        // failed embed must still report them; retrying would create duplicates.
+        embed_in_story(story_id, &uploaded, client)
+            .await
+            .map_err(|e| with_partial(e.to_string(), &uploaded))?;
     }
 
     print_uploaded(&uploaded, opts, out)
 }
 
-/// Add the IDs of files that were already uploaded to an error message, so a
-/// partial failure never leaves orphaned uploads unreported.
+/// Add the IDs and markdown snippets of files that were already uploaded to an
+/// error message, so a failure after a successful upload never leaves those
+/// files unreported and the user can finish (e.g. embed) them by hand.
 fn with_partial(msg: String, uploaded: &[serde_json::Value]) -> String {
     if uploaded.is_empty() {
         return msg;
@@ -118,10 +122,16 @@ fn with_partial(msg: String, uploaded: &[serde_json::Value]) -> String {
         .iter()
         .filter_map(|f| f.get("id").map(|v| v.to_string()))
         .collect();
-    format!(
+    let mut out = format!(
         "{msg}\nAlready uploaded before the failure (file IDs): {}",
         ids.join(", ")
-    )
+    );
+    let markdown = markdown_block(uploaded);
+    if !markdown.is_empty() {
+        out.push_str("\nMarkdown for the uploaded files:\n");
+        out.push_str(&markdown);
+    }
+    out
 }
 
 async fn embed_in_story(

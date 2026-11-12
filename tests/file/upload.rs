@@ -399,6 +399,89 @@ async fn upload_embed_appends_markdown_to_story_description() {
 }
 
 #[tokio::test]
+async fn upload_embed_failure_reports_uploaded_files() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+    let paths = write_files(tmp.path(), &["a.png", "b.png"]);
+
+    Mock::given(method("POST"))
+        .and(path("/api/v3/files"))
+        .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!([
+            uploaded_file_json(21, "a.png", "image/png", vec![42]),
+            uploaded_file_json(22, "b.png", "image/png", vec![42]),
+        ])))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(full_story_json(42, "Story", "Existing")),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(
+            ResponseTemplate::new(422)
+                .set_body_json(serde_json::json!({"message": "Description is invalid"})),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let err = file::run(
+        &with_flags(upload_args(paths, Some(42)), false, true),
+        &client,
+        &out,
+    )
+    .await
+    .unwrap_err()
+    .to_string();
+
+    assert!(err.contains("failed to update story 42 description"));
+    assert!(err.contains("422 Unprocessable Entity: Description is invalid"));
+    assert!(err.contains("(file IDs): 21, 22"));
+    assert!(err.contains(&format!("![a.png]({MEDIA}/21/a.png)")));
+    assert!(err.contains(&format!("![b.png]({MEDIA}/22/b.png)")));
+}
+
+#[tokio::test]
+async fn upload_partial_failure_includes_markdown() {
+    let out = make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+    let paths = write_files(tmp.path(), &["a.png", "b.png", "c.png", "d.png", "e.png"]);
+
+    Mock::given(method("POST"))
+        .and(path("/api/v3/files"))
+        .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!([
+            uploaded_file_json(31, "a.png", "image/png", vec![]),
+            uploaded_file_json(32, "b.png", "image/png", vec![]),
+            uploaded_file_json(33, "c.png", "image/png", vec![]),
+            uploaded_file_json(34, "d.png", "image/png", vec![]),
+        ])))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/api/v3/files"))
+        .respond_with(ResponseTemplate::new(500))
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let err = file::run(&upload_args(paths, None), &client, &out)
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains(&format!("![d.png]({MEDIA}/34/d.png)")));
+}
+
+#[tokio::test]
 async fn upload_embed_requires_story_id() {
     let out = make_output();
     let server = MockServer::start().await;
