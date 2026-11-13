@@ -53,7 +53,8 @@ shortcut search stories "bug"  # Search across stories
 | `init` | — | Initialize `~/.shortcut/` directory for token and cache storage |
 | `config-dir` | — | Print the current project's hashed config directory, without authentication |
 | `login` | — | Authenticate with your Shortcut API token |
-| `story` | `list` `create` `get` `update` `delete` `task` `link` `comment` `history` `branch` `commit` | Full story management with tasks, links, comments, git integration |
+| `story` | `list` `create` `get` `update` `delete` `task` `link` `comment` `file` `history` `branch` `commit` | Full story management with tasks, links, comments, file uploads, git integration |
+| `file` | `upload` `list` `get` `update` `delete` | Upload files/screenshots (optionally attaching and embedding them in a story) and manage workspace files |
 | `epic` | `list` `create` `get` `update` `delete` `comment` `docs` | Manage epics with comments and linked docs |
 | `iteration` | `list` `create` `get` `update` `delete` `stories` | Manage iterations and view their stories |
 | `label` | `list` `create` `get` `update` `delete` `stories` `epics` | Manage labels and view associated entities |
@@ -69,6 +70,27 @@ shortcut search stories "bug"  # Search across stories
 | `workflow` | — | List workflows or view a workflow's states |
 
 Run `shortcut <command> --help` for full flag documentation.
+
+## File Uploads
+
+Upload screenshots or other files, attach them to a story, and get ready-to-paste markdown:
+
+```sh
+# Upload and attach to story 123
+shortcut story file upload --story-id 123 mockup-a.png mockup-b.png
+
+# Print markdown snippets (![name](url) for images, [name](url) otherwise)
+shortcut file upload --story-id 123 --markdown mockup-a.png
+
+# Attach and append the images to the story description in one step
+shortcut story file upload --story-id 123 --embed mockup-a.png mockup-b.png
+
+# Replace or append to a description from a file (or `-` for stdin)
+shortcut story update --id 123 --description-file description.md
+shortcut story update --id 123 --append-description-file notes.md
+```
+
+Files are uploaded in batches of 4 per request. Use `--dry-run` to preview the requests.
 
 ## Git Integration
 

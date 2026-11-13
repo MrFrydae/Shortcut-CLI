@@ -12,6 +12,7 @@ mod update;
 pub mod wizard;
 
 pub mod comment;
+pub mod file;
 pub mod link;
 pub mod task;
 
@@ -66,6 +67,8 @@ pub enum StoryAction {
     Link(link::LinkArgs),
     /// Manage comments on a story
     Comment(comment::CommentArgs),
+    /// Upload files to a story
+    File(file::StoryFileArgs),
     /// Show the change history of a story
     History(history::HistoryArgs),
     /// Generate a git branch name from a story
@@ -120,6 +123,7 @@ pub async fn run(
         StoryAction::Task(task_args) => task::run(task_args, client, out).await,
         StoryAction::Link(link_args) => link::run(link_args, client, out).await,
         StoryAction::Comment(args) => comment::run(args, client, &cache_dir, out).await,
+        StoryAction::File(file_args) => file::run(file_args, client, out).await,
         StoryAction::History(history_args) => {
             history::run(history_args, client, &cache_dir, out).await
         }

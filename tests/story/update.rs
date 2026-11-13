@@ -640,3 +640,128 @@ async fn add_owner_appends_to_existing() {
     assert!(sent_ids.contains(&serde_json::json!(UUID_ALICE)));
     assert!(sent_ids.contains(&serde_json::json!(crate::UUID_BOB)));
 }
+
+#[tokio::test]
+async fn update_story_description_from_file() {
+    let out = crate::support::make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+    let desc_path = tmp.path().join("desc.md");
+    std::fs::write(&desc_path, "# Heading\n\nLong body").unwrap();
+
+    Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .and(wiremock::matchers::body_partial_json(
+            serde_json::json!({"description": "# Heading\n\nLong body"}),
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(full_story_json(
+            42,
+            "Title",
+            "# Heading\n\nLong body",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.description_file = Some(desc_path);
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "{:?}", result.err().map(|e| e.to_string()));
+}
+
+#[tokio::test]
+async fn update_story_description_file_missing_errors() {
+    let out = crate::support::make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.description_file = Some(tmp.path().join("nope.md"));
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let err = story::run(&args, &client, tmp.path().to_path_buf(), &out)
+        .await
+        .unwrap_err();
+    assert!(err.to_string().contains("nope.md"));
+}
+
+#[tokio::test]
+async fn update_story_append_description() {
+    let out = crate::support::make_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(full_story_json(
+            42,
+            "Title",
+            "Original  \n",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("PUT"))
+        .and(path("/api/v3/stories/42"))
+        .and(wiremock::matchers::body_partial_json(
+            serde_json::json!({"description": "Original\n\nMore"}),
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(full_story_json(
+            42,
+            "Title",
+            "Original\n\nMore",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.append_description = Some("More".to_string());
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    let result = story::run(&args, &client, tmp.path().to_path_buf(), &out).await;
+    assert!(result.is_ok(), "{:?}", result.err().map(|e| e.to_string()));
+}
+
+#[tokio::test]
+async fn dry_run_story_update_append_description_from_file() {
+    let (out, buf) = make_dry_run_output();
+    let server = MockServer::start().await;
+    let tmp = tempfile::tempdir().unwrap();
+    let add_path = tmp.path().join("add.md");
+    std::fs::write(&add_path, "![shot](https://x/shot.png)\n").unwrap();
+
+    Mock::given(method("GET"))
+        .and(path("/api/v3/stories/42"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(full_story_json(42, "Title", "Original")),
+        )
+        .mount(&server)
+        .await;
+    Mock::given(method("PUT"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(0)
+        .mount(&server)
+        .await;
+
+    let client = api::client_with_token("test-token", &server.uri()).unwrap();
+    let mut update_args = make_update_args(42);
+    update_args.append_description_file = Some(add_path);
+    let args = story::StoryArgs {
+        action: story::StoryAction::Update(Box::new(update_args)),
+    };
+    story::run(&args, &client, tmp.path().to_path_buf(), &out)
+        .await
+        .unwrap();
+    let output = String::from_utf8(buf.lock().unwrap().clone()).unwrap();
+    assert!(output.contains("[dry-run] PUT /api/v3/stories/42"));
+    assert!(output.contains("Original\\n\\n![shot](https://x/shot.png)"));
+}

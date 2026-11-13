@@ -319,3 +319,33 @@ fn write_default_state_cache(id: i64, cache_dir: &Path) {
         let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
     }
 }
+
+// --- Description text helpers ---
+
+/// Read text from a file path, or from stdin when the path is `-`.
+pub fn read_text_source(path: &Path) -> Result<String, Box<dyn Error>> {
+    if path.as_os_str() == "-" {
+        let mut buf = String::new();
+        std::io::Read::read_to_string(&mut std::io::stdin(), &mut buf)
+            .map_err(|e| format!("Failed to read stdin: {e}"))?;
+        return Ok(buf);
+    }
+    std::fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read file '{}': {e}", path.display()).into())
+}
+
+/// Append `addition` to an existing story description as a new paragraph.
+///
+/// Trailing whitespace on the existing description is trimmed and the two are
+/// separated by a blank line. An empty existing description yields `addition`.
+pub fn append_description(existing: &str, addition: &str) -> String {
+    let existing = existing.trim_end();
+    let addition = addition.trim();
+    if existing.is_empty() {
+        addition.to_string()
+    } else if addition.is_empty() {
+        existing.to_string()
+    } else {
+        format!("{existing}\n\n{addition}")
+    }
+}

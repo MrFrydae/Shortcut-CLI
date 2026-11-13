@@ -65,6 +65,8 @@ pub enum Command {
     Doc(commands::doc::DocArgs),
     /// Work with epics
     Epic(commands::epic::EpicArgs),
+    /// Upload and manage files
+    File(commands::file::FileArgs),
     /// Work with groups
     Group(commands::group::GroupArgs),
     /// Work with iterations
